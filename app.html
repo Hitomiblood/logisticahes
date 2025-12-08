@@ -558,10 +558,12 @@
     // Eventos para filtrado automático
     sedeFilterEl.addEventListener("change", onSedeChange);
     estadoFilterEl.addEventListener("change", onEstadoChange);
-    
-    // Cargar datos guardados al iniciar
-    loadDataFromStorage();
     placaFilterEl.addEventListener("change", onPlacaChange);
+    
+    // Cargar datos guardados al iniciar (después de que todo esté listo)
+    window.addEventListener('DOMContentLoaded', function() {
+      setTimeout(loadDataFromStorage, 100);
+    });
     
     // Nombres de meses
     const monthNames = ['Ene', 'Feb', 'Mar', 'Abr', 'May', 'Jun', 'Jul', 'Ago', 'Sep', 'Oct', 'Nov', 'Dic'];
