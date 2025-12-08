@@ -386,21 +386,21 @@
           <label for="sedeFilter">Sede (multi-selección)</label>
           <input type="text" class="filter-search" id="sedeSearch" placeholder="Buscar sede..." oninput="filterSelect('sedeFilter', this.value)">
           <select id="sedeFilter" multiple></select>
-          <button type="button" class="secondary" onclick="selectAll('sedeFilter')">Seleccionar todo</button>
+          <button type="button" class="secondary" id="sedeFilterBtn" onclick="toggleSelectAll('sedeFilter', 'sedeFilterBtn')">Seleccionar todo</button>
         </div>
 
         <div>
           <label for="estadoFilter">Estado Vehículo (multi)</label>
           <input type="text" class="filter-search" id="estadoSearch" placeholder="Buscar estado..." oninput="filterSelect('estadoFilter', this.value)">
           <select id="estadoFilter" multiple></select>
-          <button type="button" class="secondary" onclick="selectAll('estadoFilter')">Seleccionar todo</button>
+          <button type="button" class="secondary" id="estadoFilterBtn" onclick="toggleSelectAll('estadoFilter', 'estadoFilterBtn')">Seleccionar todo</button>
         </div>
 
         <div>
           <label for="placaFilter">Placa (multi-selección)</label>
           <input type="text" class="filter-search" id="placaSearch" placeholder="Buscar placa..." oninput="filterSelect('placaFilter', this.value)">
           <select id="placaFilter" multiple></select>
-          <button type="button" class="secondary" onclick="selectAll('placaFilter')">Seleccionar todo</button>
+          <button type="button" class="secondary" id="placaFilterBtn" onclick="toggleSelectAll('placaFilter', 'placaFilterBtn')">Seleccionar todo</button>
         </div>
 
         <div>
@@ -555,10 +555,19 @@
     document.getElementById("applyFiltersBtn").addEventListener("click", applyFilters);
     document.getElementById("resetFiltersBtn").addEventListener("click", resetFilters);
     
-    // Eventos para filtrado automático
-    sedeFilterEl.addEventListener("change", onSedeChange);
-    estadoFilterEl.addEventListener("change", onEstadoChange);
-    placaFilterEl.addEventListener("change", onPlacaChange);
+    // Eventos para filtrado automático y actualizar botones
+    sedeFilterEl.addEventListener("change", function() {
+      onSedeChange();
+      updateToggleButton('sedeFilter', 'sedeFilterBtn');
+    });
+    estadoFilterEl.addEventListener("change", function() {
+      onEstadoChange();
+      updateToggleButton('estadoFilter', 'estadoFilterBtn');
+    });
+    placaFilterEl.addEventListener("change", function() {
+      onPlacaChange();
+      updateToggleButton('placaFilter', 'placaFilterBtn');
+    });
     
     // Cargar datos guardados al iniciar (después de que todo esté listo)
     window.addEventListener('DOMContentLoaded', function() {
@@ -925,6 +934,11 @@
               updateDateDisplay('end');
             }
             
+            // Actualizar texto de los botones según la selección restaurada
+            updateToggleButton('sedeFilter', 'sedeFilterBtn');
+            updateToggleButton('estadoFilter', 'estadoFilterBtn');
+            updateToggleButton('placaFilter', 'placaFilterBtn');
+            
             console.log('✅ Filtros restaurados completamente');
             applyFilters();
             
@@ -1120,16 +1134,38 @@
       }
     }
 
-    function selectAll(selectId) {
+    function toggleSelectAll(selectId, buttonId) {
       const selectEl = document.getElementById(selectId);
-      // Solo seleccionar opciones visibles
-      Array.from(selectEl.options).forEach(opt => {
-        if (opt.style.display !== 'none') {
-          opt.selected = true;
-        }
-      });
+      const buttonEl = document.getElementById(buttonId);
+      
+      // Verificar si hay opciones visibles seleccionadas
+      const visibleOptions = Array.from(selectEl.options).filter(opt => opt.style.display !== 'none');
+      const allSelected = visibleOptions.length > 0 && visibleOptions.every(opt => opt.selected);
+      
+      if (allSelected) {
+        // Deseleccionar todo
+        visibleOptions.forEach(opt => opt.selected = false);
+        buttonEl.textContent = 'Seleccionar todo';
+      } else {
+        // Seleccionar todo
+        visibleOptions.forEach(opt => opt.selected = true);
+        buttonEl.textContent = 'Deseleccionar todo';
+      }
+      
       // Disparar cambio automático
       selectEl.dispatchEvent(new Event('change'));
+    }
+    
+    // Actualizar texto del botón según selección actual
+    function updateToggleButton(selectId, buttonId) {
+      const selectEl = document.getElementById(selectId);
+      const buttonEl = document.getElementById(buttonId);
+      if (!buttonEl) return;
+      
+      const visibleOptions = Array.from(selectEl.options).filter(opt => opt.style.display !== 'none');
+      const allSelected = visibleOptions.length > 0 && visibleOptions.every(opt => opt.selected);
+      
+      buttonEl.textContent = allSelected ? 'Deseleccionar todo' : 'Seleccionar todo';
     }
 
     function filterSelect(selectId, searchText) {
