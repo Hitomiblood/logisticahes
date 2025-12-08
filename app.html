@@ -1042,8 +1042,33 @@
 
     function onPlacaChange() {
       if (!rawData.length) return;
-      // Simplemente aplicar filtros con la placa seleccionada
-      // No modificar sedes ni estados automáticamente
+      
+      const selectedPlacas = getSelectedOptions(placaFilterEl);
+      
+      // Si hay placas seleccionadas, marcar las sedes y estados correspondientes
+      if (selectedPlacas.length > 0) {
+        // Encontrar sedes y estados de las placas seleccionadas
+        const sedesDeplacas = new Set();
+        const estadosDePlacas = new Set();
+        
+        rawData.forEach(row => {
+          if (selectedPlacas.includes(String(row[PLACA_COL]))) {
+            if (row[SEDE_COL]) sedesDeplacas.add(String(row[SEDE_COL]));
+            if (row[ESTADO_COL]) estadosDePlacas.add(String(row[ESTADO_COL]));
+          }
+        });
+        
+        // Seleccionar las sedes correspondientes
+        Array.from(sedeFilterEl.options).forEach(opt => {
+          opt.selected = sedesDeplacas.has(opt.value);
+        });
+        
+        // Seleccionar los estados correspondientes
+        Array.from(estadoFilterEl.options).forEach(opt => {
+          opt.selected = estadosDePlacas.has(opt.value);
+        });
+      }
+      
       applyFilters();
     }
 
