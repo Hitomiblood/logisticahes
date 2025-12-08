@@ -1058,15 +1058,35 @@
           }
         });
         
+        // Deseleccionar todo primero
+        Array.from(sedeFilterEl.options).forEach(opt => opt.selected = false);
+        Array.from(estadoFilterEl.options).forEach(opt => opt.selected = false);
+        
         // Seleccionar las sedes correspondientes
+        let primeraSede = null;
         Array.from(sedeFilterEl.options).forEach(opt => {
-          opt.selected = sedesDeplacas.has(opt.value);
+          if (sedesDeplacas.has(opt.value)) {
+            opt.selected = true;
+            if (!primeraSede) primeraSede = opt;
+          }
         });
         
         // Seleccionar los estados correspondientes
+        let primerEstado = null;
         Array.from(estadoFilterEl.options).forEach(opt => {
-          opt.selected = estadosDePlacas.has(opt.value);
+          if (estadosDePlacas.has(opt.value)) {
+            opt.selected = true;
+            if (!primerEstado) primerEstado = opt;
+          }
         });
+        
+        // Hacer scroll para mostrar la primera opción seleccionada
+        if (primeraSede) {
+          primeraSede.scrollIntoView({ block: 'nearest' });
+        }
+        if (primerEstado) {
+          primerEstado.scrollIntoView({ block: 'nearest' });
+        }
       }
       
       applyFilters();
