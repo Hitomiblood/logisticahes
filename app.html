@@ -774,12 +774,27 @@
           return newRow;
         });
         
-        localStorage.setItem('hesego_data', JSON.stringify(dataToSave));
+        const jsonData = JSON.stringify(dataToSave);
+        const sizeKB = (jsonData.length / 1024).toFixed(2);
+        
+        // localStorage tiene límite de ~5MB
+        if (jsonData.length > 4 * 1024 * 1024) {
+          console.warn(`Datos muy grandes (${sizeKB} KB), no se guardarán en localStorage`);
+          setStatus(`Archivo cargado. Registros: ${data.length}. (Muy grande para guardar en memoria)`);
+          return;
+        }
+        
+        localStorage.setItem('hesego_data', jsonData);
         localStorage.setItem('hesego_fileName', fileName);
         localStorage.setItem('hesego_savedAt', new Date().toISOString());
-        console.log('Datos guardados en memoria local');
+        console.log(`Datos guardados en memoria local (${sizeKB} KB, ${data.length} registros)`);
       } catch (e) {
-        console.warn('No se pudo guardar en localStorage:', e);
+        console.warn('No se pudo guardar en localStorage:', e.message);
+        // Limpiar si hay error de cuota
+        if (e.name === 'QuotaExceededError') {
+          localStorage.removeItem('hesego_data');
+          setStatus(`Archivo cargado. Registros: ${data.length}. (Memoria llena, datos no persistidos)`);
+        }
       }
     }
     
@@ -787,6 +802,8 @@
       try {
         const savedData = localStorage.getItem('hesego_data');
         const savedFileName = localStorage.getItem('hesego_fileName');
+        
+        console.log('Buscando datos guardados...', savedData ? 'Encontrados' : 'No hay datos');
         
         if (savedData) {
           rawData = JSON.parse(savedData);
@@ -798,13 +815,16 @@
             row.__dateStr = d ? formatDateISO(d) : null;
           });
           
+          console.log(`Datos restaurados: ${rawData.length} registros`);
           setStatus(`Datos restaurados: ${rawData.length} registros. Archivo: "${savedFileName || 'desconocido'}"`);
           
           initFilters();
           applyFilters();
+        } else {
+          console.log('No hay datos guardados previamente');
         }
       } catch (e) {
-        console.warn('No se pudo cargar desde localStorage:', e);
+        console.warn('No se pudo cargar desde localStorage:', e.message);
       }
     }
 
