@@ -768,6 +768,7 @@
     const DB_NAME = 'hesego_db';
     const DB_VERSION = 1;
     const STORE_NAME = 'excel_data';
+    let isLoadingFilters = false; // Bandera para evitar guardar mientras se cargan filtros
     
     function openDatabase() {
       return new Promise((resolve, reject) => {
@@ -822,6 +823,131 @@
       }
     }
     
+    // Guardar filtros seleccionados
+    async function saveFiltersToStorage() {
+      try {
+        const filters = {
+          id: 'filters',
+          sedes: getSelectedOptions(sedeFilterEl),
+          estados: getSelectedOptions(estadoFilterEl),
+          placas: getSelectedOptions(placaFilterEl),
+          startDate: startDateEl.value,
+          endDate: endDateEl.value,
+          datePickerState: JSON.parse(JSON.stringify(datePickerState)) // Clonar objeto
+        };
+        
+        console.log('💾 Guardando filtros:', filters);
+        
+        const db = await openDatabase();
+        const transaction = db.transaction([STORE_NAME], 'readwrite');
+        const store = transaction.objectStore(STORE_NAME);
+        const request = store.put(filters);
+        
+        request.onsuccess = () => {
+          console.log('✅ Filtros guardados correctamente');
+        };
+        
+        request.onerror = () => {
+          console.warn('❌ Error en request de filtros:', request.error);
+        };
+        
+        transaction.oncomplete = () => {
+          console.log('✅ Transacción de filtros completada');
+          db.close();
+        };
+        
+        transaction.onerror = () => {
+          console.warn('❌ Error en transacción de filtros:', transaction.error);
+          db.close();
+        };
+      } catch (e) {
+        console.warn('Error guardando filtros:', e.message);
+      }
+    }
+    
+    // Restaurar filtros guardados
+    async function loadFiltersFromStorage() {
+      try {
+        console.log('🔍 Buscando filtros guardados...');
+        const db = await openDatabase();
+        const transaction = db.transaction([STORE_NAME], 'readonly');
+        const store = transaction.objectStore(STORE_NAME);
+        const request = store.get('filters');
+        
+        request.onsuccess = () => {
+          const filters = request.result;
+          db.close();
+          
+          console.log('📦 Filtros encontrados:', filters);
+          
+          if (filters) {
+            isLoadingFilters = true; // Evitar guardar mientras restauramos
+            
+            // Restaurar selección de sedes
+            if (filters.sedes && filters.sedes.length > 0) {
+              console.log('Restaurando sedes:', filters.sedes);
+              Array.from(sedeFilterEl.options).forEach(opt => {
+                opt.selected = filters.sedes.includes(opt.value);
+              });
+            }
+            
+            // Restaurar selección de estados
+            if (filters.estados && filters.estados.length > 0) {
+              console.log('Restaurando estados:', filters.estados);
+              Array.from(estadoFilterEl.options).forEach(opt => {
+                opt.selected = filters.estados.includes(opt.value);
+              });
+            }
+            
+            // Restaurar selección de placas
+            if (filters.placas && filters.placas.length > 0) {
+              console.log('Restaurando placas:', filters.placas);
+              Array.from(placaFilterEl.options).forEach(opt => {
+                opt.selected = filters.placas.includes(opt.value);
+              });
+            }
+            
+            // Restaurar fechas
+            if (filters.startDate) {
+              console.log('Restaurando fecha inicio:', filters.startDate);
+              startDateEl.value = filters.startDate;
+            }
+            if (filters.endDate) {
+              console.log('Restaurando fecha fin:', filters.endDate);
+              endDateEl.value = filters.endDate;
+            }
+            
+            // Restaurar estado del date picker
+            if (filters.datePickerState) {
+              datePickerState.start = filters.datePickerState.start || datePickerState.start;
+              datePickerState.end = filters.datePickerState.end || datePickerState.end;
+              updateDateDisplay('start');
+              updateDateDisplay('end');
+            }
+            
+            console.log('✅ Filtros restaurados completamente');
+            applyFilters();
+            
+            isLoadingFilters = false; // Permitir guardar de nuevo
+          } else {
+            console.log('ℹ️ No hay filtros guardados, aplicando por defecto');
+            // No hay filtros guardados, aplicar filtros por defecto
+            applyFilters();
+          }
+        };
+        
+        request.onerror = () => {
+          console.warn('❌ Error leyendo filtros:', request.error);
+          db.close();
+          applyFilters();
+        };
+      } catch (e) {
+        console.warn('Error cargando filtros:', e.message);
+        isLoadingFilters = false;
+        applyFilters();
+      }
+    }
+    
     async function loadDataFromStorage() {
       try {
         console.log('Buscando datos guardados...');
@@ -849,7 +975,8 @@
             setStatus(`Datos restaurados: ${rawData.length} registros. Archivo: "${result.fileName || 'desconocido'}"`);
             
             initFilters();
-            applyFilters();
+            // Cargar filtros guardados después de inicializar
+            loadFiltersFromStorage();
           } else {
             console.log('No hay datos guardados previamente');
           }
@@ -1357,6 +1484,11 @@
       updateKPIs();
       drawCharts();
       renderTable();
+      
+      // Guardar filtros (solo si no estamos en proceso de carga)
+      if (!isLoadingFilters) {
+        saveFiltersToStorage();
+      }
     }
 
     function resetFilters() {
@@ -1375,6 +1507,24 @@
         initDateSelectors(minD, maxD);
       }
       applyFilters();
+      
+      // Limpiar filtros guardados
+      clearSavedFilters();
+    }
+    
+    async function clearSavedFilters() {
+      try {
+        const db = await openDatabase();
+        const transaction = db.transaction([STORE_NAME], 'readwrite');
+        const store = transaction.objectStore(STORE_NAME);
+        store.delete('filters');
+        transaction.oncomplete = () => {
+          console.log('✅ Filtros guardados eliminados');
+          db.close();
+        };
+      } catch (e) {
+        console.warn('Error eliminando filtros:', e.message);
+      }
     }
 
     function sumNumeric(arr, col) {
