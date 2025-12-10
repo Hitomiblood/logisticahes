@@ -44,7 +44,7 @@
     }
     #controls {
       display: grid;
-      grid-template-columns: 1.5fr 1fr 1fr 1fr;
+      grid-template-columns: 1.5fr 1fr 1fr 1fr 1fr;
       gap: 1rem;
       align-items: flex-end;
     }
@@ -88,6 +88,18 @@
     }
     button.secondary:hover {
       background: #d0d7de;
+    }
+    .filter-search {
+      width: 100%;
+      padding: 0.3rem 0.5rem;
+      border-radius: 6px;
+      border: 1px solid #d0d7de;
+      font-size: 0.8rem;
+      box-sizing: border-box;
+      margin-bottom: 0.3rem;
+    }
+    .filter-search::placeholder {
+      color: #999;
     }
     .kpi-grid {
       display: grid;
@@ -220,12 +232,23 @@
 
         <div>
           <label for="catalogoFilter">Catálogo (multi)</label>
+          <input type="text" class="filter-search" id="catalogoSearch" placeholder="Buscar catálogo..." oninput="filterSelect('catalogoFilter', this.value)">
           <select id="catalogoFilter" multiple></select>
+          <button type="button" class="secondary" id="catalogoFilterBtn" onclick="toggleSelectAll('catalogoFilter', 'catalogoFilterBtn')">Seleccionar todo</button>
         </div>
 
         <div>
           <label for="ciudadFilter">Ciudad (multi)</label>
+          <input type="text" class="filter-search" id="ciudadSearch" placeholder="Buscar ciudad..." oninput="filterSelect('ciudadFilter', this.value)">
           <select id="ciudadFilter" multiple></select>
+          <button type="button" class="secondary" id="ciudadFilterBtn" onclick="toggleSelectAll('ciudadFilter', 'ciudadFilterBtn')">Seleccionar todo</button>
+        </div>
+
+        <div>
+          <label for="terceroFilter">Tercero Nombre (multi)</label>
+          <input type="text" class="filter-search" id="terceroSearch" placeholder="Buscar tercero..." oninput="filterSelect('terceroFilter', this.value)">
+          <select id="terceroFilter" multiple></select>
+          <button type="button" class="secondary" id="terceroFilterBtn" onclick="toggleSelectAll('terceroFilter', 'terceroFilterBtn')">Seleccionar todo</button>
         </div>
 
         <div>
@@ -300,6 +323,11 @@
   <script>
     let rawData = [];
     let filteredData = [];
+    let availableOptions = {
+      catalogos: new Set(),
+      ciudades: new Set(),
+      terceros: new Set()
+    };
 
     const DATE_COL = "Fecha";
     const COSTO_COL = "Neto";
@@ -322,6 +350,7 @@
     const statusEl = document.getElementById("status");
     const catalogoFilterEl = document.getElementById("catalogoFilter");
     const ciudadFilterEl = document.getElementById("ciudadFilter");
+    const terceroFilterEl = document.getElementById("terceroFilter");
     const startDateEl = document.getElementById("startDate");
     const endDateEl = document.getElementById("endDate");
 
@@ -340,6 +369,29 @@
     document.getElementById("fileInput").addEventListener("change", handleFile);
     document.getElementById("applyFiltersBtn").addEventListener("click", applyFilters);
     document.getElementById("resetFiltersBtn").addEventListener("click", resetFilters);
+    catalogoFilterEl.addEventListener("change", updateChainedFilters);
+    ciudadFilterEl.addEventListener("change", updateChainedFilters);
+    terceroFilterEl.addEventListener("change", updateChainedFilters);
+
+    function filterSelect(selectId, searchText) {
+      const selectEl = document.getElementById(selectId);
+      const options = Array.from(selectEl.options);
+      const lowerSearch = searchText.toLowerCase();
+      options.forEach(opt => {
+        const match = opt.textContent.toLowerCase().includes(lowerSearch);
+        opt.style.display = match ? "" : "none";
+      });
+    }
+
+    function toggleSelectAll(selectId, btnId) {
+      const selectEl = document.getElementById(selectId);
+      const btn = document.getElementById(btnId);
+      const visibleOptions = Array.from(selectEl.options).filter(o => o.style.display !== "none");
+      const allSelected = visibleOptions.every(o => o.selected);
+      visibleOptions.forEach(o => o.selected = !allSelected);
+      btn.textContent = allSelected ? "Seleccionar todo" : "Deseleccionar todo";
+      updateChainedFilters();
+    }
 
     function setStatus(msg) {
       statusEl.textContent = msg || "";
@@ -454,29 +506,15 @@
     }
 
     function initFilters() {
-      // Catálogo
-      const catalogos = Array.from(
-        new Set(rawData.map(r => r[CATALOGO_COL]).filter(Boolean))
-      ).sort();
-      catalogoFilterEl.innerHTML = "";
-      catalogos.forEach(cat => {
-        const opt = document.createElement("option");
-        opt.value = cat;
-        opt.textContent = cat;
-        catalogoFilterEl.appendChild(opt);
-      });
+      // Inicializar opciones disponibles desde rawData
+      availableOptions.catalogos = new Set(rawData.map(r => r[CATALOGO_COL]).filter(Boolean));
+      availableOptions.ciudades = new Set(rawData.map(r => r[CIUDAD_COL]).filter(Boolean));
+      availableOptions.terceros = new Set(rawData.map(r => r[TERCERO_COL]).filter(Boolean));
 
-      // Ciudad
-      const ciudades = Array.from(
-        new Set(rawData.map(r => r[CIUDAD_COL]).filter(Boolean))
-      ).sort();
-      ciudadFilterEl.innerHTML = "";
-      ciudades.forEach(ci => {
-        const opt = document.createElement("option");
-        opt.value = ci;
-        opt.textContent = ci;
-        ciudadFilterEl.appendChild(opt);
-      });
+      // Poblar todos los filtros
+      populateFilter(catalogoFilterEl, availableOptions.catalogos);
+      populateFilter(ciudadFilterEl, availableOptions.ciudades);
+      populateFilter(terceroFilterEl, availableOptions.terceros);
 
       // Rango de fechas global
       const validDates = rawData
@@ -490,11 +528,53 @@
       }
     }
 
+    function populateFilter(selectEl, optionsSet, selectedValues = []) {
+      const currentSearch = selectEl.previousElementSibling?.value || "";
+      selectEl.innerHTML = "";
+      const sortedOptions = Array.from(optionsSet).sort();
+      sortedOptions.forEach(val => {
+        const opt = document.createElement("option");
+        opt.value = val;
+        opt.textContent = val;
+        opt.selected = selectedValues.includes(val);
+        selectEl.appendChild(opt);
+      });
+      if (currentSearch) {
+        filterSelect(selectEl.id, currentSearch);
+      }
+    }
+
+    function updateChainedFilters() {
+      // Obtener selecciones actuales
+      const selectedCatalogos = getSelectedOptions(catalogoFilterEl);
+      const selectedCiudades = getSelectedOptions(ciudadFilterEl);
+      const selectedTerceros = getSelectedOptions(terceroFilterEl);
+
+      // Filtrar rawData basado en selecciones actuales
+      let tempFiltered = rawData.filter(row => {
+        if (selectedCatalogos.length > 0 && !selectedCatalogos.includes(String(row[CATALOGO_COL]))) return false;
+        if (selectedCiudades.length > 0 && !selectedCiudades.includes(String(row[CIUDAD_COL]))) return false;
+        if (selectedTerceros.length > 0 && !selectedTerceros.includes(String(row[TERCERO_COL]))) return false;
+        return true;
+      });
+
+      // Actualizar opciones disponibles basadas en filtro temporal
+      const newCatalogos = new Set(tempFiltered.map(r => r[CATALOGO_COL]).filter(Boolean));
+      const newCiudades = new Set(tempFiltered.map(r => r[CIUDAD_COL]).filter(Boolean));
+      const newTerceros = new Set(tempFiltered.map(r => r[TERCERO_COL]).filter(Boolean));
+
+      // Repoblar filtros manteniendo selecciones válidas
+      populateFilter(catalogoFilterEl, newCatalogos, selectedCatalogos.filter(s => newCatalogos.has(s)));
+      populateFilter(ciudadFilterEl, newCiudades, selectedCiudades.filter(s => newCiudades.has(s)));
+      populateFilter(terceroFilterEl, newTerceros, selectedTerceros.filter(s => newTerceros.has(s)));
+    }
+
     function applyFilters() {
       if (!rawData.length) return;
 
       const selectedCatalogos = getSelectedOptions(catalogoFilterEl);
       const selectedCiudades = getSelectedOptions(ciudadFilterEl);
+      const selectedTerceros = getSelectedOptions(terceroFilterEl);
       const startFilter = startDateEl.value ? new Date(startDateEl.value) : null;
       const endFilter = endDateEl.value ? new Date(endDateEl.value) : null;
 
@@ -516,6 +596,11 @@
           const ci = row[CIUDAD_COL];
           if (!selectedCiudades.includes(String(ci))) return false;
         }
+        // Tercero
+        if (selectedTerceros.length > 0) {
+          const ter = row[TERCERO_COL];
+          if (!selectedTerceros.includes(String(ter))) return false;
+        }
         return true;
       });
 
@@ -530,6 +615,12 @@
 
       Array.from(catalogoFilterEl.options).forEach(o => (o.selected = false));
       Array.from(ciudadFilterEl.options).forEach(o => (o.selected = false));
+      Array.from(terceroFilterEl.options).forEach(o => (o.selected = false));
+
+      // Limpiar búsquedas
+      document.getElementById("catalogoSearch").value = "";
+      document.getElementById("ciudadSearch").value = "";
+      document.getElementById("terceroSearch").value = "";
 
       const validDates = rawData
         .map(r => r.__date)
@@ -543,6 +634,9 @@
         startDateEl.value = "";
         endDateEl.value = "";
       }
+
+      // Reinicializar filtros encadenados
+      initFilters();
       applyFilters();
     }
 
@@ -793,15 +887,16 @@
 
       const trace = {
         x: valores,
-        y: terceros,
+        y: terceros.map(t => t.length > 22 ? t.replace(/(.{22})/g, '$1<br>') : t),
         type: "bar",
         orientation: "h",
         hovertemplate: "Tercero: %{y}<br>Costo: %{x:,.0f}<extra></extra>"
       };
 
       const layout = {
-        margin: { t: 20, r: 10, b: 40, l: 150 },
-        xaxis: { title: "Costo Neto (Top 10 terceros)", type: "log" }
+        margin: { t: 20, r: 10, b: 40, l: 320 }, // margen izquierdo aún mayor
+        xaxis: { title: "Costo Neto (Top 10 terceros)", type: "log" },
+        width: 900 // ancho más amplio para evitar corte de texto
       };
 
       Plotly.newPlot("chart_costos_terceros", [trace], layout, { responsive: true });
