@@ -323,6 +323,7 @@
   <script>
     let rawData = [];
     let filteredData = [];
+    let chartFilter = { type: null, value: null }; // Filtro adicional desde gráficas
     let availableOptions = {
       catalogos: new Set(),
       ciudades: new Set(),
@@ -798,6 +799,9 @@
         return true;
       });
 
+      // Limpiar filtro de gráfica al aplicar nuevos filtros
+      chartFilter = { type: null, value: null };
+      
       setStatus(`Registros filtrados: ${filteredData.length}`);
       updateKPIs();
       drawCharts();
@@ -1010,7 +1014,7 @@
         x: cats,
         y: valores,
         type: "bar",
-        hovertemplate: "%{x}<br>Costo: %{y:,.0f}<extra></extra>"
+        hovertemplate: "%{x}<br>Costo: %{y:,.0f}<br><i>Click para filtrar</i><extra></extra>"
       };
 
       const layout = {
@@ -1020,6 +1024,19 @@
       };
 
       Plotly.newPlot("chart_costos_catalogo", [trace], layout, { responsive: true });
+      
+      // Agregar evento de click
+      document.getElementById("chart_costos_catalogo").on('plotly_click', function(data) {
+        if (data.points && data.points.length > 0) {
+          const clickedCatalogo = data.points[0].x;
+          if (chartFilter.type === 'catalogo' && chartFilter.value === clickedCatalogo) {
+            chartFilter = { type: null, value: null };
+          } else {
+            chartFilter = { type: 'catalogo', value: clickedCatalogo };
+          }
+          renderTableWithChartFilter();
+        }
+      });
     }
 
     function drawCostosPorCiudad() {
@@ -1052,7 +1069,7 @@
         y: ciudades,
         type: "bar",
         orientation: "h",
-        hovertemplate: "Ciudad: %{y}<br>Costo: %{x:,.0f}<extra></extra>"
+        hovertemplate: "Ciudad: %{y}<br>Costo: %{x:,.0f}<br><i>Click para filtrar</i><extra></extra>"
       };
 
       const layout = {
@@ -1061,6 +1078,20 @@
       };
 
       Plotly.newPlot("chart_costos_ciudad", [trace], layout, { responsive: true });
+      
+      // Agregar evento de click
+      document.getElementById("chart_costos_ciudad").on('plotly_click', function(data) {
+        if (data.points && data.points.length > 0) {
+          const clickedLabel = data.points[0].y;
+          const clickedCiudad = clickedLabel.split(" (")[0];
+          if (chartFilter.type === 'ciudad' && chartFilter.value === clickedCiudad) {
+            chartFilter = { type: null, value: null };
+          } else {
+            chartFilter = { type: 'ciudad', value: clickedCiudad };
+          }
+          renderTableWithChartFilter();
+        }
+      });
     }
 
     function drawCostosPorTercero() {
@@ -1084,7 +1115,8 @@
         y: terceros.map(t => t.length > 22 ? t.replace(/(.{22})/g, '$1<br>') : t),
         type: "bar",
         orientation: "h",
-        hovertemplate: "Tercero: %{y}<br>Costo: %{x:,.0f}<extra></extra>"
+        hovertemplate: "Tercero: %{y}<br>Costo: %{x:,.0f}<br><i>Click para filtrar</i><extra></extra>",
+        customdata: terceros  // Guardar nombres completos sin saltos de línea
       };
 
       const layout = {
@@ -1094,9 +1126,39 @@
       };
 
       Plotly.newPlot("chart_costos_terceros", [trace], layout, { responsive: true });
+      
+      // Agregar evento de click
+      document.getElementById("chart_costos_terceros").on('plotly_click', function(data) {
+        if (data.points && data.points.length > 0) {
+          const clickedTercero = data.points[0].customdata || data.points[0].y.replace(/<br>/g, '');
+          if (chartFilter.type === 'tercero' && chartFilter.value === clickedTercero) {
+            chartFilter = { type: null, value: null };
+          } else {
+            chartFilter = { type: 'tercero', value: clickedTercero };
+          }
+          renderTableWithChartFilter();
+        }
+      });
     }
 
-    function renderTable() {
+    function renderTableWithChartFilter() {
+      let dataToRender = filteredData;
+      
+      // Aplicar filtro de gráfica si existe
+      if (chartFilter.type === 'catalogo' && chartFilter.value) {
+        dataToRender = filteredData.filter(r => String(r[CATALOGO_COL]) === chartFilter.value || (r[CATALOGO_COL] == null && chartFilter.value === "Sin catálogo"));
+      } else if (chartFilter.type === 'ciudad' && chartFilter.value) {
+        dataToRender = filteredData.filter(r => String(r[CIUDAD_COL]) === chartFilter.value || (r[CIUDAD_COL] == null && chartFilter.value === "Sin ciudad"));
+      } else if (chartFilter.type === 'tercero' && chartFilter.value) {
+        dataToRender = filteredData.filter(r => String(r[TERCERO_COL]) === chartFilter.value || (r[TERCERO_COL] == null && chartFilter.value === "Sin tercero"));
+      }
+      
+      // Limpiar filtro de gráfica al aplicar nuevos filtros
+      if (dataToRender.length === 0 && chartFilter.type) {
+        chartFilter = { type: null, value: null };
+        dataToRender = filteredData;
+      }
+      
       detailTableHead.innerHTML = "";
       detailTableBody.innerHTML = "";
 
@@ -1109,7 +1171,7 @@
       detailTableHead.appendChild(theadRow);
 
       const maxRows = 300;
-      const rowsToShow = filteredData.slice(0, maxRows);
+      const rowsToShow = dataToRender.slice(0, maxRows);
 
       rowsToShow.forEach(r => {
         const tr = document.createElement("tr");
@@ -1138,12 +1200,26 @@
         detailTableBody.appendChild(tr);
       });
 
-      const total = filteredData.length;
-      if (total > maxRows) {
-        tableInfoEl.textContent = `Mostrando ${rowsToShow.length} de ${total} registros (límite para vista rápida).`;
-      } else {
-        tableInfoEl.textContent = `Registros mostrados: ${total}.`;
+      const total = dataToRender.length;
+      let filterInfo = "";
+      if (chartFilter.type === 'catalogo') {
+        filterInfo = ` | Filtro gráfica: Catálogo "${chartFilter.value}" (click de nuevo para quitar)`;
+      } else if (chartFilter.type === 'ciudad') {
+        filterInfo = ` | Filtro gráfica: Ciudad "${chartFilter.value}" (click de nuevo para quitar)`;
+      } else if (chartFilter.type === 'tercero') {
+        filterInfo = ` | Filtro gráfica: Tercero "${chartFilter.value}" (click de nuevo para quitar)`;
       }
+      
+      if (total > maxRows) {
+        tableInfoEl.textContent = `Mostrando ${rowsToShow.length} de ${total} registros (límite para vista rápida)${filterInfo}.`;
+      } else {
+        tableInfoEl.textContent = `Registros mostrados: ${total}${filterInfo}.`;
+      }
+    }
+    
+    // Mantener compatibilidad con llamadas antiguas
+    function renderTable() {
+      renderTableWithChartFilter();
     }
   </script>
 </body>
