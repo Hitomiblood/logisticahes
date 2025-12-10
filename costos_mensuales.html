@@ -672,18 +672,27 @@
 
     function drawCostosPorCiudad() {
       const map = {};
+      const placasPorCiudad = {};
       filteredData.forEach(r => {
         const ci = r[CIUDAD_COL] || "Sin ciudad";
         if (!map[ci]) map[ci] = 0;
         const val = parseFloat(r[COSTO_COL]);
         if (!isNaN(val)) map[ci] += val;
+        // Guardar placas asociadas
+        if (!placasPorCiudad[ci]) placasPorCiudad[ci] = new Set();
+        if (r["Placa"]) placasPorCiudad[ci].add(r["Placa"]);
       });
 
       let entries = Object.entries(map);
       entries.sort((a, b) => b[1] - a[1]);
       entries = entries.slice(0, 10);
 
-      const ciudades = entries.map(e => e[0]);
+      // Mostrar ciudad + placas
+      const ciudades = entries.map(e => {
+        const ci = e[0];
+        const placas = placasPorCiudad[ci] ? Array.from(placasPorCiudad[ci]).slice(0, 2).join(", ") : "";
+        return placas ? `${ci} (${placas})` : ci;
+      });
       const valores = entries.map(e => e[1]);
 
       const trace = {
@@ -696,7 +705,7 @@
 
       const layout = {
         margin: { t: 20, r: 10, b: 40, l: 100 },
-        xaxis: { title: "Costo Neto (Top 10 ciudades)" }
+        xaxis: { title: "Costo Neto (Top 10 ciudades)", type: "log" }
       };
 
       Plotly.newPlot("chart_costos_ciudad", [trace], layout, { responsive: true });
@@ -728,7 +737,7 @@
 
       const layout = {
         margin: { t: 20, r: 10, b: 40, l: 150 },
-        xaxis: { title: "Costo Neto (Top 10 terceros)" }
+        xaxis: { title: "Costo Neto (Top 10 terceros)", type: "log" }
       };
 
       Plotly.newPlot("chart_costos_terceros", [trace], layout, { responsive: true });
