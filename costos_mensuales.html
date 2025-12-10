@@ -606,6 +606,70 @@
       drawCostosPorCatalogo();
       drawCostosPorCiudad();
       drawCostosPorTercero();
+      addChartClickFilters();
+    }
+
+    // Interactividad para filtrar al hacer clic en las gráficas
+    function addChartClickFilters() {
+      // Catálogo
+      const catalogoDiv = document.getElementById("chart_costos_catalogo");
+      if (catalogoDiv) {
+        catalogoDiv.on("plotly_click", function(e) {
+          if (e.points && e.points[0] && e.points[0].x) {
+            const cat = e.points[0].x;
+            Array.from(catalogoFilterEl.options).forEach(opt => {
+              opt.selected = (opt.value === cat);
+            });
+            applyFilters();
+          }
+        });
+      }
+      // Ciudad
+      const ciudadDiv = document.getElementById("chart_costos_ciudad");
+      if (ciudadDiv) {
+        ciudadDiv.on("plotly_click", function(e) {
+          if (e.points && e.points[0] && e.points[0].y) {
+            // Extraer solo el nombre de ciudad (sin placas)
+            const label = e.points[0].y;
+            const ciudad = label.split(" (")[0];
+            Array.from(ciudadFilterEl.options).forEach(opt => {
+              opt.selected = (opt.value === ciudad);
+            });
+            applyFilters();
+          }
+        });
+      }
+      // Tercero
+      const terceroDiv = document.getElementById("chart_costos_terceros");
+      if (terceroDiv) {
+        terceroDiv.on("plotly_click", function(e) {
+          if (e.points && e.points[0] && e.points[0].y) {
+            // No hay select de terceros, pero podrías mostrar solo los registros de ese tercero en la tabla
+            // Si quieres agregar un filtro visual, se puede agregar un select de terceros
+            // Por ahora, solo filtra en la tabla
+            const tercero = e.points[0].y;
+            filteredData = filteredData.filter(r => r[TERCERO_COL] === tercero);
+            setStatus(`Filtrado por tercero: ${tercero}`);
+            updateKPIs();
+            drawCharts();
+            renderTable();
+          }
+        });
+      }
+      // Placa (si existe una gráfica de placas)
+      const placaDiv = document.getElementById("chart_costos_placa");
+      const placaFilterEl = document.getElementById("placaFilter");
+      if (placaDiv && placaFilterEl) {
+        placaDiv.on("plotly_click", function(e) {
+          if (e.points && e.points[0] && e.points[0].y) {
+            const placa = e.points[0].y;
+            Array.from(placaFilterEl.options).forEach(opt => {
+              opt.selected = (opt.value === placa);
+            });
+            applyFilters();
+          }
+        });
+      }
     }
 
     function drawCostosMensuales() {
