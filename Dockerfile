@@ -4,6 +4,7 @@ FROM nginx:alpine
 COPY index.html /usr/share/nginx/html/
 COPY app.html /usr/share/nginx/html/
 COPY costos_mensuales.html /usr/share/nginx/html/
+COPY operatividad_vehiculos.html /usr/share/nginx/html/
 COPY img/ /usr/share/nginx/html/img/
 
 # Copiar configuración de nginx

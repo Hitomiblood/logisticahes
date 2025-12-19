@@ -22,7 +22,7 @@
     .sidebar {
       width: 280px;
       background: linear-gradient(180deg, #0a2540 0%, #1c4e80 100%);
-      min-height: 100vh;
+      height: 100vh;
       padding: 1rem 0;
       box-shadow: 4px 0 20px rgba(0, 0, 0, 0.3);
       position: fixed;
@@ -31,7 +31,7 @@
       z-index: 100;
       display: flex;
       flex-direction: column;
-      overflow-y: auto;
+      overflow: hidden;
     }
     
     .sidebar-header {
@@ -39,6 +39,7 @@
       padding: 0 1rem 1rem;
       border-bottom: 1px solid rgba(255, 255, 255, 0.1);
       margin-bottom: 0.5rem;
+      flex-shrink: 0;
     }
     
     .sidebar-header img {
@@ -76,10 +77,36 @@
       border-color: rgba(255, 255, 255, 0.5);
     }
     
+    .btn-sharepoint {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 0.5rem;
+      width: 100%;
+      padding: 0.6rem 1rem;
+      background: linear-gradient(135deg, #0078d4, #106ebe);
+      color: white;
+      border: none;
+      border-radius: 6px;
+      font-size: 0.8rem;
+      font-weight: 600;
+      text-decoration: none;
+      transition: all 0.3s ease;
+      cursor: pointer;
+      box-shadow: 0 2px 8px rgba(0, 120, 212, 0.3);
+    }
+    
+    .btn-sharepoint:hover {
+      background: linear-gradient(135deg, #106ebe, #005a9e);
+      box-shadow: 0 4px 12px rgba(0, 120, 212, 0.4);
+      transform: translateY(-1px);
+    }
+    
     .sidebar-filters {
       padding: 0.8rem 1rem;
       flex: 1;
       overflow-y: auto;
+      min-height: 0;
     }
     
     .sidebar-filters h3 {
@@ -175,6 +202,7 @@
     .sidebar-actions {
       padding: 0.8rem 1rem;
       border-top: 1px solid rgba(255, 255, 255, 0.1);
+      flex-shrink: 0;
     }
     
     .sidebar-actions button {
@@ -211,6 +239,7 @@
       padding: 0.6rem 1rem;
       border-top: 1px solid rgba(255, 255, 255, 0.1);
       text-align: center;
+      flex-shrink: 0;
     }
     
     .sidebar-footer p {
@@ -594,9 +623,23 @@
     </div>
     
     <div class="sidebar-filters">
-      <h3>📁 Archivo</h3>
+      <h3>📁 Origen de datos</h3>
       <div class="filter-group">
-        <label for="fileInput">Cargar Excel</label>
+        <div id="autoLoadStatus" style="padding: 0.5rem; border-radius: 4px; margin-bottom: 0.5rem; font-size: 0.75rem;"></div>
+        <button onclick="loadFromServer()" class="btn-sharepoint" style="margin-bottom: 0.5rem;">
+          🔄 Recargar desde servidor
+        </button>
+        <a href="https://hesegoingsas.sharepoint.com/:x:/r/sites/Logstica/Shared%20Documents/BI%20L%26A/TRANSPORTE/Operatividad%20diaria%20Transporte.xlsx?d=weafb22de00d446d59e26c840d4c4f9c4&csf=1&web=1&e=qds1Dg" 
+           target="_blank" 
+           class="btn-sharepoint" style="background: linear-gradient(135deg, #6c757d 0%, #495057 100%);">
+          📂 Abrir en SharePoint
+        </a>
+        <p style="color: rgba(255,255,255,0.6); font-size: 0.65rem; margin-top: 0.4rem; line-height: 1.3;">
+          Los datos se sincronizan automáticamente cada 5 minutos desde SharePoint.
+        </p>
+      </div>
+      <div class="filter-group">
+        <label for="fileInput">O cargar archivo manual</label>
         <input type="file" id="fileInput" accept=".xlsx,.xls" />
         <div id="status"></div>
       </div>
@@ -808,11 +851,79 @@
     // Verificar si el documento ya está listo o esperar el evento
     if (document.readyState === 'loading') {
       window.addEventListener('DOMContentLoaded', function() {
-        setTimeout(loadDataFromStorage, 100);
+        setTimeout(autoLoadData, 100);
       });
     } else {
       // El DOM ya está listo, ejecutar directamente
-      setTimeout(loadDataFromStorage, 100);
+      setTimeout(autoLoadData, 100);
+    }
+    
+    // Función para intentar cargar automáticamente desde servidor
+    async function autoLoadData() {
+      // Primero intentar cargar desde el servidor
+      const serverLoaded = await loadFromServer();
+      if (!serverLoaded) {
+        // Si no hay datos en servidor, intentar cargar desde localStorage
+        loadDataFromStorage();
+      }
+    }
+    
+    // Función para cargar archivo desde el servidor (sincronizado via Rclone)
+    async function loadFromServer() {
+      const autoLoadStatus = document.getElementById('autoLoadStatus');
+      const serverPath = '/data/transporte/Operatividad diaria Transporte.xlsx';
+      
+      autoLoadStatus.innerHTML = '⏳ Cargando datos del servidor...';
+      autoLoadStatus.style.background = 'rgba(255,193,7,0.2)';
+      autoLoadStatus.style.color = '#ffc107';
+      
+      try {
+        const response = await fetch(serverPath);
+        if (!response.ok) {
+          throw new Error(`HTTP ${response.status}`);
+        }
+        
+        const data = await response.arrayBuffer();
+        const workbook = XLSX.read(new Uint8Array(data), { type: "array" });
+        
+        // Buscar hoja "operatividad" (o similar)
+        let sheetName = workbook.SheetNames.find(n =>
+          n.toLowerCase().includes("operatividad")
+        );
+        if (!sheetName) {
+          sheetName = workbook.SheetNames[0];
+        }
+        
+        const sheet = workbook.Sheets[sheetName];
+        rawData = XLSX.utils.sheet_to_json(sheet, { defval: null });
+        
+        if (!rawData.length) {
+          throw new Error("La hoja está vacía");
+        }
+        
+        // Normalizar columna de fecha
+        rawData.forEach(row => {
+          const d = parseDate(row[DATE_COL]);
+          row.__date = d;
+          row.__dateStr = d ? formatDateISO(d) : null;
+        });
+        
+        autoLoadStatus.innerHTML = `✅ Datos cargados: ${rawData.length} registros<br><small>Hoja: "${sheetName}"</small>`;
+        autoLoadStatus.style.background = 'rgba(40,167,69,0.2)';
+        autoLoadStatus.style.color = '#28a745';
+        
+        setStatus(`Cargado automáticamente. Registros: ${rawData.length}`);
+        initFilters();
+        applyFilters();
+        
+        return true;
+      } catch (error) {
+        console.log('No se pudo cargar desde servidor:', error.message);
+        autoLoadStatus.innerHTML = '⚠️ Servidor no disponible<br><small>Carga un archivo manual</small>';
+        autoLoadStatus.style.background = 'rgba(108,117,125,0.2)';
+        autoLoadStatus.style.color = '#6c757d';
+        return false;
+      }
     }
     
     // Nombres de meses

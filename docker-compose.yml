@@ -1,14 +1,35 @@
 version: '3.8'
 
 services:
+  # Servicio principal - Nginx con la aplicación web
   logisticahesego:
     build: .
     container_name: logisticahesego
     restart: unless-stopped
     ports:
       - "8085:80"
+    volumes:
+      - sharepoint_data:/usr/share/nginx/html/data:ro
     networks:
       - web
+    depends_on:
+      - rclone-sync
+
+  # Servicio Rclone - Sincroniza archivos de SharePoint
+  rclone-sync:
+    build:
+      context: .
+      dockerfile: Dockerfile.rclone
+    container_name: rclone-sync
+    restart: unless-stopped
+    volumes:
+      - sharepoint_data:/data
+      - ./rclone/rclone.conf:/config/rclone.conf:ro
+    networks:
+      - web
+
+volumes:
+  sharepoint_data:
 
 networks:
   web:
