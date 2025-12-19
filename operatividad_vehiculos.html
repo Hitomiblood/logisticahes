@@ -841,6 +841,14 @@
           const option = e.target;
           option.selected = !option.selected;
           selectEl.dispatchEvent(new Event('change'));
+          selectEl.focus(); // Mantener el foco en el select
+        }
+      });
+      
+      // Prevenir que el click default cambie la selección
+      selectEl.addEventListener('click', function(e) {
+        if (e.target.tagName === 'OPTION') {
+          e.preventDefault();
         }
       });
     }
