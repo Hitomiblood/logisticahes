@@ -647,27 +647,6 @@
       <h3>🔍 Filtros</h3>
       
       <div class="filter-group">
-        <label for="sedeFilter">Sede</label>
-        <input type="text" class="filter-search" id="sedeSearch" placeholder="Buscar..." oninput="filterSelect('sedeFilter', this.value)">
-        <select id="sedeFilter" multiple></select>
-        <button type="button" class="btn-filter" id="sedeFilterBtn" onclick="toggleSelectAll('sedeFilter', 'sedeFilterBtn')">Seleccionar todo</button>
-      </div>
-      
-      <div class="filter-group">
-        <label for="estadoFilter">Estado Vehículo</label>
-        <input type="text" class="filter-search" id="estadoSearch" placeholder="Buscar..." oninput="filterSelect('estadoFilter', this.value)">
-        <select id="estadoFilter" multiple></select>
-        <button type="button" class="btn-filter" id="estadoFilterBtn" onclick="toggleSelectAll('estadoFilter', 'estadoFilterBtn')">Seleccionar todo</button>
-      </div>
-      
-      <div class="filter-group">
-        <label for="placaFilter">Placa</label>
-        <input type="text" class="filter-search" id="placaSearch" placeholder="Buscar..." oninput="filterSelect('placaFilter', this.value)">
-        <select id="placaFilter" multiple></select>
-        <button type="button" class="btn-filter" id="placaFilterBtn" onclick="toggleSelectAll('placaFilter', 'placaFilterBtn')">Seleccionar todo</button>
-      </div>
-      
-      <div class="filter-group">
         <label>Rango de fechas</label>
         <div class="date-picker-container">
           <input type="text" class="date-input" id="startDateDisplay" placeholder="Desde..." readonly onclick="openDatePicker('start')">
@@ -695,6 +674,27 @@
         </div>
         <input type="hidden" id="startDate" />
         <input type="hidden" id="endDate" />
+      </div>
+      
+      <div class="filter-group">
+        <label for="sedeFilter">Sede</label>
+        <input type="text" class="filter-search" id="sedeSearch" placeholder="Buscar..." oninput="filterSelect('sedeFilter', this.value)">
+        <select id="sedeFilter" multiple></select>
+        <button type="button" class="btn-filter" id="sedeFilterBtn" onclick="toggleSelectAll('sedeFilter', 'sedeFilterBtn')">Seleccionar todo</button>
+      </div>
+      
+      <div class="filter-group">
+        <label for="estadoFilter">Estado Vehículo</label>
+        <input type="text" class="filter-search" id="estadoSearch" placeholder="Buscar..." oninput="filterSelect('estadoFilter', this.value)">
+        <select id="estadoFilter" multiple></select>
+        <button type="button" class="btn-filter" id="estadoFilterBtn" onclick="toggleSelectAll('estadoFilter', 'estadoFilterBtn')">Seleccionar todo</button>
+      </div>
+      
+      <div class="filter-group">
+        <label for="placaFilter">Placa</label>
+        <input type="text" class="filter-search" id="placaSearch" placeholder="Buscar..." oninput="filterSelect('placaFilter', this.value)">
+        <select id="placaFilter" multiple></select>
+        <button type="button" class="btn-filter" id="placaFilterBtn" onclick="toggleSelectAll('placaFilter', 'placaFilterBtn')">Seleccionar todo</button>
       </div>
     </div>
     

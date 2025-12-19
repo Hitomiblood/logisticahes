@@ -461,6 +461,12 @@
       <h3>🔍 Filtros</h3>
       
       <div class="filter-group">
+        <label>Rango de fechas</label>
+        <input type="date" id="startDate" />
+        <input type="date" id="endDate" />
+      </div>
+      
+      <div class="filter-group">
         <label for="catalogoFilter">Catálogo</label>
         <input type="text" class="filter-search" id="catalogoSearch" placeholder="Buscar..." oninput="filterSelect('catalogoFilter', this.value)">
         <select id="catalogoFilter" multiple></select>
@@ -479,12 +485,6 @@
         <input type="text" class="filter-search" id="terceroSearch" placeholder="Buscar..." oninput="filterSelect('terceroFilter', this.value)">
         <select id="terceroFilter" multiple></select>
         <button type="button" class="btn-filter" id="terceroFilterBtn" onclick="toggleSelectAll('terceroFilter', 'terceroFilterBtn')">Seleccionar todo</button>
-      </div>
-      
-      <div class="filter-group">
-        <label>Rango de fechas</label>
-        <input type="date" id="startDate" />
-        <input type="date" id="endDate" />
       </div>
     </div>
     
