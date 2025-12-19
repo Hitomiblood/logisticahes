@@ -15,7 +15,237 @@
       margin: 0;
       background: #f4f5f7;
       color: #222;
+      display: flex;
     }
+    
+    /* Sidebar */
+    .sidebar {
+      width: 280px;
+      background: linear-gradient(180deg, #0a2540 0%, #1c4e80 100%);
+      min-height: 100vh;
+      padding: 1rem 0;
+      box-shadow: 4px 0 20px rgba(0, 0, 0, 0.3);
+      position: fixed;
+      left: 0;
+      top: 0;
+      z-index: 100;
+      display: flex;
+      flex-direction: column;
+      overflow-y: auto;
+    }
+    
+    .sidebar-header {
+      text-align: center;
+      padding: 0 1rem 1rem;
+      border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+      margin-bottom: 0.5rem;
+    }
+    
+    .sidebar-header img {
+      width: 60px;
+      height: auto;
+      margin-bottom: 0.3rem;
+    }
+    
+    .sidebar-header h2 {
+      color: white;
+      font-size: 0.95rem;
+      font-weight: 600;
+      margin: 0 0 0.8rem 0;
+    }
+    
+    .btn-back {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      gap: 0.4rem;
+      padding: 0.5rem 1rem;
+      background: rgba(255, 255, 255, 0.15);
+      color: white;
+      border: 1px solid rgba(255, 255, 255, 0.3);
+      border-radius: 6px;
+      font-size: 0.8rem;
+      font-weight: 500;
+      text-decoration: none;
+      transition: all 0.3s ease;
+      cursor: pointer;
+    }
+    
+    .btn-back:hover {
+      background: rgba(255, 255, 255, 0.25);
+      border-color: rgba(255, 255, 255, 0.5);
+    }
+    
+    .sidebar-filters {
+      padding: 0.8rem 1rem;
+      flex: 1;
+      overflow-y: auto;
+    }
+    
+    .sidebar-filters h3 {
+      color: rgba(255, 255, 255, 0.9);
+      font-size: 0.75rem;
+      text-transform: uppercase;
+      letter-spacing: 0.05em;
+      margin: 0 0 0.6rem 0;
+      padding-bottom: 0.4rem;
+      border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+    }
+    
+    .filter-group {
+      margin-bottom: 0.8rem;
+    }
+    
+    .filter-group label {
+      display: block;
+      color: rgba(255, 255, 255, 0.8);
+      font-size: 0.75rem;
+      font-weight: 500;
+      margin-bottom: 0.3rem;
+    }
+    
+    .filter-group input[type="file"] {
+      width: 100%;
+      padding: 0.3rem;
+      border-radius: 4px;
+      border: 1px solid rgba(255, 255, 255, 0.2);
+      font-size: 0.75rem;
+      background: rgba(255, 255, 255, 0.1);
+      color: white;
+      box-sizing: border-box;
+    }
+    
+    .filter-group .filter-search {
+      width: 100%;
+      padding: 0.3rem 0.5rem;
+      border-radius: 4px;
+      border: 1px solid rgba(255, 255, 255, 0.2);
+      font-size: 0.75rem;
+      background: rgba(255, 255, 255, 0.1);
+      color: white;
+      box-sizing: border-box;
+      margin-bottom: 0.3rem;
+    }
+    
+    .filter-group .filter-search::placeholder {
+      color: rgba(255, 255, 255, 0.5);
+    }
+    
+    .filter-group select {
+      width: 100%;
+      height: 70px;
+      padding: 0.2rem;
+      border-radius: 4px;
+      border: 1px solid rgba(255, 255, 255, 0.2);
+      font-size: 0.75rem;
+      background: rgba(255, 255, 255, 0.95);
+      box-sizing: border-box;
+    }
+    
+    .filter-group .btn-filter {
+      width: 100%;
+      padding: 0.35rem 0.5rem;
+      margin-top: 0.3rem;
+      border-radius: 4px;
+      border: none;
+      font-size: 0.7rem;
+      font-weight: 500;
+      background: rgba(255, 255, 255, 0.2);
+      color: white;
+      cursor: pointer;
+      transition: background 0.2s;
+    }
+    
+    .filter-group .btn-filter:hover {
+      background: rgba(255, 255, 255, 0.3);
+    }
+    
+    .filter-group input[type="date"] {
+      width: 100%;
+      padding: 0.35rem 0.5rem;
+      border-radius: 4px;
+      border: 1px solid rgba(255, 255, 255, 0.2);
+      font-size: 0.75rem;
+      background: rgba(255, 255, 255, 0.95);
+      box-sizing: border-box;
+      margin-bottom: 0.3rem;
+    }
+    
+    .sidebar-actions {
+      padding: 0.8rem 1rem;
+      border-top: 1px solid rgba(255, 255, 255, 0.1);
+    }
+    
+    .sidebar-actions button {
+      width: 100%;
+      padding: 0.5rem;
+      border-radius: 6px;
+      border: none;
+      font-size: 0.8rem;
+      font-weight: 600;
+      cursor: pointer;
+      margin-bottom: 0.4rem;
+      transition: all 0.2s;
+    }
+    
+    .sidebar-actions .btn-apply {
+      background: #14b8a6;
+      color: white;
+    }
+    
+    .sidebar-actions .btn-apply:hover {
+      background: #0d9488;
+    }
+    
+    .sidebar-actions .btn-reset {
+      background: rgba(255, 255, 255, 0.15);
+      color: white;
+    }
+    
+    .sidebar-actions .btn-reset:hover {
+      background: rgba(255, 255, 255, 0.25);
+    }
+    
+    .sidebar-footer {
+      padding: 0.6rem 1rem;
+      border-top: 1px solid rgba(255, 255, 255, 0.1);
+      text-align: center;
+    }
+    
+    .sidebar-footer p {
+      color: rgba(255, 255, 255, 0.5);
+      font-size: 0.6rem;
+      margin: 0;
+    }
+    
+    #status {
+      color: rgba(255, 255, 255, 0.8);
+      font-size: 0.7rem;
+      margin-top: 0.3rem;
+    }
+    
+    .main-wrapper {
+      margin-left: 280px;
+      flex: 1;
+      min-height: 100vh;
+    }
+    
+    @media (max-width: 992px) {
+      .sidebar {
+        width: 240px;
+      }
+      .main-wrapper {
+        margin-left: 240px;
+      }
+    }
+
+    header {
+      }
+      .main-wrapper {
+        margin-left: 60px;
+      }
+    }
+    
     header {
       background: linear-gradient(135deg, #14532d, #16a34a);
       color: #fff;
@@ -215,53 +445,69 @@
   </style>
 </head>
 <body>
-  <header>
-    <h1>Dashboard - Costos Mensuales Vehículos</h1>
-    <p>Carga el archivo <strong>Costos mensuales - Vehiculos.xlsx</strong> (hoja "Cto Vehiculos") y explora los costos.</p>
-  </header>
-
-  <div class="container">
-    <!-- Controles -->
-    <div class="card">
-      <div id="controls">
-        <div>
-          <label for="fileInput">Archivo Excel</label>
-          <input type="file" id="fileInput" accept=".xlsx,.xls" />
-          <div id="status"></div>
-        </div>
-
-        <div>
-          <label for="catalogoFilter">Catálogo (multi)</label>
-          <input type="text" class="filter-search" id="catalogoSearch" placeholder="Buscar catálogo..." oninput="filterSelect('catalogoFilter', this.value)">
-          <select id="catalogoFilter" multiple></select>
-          <button type="button" class="secondary" id="catalogoFilterBtn" onclick="toggleSelectAll('catalogoFilter', 'catalogoFilterBtn')">Seleccionar todo</button>
-        </div>
-
-        <div>
-          <label for="ciudadFilter">Ciudad (multi)</label>
-          <input type="text" class="filter-search" id="ciudadSearch" placeholder="Buscar ciudad..." oninput="filterSelect('ciudadFilter', this.value)">
-          <select id="ciudadFilter" multiple></select>
-          <button type="button" class="secondary" id="ciudadFilterBtn" onclick="toggleSelectAll('ciudadFilter', 'ciudadFilterBtn')">Seleccionar todo</button>
-        </div>
-
-        <div>
-          <label for="terceroFilter">Tercero Nombre (multi)</label>
-          <input type="text" class="filter-search" id="terceroSearch" placeholder="Buscar tercero..." oninput="filterSelect('terceroFilter', this.value)">
-          <select id="terceroFilter" multiple></select>
-          <button type="button" class="secondary" id="terceroFilterBtn" onclick="toggleSelectAll('terceroFilter', 'terceroFilterBtn')">Seleccionar todo</button>
-        </div>
-
-        <div>
-          <label>Rango de fechas</label>
-          <div style="display:flex; gap:0.3rem;">
-            <input type="date" id="startDate" />
-            <input type="date" id="endDate" />
-          </div>
-          <button id="applyFiltersBtn" style="margin-top:0.4rem;">Aplicar filtros</button>
-          <button id="resetFiltersBtn" class="secondary">Limpiar filtros</button>
-        </div>
+  <!-- Sidebar con filtros -->
+  <nav class="sidebar">
+    <div class="sidebar-header">
+      <img src="img/logo.png" alt="HESEGO Logo" />
+      <h2>Costos Mensuales</h2>
+      <a href="index.html" class="btn-back">← Regresar</a>
+    </div>
+    
+    <div class="sidebar-filters">
+      <h3>📁 Archivo</h3>
+      <div class="filter-group">
+        <label for="fileInput">Cargar Excel</label>
+        <input type="file" id="fileInput" accept=".xlsx,.xls" />
+        <div id="status"></div>
       </div>
+      
+      <h3>🔍 Filtros</h3>
+      
+      <div class="filter-group">
+        <label for="catalogoFilter">Catálogo</label>
+        <input type="text" class="filter-search" id="catalogoSearch" placeholder="Buscar..." oninput="filterSelect('catalogoFilter', this.value)">
+        <select id="catalogoFilter" multiple></select>
+        <button type="button" class="btn-filter" id="catalogoFilterBtn" onclick="toggleSelectAll('catalogoFilter', 'catalogoFilterBtn')">Seleccionar todo</button>
+      </div>
+      
+      <div class="filter-group">
+        <label for="ciudadFilter">Ciudad</label>
+        <input type="text" class="filter-search" id="ciudadSearch" placeholder="Buscar..." oninput="filterSelect('ciudadFilter', this.value)">
+        <select id="ciudadFilter" multiple></select>
+        <button type="button" class="btn-filter" id="ciudadFilterBtn" onclick="toggleSelectAll('ciudadFilter', 'ciudadFilterBtn')">Seleccionar todo</button>
+      </div>
+      
+      <div class="filter-group">
+        <label for="terceroFilter">Tercero Nombre</label>
+        <input type="text" class="filter-search" id="terceroSearch" placeholder="Buscar..." oninput="filterSelect('terceroFilter', this.value)">
+        <select id="terceroFilter" multiple></select>
+        <button type="button" class="btn-filter" id="terceroFilterBtn" onclick="toggleSelectAll('terceroFilter', 'terceroFilterBtn')">Seleccionar todo</button>
+      </div>
+      
+      <div class="filter-group">
+        <label>Rango de fechas</label>
+        <input type="date" id="startDate" />
+        <input type="date" id="endDate" />
+      </div>
+    </div>
+    
+    <div class="sidebar-actions">
+      <button id="applyFiltersBtn" class="btn-apply">✓ Aplicar filtros</button>
+      <button id="resetFiltersBtn" class="btn-reset">✕ Limpiar filtros</button>
+    </div>
+    
+    <div class="sidebar-footer">
+      <p>© 2025 HESEGO Ingeniería</p>
+    </div>
+  </nav>
 
+  <div class="main-wrapper">
+    <header>
+      <h1>Dashboard - Costos Mensuales Vehículos</h1>
+      <p>Análisis de costos de operación de la flota</p>
+    </header>
+
+    <div class="container">
       <!-- KPIs -->
       <div class="kpi-grid">
         <div class="kpi">
@@ -1222,5 +1468,6 @@
       renderTableWithChartFilter();
     }
   </script>
+  </div>
 </body>
 </html>

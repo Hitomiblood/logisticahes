@@ -15,7 +15,231 @@
       margin: 0;
       background: #f4f5f7;
       color: #222;
+      display: flex;
     }
+    
+    /* Sidebar */
+    .sidebar {
+      width: 280px;
+      background: linear-gradient(180deg, #0a2540 0%, #1c4e80 100%);
+      min-height: 100vh;
+      padding: 1rem 0;
+      box-shadow: 4px 0 20px rgba(0, 0, 0, 0.3);
+      position: fixed;
+      left: 0;
+      top: 0;
+      z-index: 100;
+      display: flex;
+      flex-direction: column;
+      overflow-y: auto;
+    }
+    
+    .sidebar-header {
+      text-align: center;
+      padding: 0 1rem 1rem;
+      border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+      margin-bottom: 0.5rem;
+    }
+    
+    .sidebar-header img {
+      width: 60px;
+      height: auto;
+      margin-bottom: 0.3rem;
+    }
+    
+    .sidebar-header h2 {
+      color: white;
+      font-size: 0.95rem;
+      font-weight: 600;
+      margin: 0 0 0.8rem 0;
+    }
+    
+    .btn-back {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      gap: 0.4rem;
+      padding: 0.5rem 1rem;
+      background: rgba(255, 255, 255, 0.15);
+      color: white;
+      border: 1px solid rgba(255, 255, 255, 0.3);
+      border-radius: 6px;
+      font-size: 0.8rem;
+      font-weight: 500;
+      text-decoration: none;
+      transition: all 0.3s ease;
+      cursor: pointer;
+    }
+    
+    .btn-back:hover {
+      background: rgba(255, 255, 255, 0.25);
+      border-color: rgba(255, 255, 255, 0.5);
+    }
+    
+    .sidebar-filters {
+      padding: 0.8rem 1rem;
+      flex: 1;
+      overflow-y: auto;
+    }
+    
+    .sidebar-filters h3 {
+      color: rgba(255, 255, 255, 0.9);
+      font-size: 0.75rem;
+      text-transform: uppercase;
+      letter-spacing: 0.05em;
+      margin: 0 0 0.6rem 0;
+      padding-bottom: 0.4rem;
+      border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+    }
+    
+    .filter-group {
+      margin-bottom: 0.8rem;
+    }
+    
+    .filter-group label {
+      display: block;
+      color: rgba(255, 255, 255, 0.8);
+      font-size: 0.75rem;
+      font-weight: 500;
+      margin-bottom: 0.3rem;
+    }
+    
+    .filter-group input[type="file"] {
+      width: 100%;
+      padding: 0.3rem;
+      border-radius: 4px;
+      border: 1px solid rgba(255, 255, 255, 0.2);
+      font-size: 0.75rem;
+      background: rgba(255, 255, 255, 0.1);
+      color: white;
+      box-sizing: border-box;
+    }
+    
+    .filter-group .filter-search {
+      width: 100%;
+      padding: 0.3rem 0.5rem;
+      border-radius: 4px;
+      border: 1px solid rgba(255, 255, 255, 0.2);
+      font-size: 0.75rem;
+      background: rgba(255, 255, 255, 0.1);
+      color: white;
+      box-sizing: border-box;
+      margin-bottom: 0.3rem;
+    }
+    
+    .filter-group .filter-search::placeholder {
+      color: rgba(255, 255, 255, 0.5);
+    }
+    
+    .filter-group select {
+      width: 100%;
+      height: 70px;
+      padding: 0.2rem;
+      border-radius: 4px;
+      border: 1px solid rgba(255, 255, 255, 0.2);
+      font-size: 0.75rem;
+      background: rgba(255, 255, 255, 0.95);
+      box-sizing: border-box;
+    }
+    
+    .filter-group .btn-filter {
+      width: 100%;
+      padding: 0.35rem 0.5rem;
+      margin-top: 0.3rem;
+      border-radius: 4px;
+      border: none;
+      font-size: 0.7rem;
+      font-weight: 500;
+      background: rgba(255, 255, 255, 0.2);
+      color: white;
+      cursor: pointer;
+      transition: background 0.2s;
+    }
+    
+    .filter-group .btn-filter:hover {
+      background: rgba(255, 255, 255, 0.3);
+    }
+    
+    .filter-group .date-input {
+      width: 100%;
+      padding: 0.35rem 0.5rem;
+      border-radius: 4px;
+      border: 1px solid rgba(255, 255, 255, 0.2);
+      font-size: 0.75rem;
+      background: rgba(255, 255, 255, 0.95);
+      box-sizing: border-box;
+      margin-bottom: 0.3rem;
+      cursor: pointer;
+    }
+    
+    .sidebar-actions {
+      padding: 0.8rem 1rem;
+      border-top: 1px solid rgba(255, 255, 255, 0.1);
+    }
+    
+    .sidebar-actions button {
+      width: 100%;
+      padding: 0.5rem;
+      border-radius: 6px;
+      border: none;
+      font-size: 0.8rem;
+      font-weight: 600;
+      cursor: pointer;
+      margin-bottom: 0.4rem;
+      transition: all 0.2s;
+    }
+    
+    .sidebar-actions .btn-apply {
+      background: #14b8a6;
+      color: white;
+    }
+    
+    .sidebar-actions .btn-apply:hover {
+      background: #0d9488;
+    }
+    
+    .sidebar-actions .btn-reset {
+      background: rgba(255, 255, 255, 0.15);
+      color: white;
+    }
+    
+    .sidebar-actions .btn-reset:hover {
+      background: rgba(255, 255, 255, 0.25);
+    }
+    
+    .sidebar-footer {
+      padding: 0.6rem 1rem;
+      border-top: 1px solid rgba(255, 255, 255, 0.1);
+      text-align: center;
+    }
+    
+    .sidebar-footer p {
+      color: rgba(255, 255, 255, 0.5);
+      font-size: 0.6rem;
+      margin: 0;
+    }
+    
+    #status {
+      color: rgba(255, 255, 255, 0.8);
+      font-size: 0.7rem;
+      margin-top: 0.3rem;
+    }
+    
+    .main-wrapper {
+      margin-left: 280px;
+      flex: 1;
+      min-height: 100vh;
+    }
+    
+    @media (max-width: 992px) {
+      .sidebar {
+        width: 240px;
+      }
+      .main-wrapper {
+        margin-left: 240px;
+      }
+    }
+
     header {
       background: linear-gradient(135deg, #1c4e80, #00a3cc);
       color: #fff;
@@ -361,84 +585,95 @@
   </style>
 </head>
 <body>
-  <header>
-    <div class="header-text">
-      <h1>Dashboard - Operatividad Vehículos</h1>
-      <p>Carga el archivo <strong>OPERATIVIDAD DIARIA.xlsx</strong> y explora las gráficas y filtros.</p>
+  <!-- Sidebar con filtros -->
+  <nav class="sidebar">
+    <div class="sidebar-header">
+      <img src="img/logo.png" alt="HESEGO Logo" />
+      <h2>Operatividad Vehículos</h2>
+      <a href="index.html" class="btn-back">← Regresar</a>
     </div>
-  </header>
-
-  <div class="container">
-
-    <!-- Controles -->
-    <div class="card">
-      <div id="controls">
-        <div>
-          <div style="text-align: center; margin-bottom: 0.8rem;">
-            <img src="img/logo.png" alt="HESEGO Ingeniería S.A.S" style="height: 120px; width: auto;">
-          </div>
-          <label for="fileInput">Archivo Excel</label>
-          <input type="file" id="fileInput" accept=".xlsx,.xls" />
-          <div id="status"></div>
-        </div>
-
-        <div>
-          <label for="sedeFilter">Sede (multi-selección)</label>
-          <input type="text" class="filter-search" id="sedeSearch" placeholder="Buscar sede..." oninput="filterSelect('sedeFilter', this.value)">
-          <select id="sedeFilter" multiple></select>
-          <button type="button" class="secondary" id="sedeFilterBtn" onclick="toggleSelectAll('sedeFilter', 'sedeFilterBtn')">Seleccionar todo</button>
-        </div>
-
-        <div>
-          <label for="estadoFilter">Estado Vehículo (multi)</label>
-          <input type="text" class="filter-search" id="estadoSearch" placeholder="Buscar estado..." oninput="filterSelect('estadoFilter', this.value)">
-          <select id="estadoFilter" multiple></select>
-          <button type="button" class="secondary" id="estadoFilterBtn" onclick="toggleSelectAll('estadoFilter', 'estadoFilterBtn')">Seleccionar todo</button>
-        </div>
-
-        <div>
-          <label for="placaFilter">Placa (multi-selección)</label>
-          <input type="text" class="filter-search" id="placaSearch" placeholder="Buscar placa..." oninput="filterSelect('placaFilter', this.value)">
-          <select id="placaFilter" multiple></select>
-          <button type="button" class="secondary" id="placaFilterBtn" onclick="toggleSelectAll('placaFilter', 'placaFilterBtn')">Seleccionar todo</button>
-        </div>
-
-        <div>
-          <label>Rango de fechas</label>
-          
-          <div class="date-picker-container">
-            <input type="text" class="date-input" id="startDateDisplay" placeholder="Desde..." readonly onclick="openDatePicker('start')">
-            <div class="date-popup" id="startDatePopup">
-              <div class="date-popup-header">
-                <span class="date-popup-title">Fecha inicio</span>
-                <span class="date-popup-close" onclick="closeDatePicker('start')">×</span>
-              </div>
-              <div class="year-grid" id="startYearGrid"></div>
-              <div class="month-grid" id="startMonthGrid"></div>
-              <div class="day-grid" id="startDayGrid"></div>
-            </div>
-          </div>
-          
-          <div class="date-picker-container">
-            <input type="text" class="date-input" id="endDateDisplay" placeholder="Hasta..." readonly onclick="openDatePicker('end')">
-            <div class="date-popup" id="endDatePopup">
-              <div class="date-popup-header">
-                <span class="date-popup-title">Fecha fin</span>
-                <span class="date-popup-close" onclick="closeDatePicker('end')">×</span>
-              </div>
-              <div class="year-grid" id="endYearGrid"></div>
-              <div class="month-grid" id="endMonthGrid"></div>
-              <div class="day-grid" id="endDayGrid"></div>
-            </div>
-          </div>
-          
-          <input type="hidden" id="startDate" />
-          <input type="hidden" id="endDate" />
-          <button id="applyFiltersBtn" style="margin-top:0.4rem;">Aplicar filtros</button>
-          <button id="resetFiltersBtn" class="secondary">Limpiar filtros</button>
-        </div>
+    
+    <div class="sidebar-filters">
+      <h3>📁 Archivo</h3>
+      <div class="filter-group">
+        <label for="fileInput">Cargar Excel</label>
+        <input type="file" id="fileInput" accept=".xlsx,.xls" />
+        <div id="status"></div>
       </div>
+      
+      <h3>🔍 Filtros</h3>
+      
+      <div class="filter-group">
+        <label for="sedeFilter">Sede</label>
+        <input type="text" class="filter-search" id="sedeSearch" placeholder="Buscar..." oninput="filterSelect('sedeFilter', this.value)">
+        <select id="sedeFilter" multiple></select>
+        <button type="button" class="btn-filter" id="sedeFilterBtn" onclick="toggleSelectAll('sedeFilter', 'sedeFilterBtn')">Seleccionar todo</button>
+      </div>
+      
+      <div class="filter-group">
+        <label for="estadoFilter">Estado Vehículo</label>
+        <input type="text" class="filter-search" id="estadoSearch" placeholder="Buscar..." oninput="filterSelect('estadoFilter', this.value)">
+        <select id="estadoFilter" multiple></select>
+        <button type="button" class="btn-filter" id="estadoFilterBtn" onclick="toggleSelectAll('estadoFilter', 'estadoFilterBtn')">Seleccionar todo</button>
+      </div>
+      
+      <div class="filter-group">
+        <label for="placaFilter">Placa</label>
+        <input type="text" class="filter-search" id="placaSearch" placeholder="Buscar..." oninput="filterSelect('placaFilter', this.value)">
+        <select id="placaFilter" multiple></select>
+        <button type="button" class="btn-filter" id="placaFilterBtn" onclick="toggleSelectAll('placaFilter', 'placaFilterBtn')">Seleccionar todo</button>
+      </div>
+      
+      <div class="filter-group">
+        <label>Rango de fechas</label>
+        <div class="date-picker-container">
+          <input type="text" class="date-input" id="startDateDisplay" placeholder="Desde..." readonly onclick="openDatePicker('start')">
+          <div class="date-popup" id="startDatePopup">
+            <div class="date-popup-header">
+              <span class="date-popup-title">Fecha inicio</span>
+              <span class="date-popup-close" onclick="closeDatePicker('start')">×</span>
+            </div>
+            <div class="year-grid" id="startYearGrid"></div>
+            <div class="month-grid" id="startMonthGrid"></div>
+            <div class="day-grid" id="startDayGrid"></div>
+          </div>
+        </div>
+        <div class="date-picker-container">
+          <input type="text" class="date-input" id="endDateDisplay" placeholder="Hasta..." readonly onclick="openDatePicker('end')">
+          <div class="date-popup" id="endDatePopup">
+            <div class="date-popup-header">
+              <span class="date-popup-title">Fecha fin</span>
+              <span class="date-popup-close" onclick="closeDatePicker('end')">×</span>
+            </div>
+            <div class="year-grid" id="endYearGrid"></div>
+            <div class="month-grid" id="endMonthGrid"></div>
+            <div class="day-grid" id="endDayGrid"></div>
+          </div>
+        </div>
+        <input type="hidden" id="startDate" />
+        <input type="hidden" id="endDate" />
+      </div>
+    </div>
+    
+    <div class="sidebar-actions">
+      <button id="applyFiltersBtn" class="btn-apply">✓ Aplicar filtros</button>
+      <button id="resetFiltersBtn" class="btn-reset">✕ Limpiar filtros</button>
+    </div>
+    
+    <div class="sidebar-footer">
+      <p>© 2025 HESEGO Ingeniería</p>
+    </div>
+  </nav>
 
+  <div class="main-wrapper">
+    <header>
+      <div class="header-text">
+        <h1>Dashboard - Operatividad Vehículos</h1>
+        <p>Análisis de operatividad diaria de la flota</p>
+      </div>
+    </header>
+
+    <div class="container">
       <!-- KPIs -->
       <div class="kpi-grid">
         <div class="kpi">
@@ -1979,5 +2214,6 @@
       }
     }
   </script>
+  </div>
 </body>
 </html>
