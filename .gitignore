@@ -3,7 +3,7 @@
 .DS_Store
 Thumbs.db
 logisticahesego.com.nginx
-*__pycache__# Python
+# Python
 __pycache__/
 *.py[cod]
 *$py.class
