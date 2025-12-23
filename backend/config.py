@@ -27,6 +27,10 @@ EXCEL_FILES = {
     "indicadores": {
         "path": DATA_DIR / "ALMACENES" / "INDICADORES 2025.xlsx",
         "sheet": "OYMM"
+    },
+    "fiscal_ru": {
+        "path": DATA_DIR / "ALMACENES" / "INDICADORES 2025.xlsx",
+        "sheet": "FISCAL-RU"
     }
 }
 

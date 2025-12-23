@@ -212,6 +212,11 @@ def main():
     except Exception as e:
         print(f"⚠️ Error en Indicadores: {e}")
     
+    try:
+        total += import_fiscal_ru()
+    except Exception as e:
+        print(f"⚠️ Error en Fiscal RU: {e}")
+    
     print("=" * 60)
     print(f"✅ IMPORTACIÓN COMPLETADA - Total: {total:,} registros")
     print(f"📁 Base de datos: {DB_PATH}")
@@ -594,6 +599,97 @@ def import_indicadores():
         
     except Exception as e:
         print(f"❌ Error importando Indicadores: {e}")
+        import traceback
+        traceback.print_exc()
+        raise
+
+
+def import_fiscal_ru():
+    """Importar datos de Inventario Fiscal RU"""
+    config = EXCEL_FILES["fiscal_ru"]
+    print(f"📂 Leyendo {config['path']}...")
+    
+    try:
+        df = pd.read_excel(config["path"], sheet_name=config["sheet"])
+        print(f"   Registros encontrados: {len(df)}")
+        
+        # Limpiar tabla
+        clear_table("fiscal_ru")
+        
+        # Mapear columnas
+        column_mapping = {
+            "MES ": "mes",
+            "Item": "item",
+            "Descripción": "descripcion",
+            "Bodega": "bodega",
+            "SEDE ": "sede",
+            "Saldo Final": "saldo_final",
+            "Costo Promedio": "costo_promedio",
+            "Costo Total": "costo_total",
+            "Inf. Fisico": "inf_fisico",
+            "Diferencia": "diferencia",
+            "Estado": "estado",
+            "Costo Diferencia": "costo_diferencia",
+            "Unidad": "unidad",
+            "Clasificación": "clasificacion",
+            "Descripción3": "descripcion3",
+            "TIPO INVENTARIO ": "tipo_inventario",
+            "OBJETIVO ": "objetivo"
+        }
+        
+        # Preparar datos
+        records = []
+        for _, row in df.iterrows():
+            record = {}
+            for excel_col, db_col in column_mapping.items():
+                value = row.get(excel_col)
+                
+                # Procesar valores especiales
+                if pd.isna(value):
+                    value = None
+                elif isinstance(value, str):
+                    value = fix_encoding(value.strip())
+                
+                record[db_col] = value
+            records.append(record)
+        
+        # Insertar en BD
+        with get_db() as conn:
+            cursor = conn.cursor()
+            for record in records:
+                cursor.execute('''
+                    INSERT INTO fiscal_ru 
+                    (mes, item, descripcion, bodega, sede, saldo_final,
+                     costo_promedio, costo_total, inf_fisico, diferencia,
+                     estado, costo_diferencia, unidad, clasificacion,
+                     descripcion3, tipo_inventario, objetivo)
+                    VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+                ''', (
+                    record["mes"],
+                    record["item"],
+                    record["descripcion"],
+                    record["bodega"],
+                    record["sede"],
+                    record["saldo_final"],
+                    record["costo_promedio"],
+                    record["costo_total"],
+                    record["inf_fisico"],
+                    record["diferencia"],
+                    record["estado"],
+                    record["costo_diferencia"],
+                    record["unidad"],
+                    record["clasificacion"],
+                    record["descripcion3"],
+                    record["tipo_inventario"],
+                    record["objetivo"]
+                ))
+            conn.commit()
+        
+        print(f"✅ Fiscal RU: {len(records)} registros importados")
+        return len(records)
+        
+    except Exception as e:
+        print(f"❌ Error importando Fiscal RU: {e}")
         import traceback
         traceback.print_exc()
         raise

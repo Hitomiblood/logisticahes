@@ -19,6 +19,16 @@
     .filter-date-sidebar { width: 100%; padding: 0.4rem 0.5rem; border-radius: 4px; border: 1px solid rgba(255,255,255,0.2); font-size: 0.75rem; background: rgba(255,255,255,0.95); color: #333; box-sizing: border-box; }
     .btn-apply-sidebar { width: 100%; padding: 0.5rem; border-radius: 4px; border: none; font-size: 0.75rem; font-weight: 600; background: rgba(255,255,255,0.25); color: white; cursor: pointer; transition: all 0.3s; margin-top: 0.5rem; }
     .btn-apply-sidebar:hover { background: rgba(255,255,255,0.35); }
+    .filter-search-sidebar { width: 100%; padding: 0.5rem 0.6rem; border-radius: 4px; border: 1px solid rgba(255,255,255,0.2); font-size: 0.75rem; background: rgba(255,255,255,0.1); color: white; box-sizing: border-box; margin-bottom: 0.5rem; transition: all 0.3s; }
+    .filter-search-sidebar::placeholder { color: rgba(255,255,255,0.5); }
+    .filter-search-sidebar:focus { outline: none; background: rgba(255,255,255,0.15); border-color: rgba(255,255,255,0.4); }
+    .select-sidebar { width: 100%; height: 140px; padding: 0.4rem; border-radius: 4px; border: 1px solid rgba(255,255,255,0.2); font-size: 0.75rem; background: rgba(255,255,255,0.95); color: #333; box-sizing: border-box; }
+    .select-sidebar option { padding: 0.3rem; }
+    .select-sidebar option:checked { background: linear-gradient(135deg, #15803d, #16a34a); color: white; }
+    .btn-toggle-sidebar { width: 100%; padding: 0.4rem; border-radius: 4px; border: 1px solid rgba(255,255,255,0.2); font-size: 0.7rem; font-weight: 500; background: rgba(255,255,255,0.15); color: rgba(255,255,255,0.9); cursor: pointer; transition: all 0.3s; margin-top: 0.4rem; }
+    .btn-toggle-sidebar:hover { background: rgba(255,255,255,0.25); border-color: rgba(255,255,255,0.3); }
+    .btn-apply-filter-sidebar { width: 100%; padding: 0.5rem; border-radius: 4px; border: none; font-size: 0.75rem; font-weight: 600; background: linear-gradient(135deg, #15803d, #16a34a); color: white; cursor: pointer; transition: all 0.3s; margin-top: 0.5rem; box-shadow: 0 2px 4px rgba(0,0,0,0.2); }
+    .btn-apply-filter-sidebar:hover { background: linear-gradient(135deg, #16a34a, #22c55e); transform: translateY(-1px); box-shadow: 0 3px 6px rgba(0,0,0,0.25); }
     .sidebar-footer { padding: 0.6rem 1rem; border-top: 1px solid rgba(255,255,255,0.1); text-align: center; margin-top: auto; }
     .sidebar-footer p { color: rgba(255,255,255,0.5); font-size: 0.6rem; margin: 0; }
     #status { color: rgba(255,255,255,0.8); font-size: 0.7rem; margin-top: 0.3rem; }
@@ -63,6 +73,14 @@
         <input type="month" id="fechaFin" class="filter-date-sidebar" />
       </div>
       <button class="btn-apply-sidebar" onclick="aplicarFiltroGlobal()">Aplicar Periodo</button>
+      
+      <h3 style="margin-top: 1.5rem;">🏢 Sede Global</h3>
+      <div class="filter-group">
+        <input type="text" class="filter-search-sidebar" id="sedeGlobalSearch" placeholder="🔍 Buscar sede..." onkeyup="filterSelect('sedeGlobalFilter', this.value)" />
+        <select multiple id="sedeGlobalFilter" class="select-sidebar"></select>
+        <button class="btn-toggle-sidebar" id="sedeGlobalFilterBtn" onclick="toggleSelectAll('sedeGlobalFilter', 'sedeGlobalFilterBtn')">Seleccionar todo</button>
+        <button class="btn-apply-filter-sidebar" onclick="aplicarFiltroSedeGlobal()">✓ Aplicar Sedes</button>
+      </div>
     </div>
     <div class="sidebar-footer">
       <p>© 2025 HESEGO</p>
@@ -87,12 +105,6 @@
           <h3 class="chart-title">📈 Inventario OYMM por Sede</h3>
           <div class="chart-filters">
             <div class="chart-filter-group">
-              <label>Sede:</label>
-              <input type="text" class="filter-search" id="sedeSearch" placeholder="Buscar..." onkeyup="filterSelect('sedeFilter', this.value)" />
-              <select multiple id="sedeFilter"></select>
-              <button class="btn-filter-chart" id="sedeFilterBtn" onclick="toggleSelectAll('sedeFilter', 'sedeFilterBtn')">Seleccionar todo</button>
-            </div>
-            <div class="chart-filter-group">
               <label>Responsable:</label>
               <input type="text" class="filter-search" id="responsableSearch" placeholder="Buscar..." onkeyup="filterSelect('responsableFilter', this.value)" />
               <select multiple id="responsableFilter"></select>
@@ -102,19 +114,47 @@
         </div>
         <div id="chartPrincipal" class="chart"></div>
       </div>
+      
+      <div class="chart-card">
+        <div class="chart-header">
+          <h3 class="chart-title">📦 Inventario Fiscal RU por Sede</h3>
+          <div class="chart-filters">
+            <div class="chart-filter-group">
+              <label>Estado:</label>
+              <input type="text" class="filter-search" id="estadoSearch" placeholder="Buscar..." onkeyup="filterSelect('estadoFilter', this.value)" />
+              <select multiple id="estadoFilter"></select>
+              <button class="btn-filter-chart" id="estadoFilterBtn" onclick="toggleSelectAll('estadoFilter', 'estadoFilterBtn')">Seleccionar todo</button>
+            </div>
+            <div class="chart-filter-group">
+              <label>Tipo Inventario:</label>
+              <input type="text" class="filter-search" id="tipoSearch" placeholder="Buscar..." onkeyup="filterSelect('tipoFilter', this.value)" />
+              <select multiple id="tipoFilter"></select>
+              <button class="btn-filter-chart" id="tipoFilterBtn" onclick="toggleSelectAll('tipoFilter', 'tipoFilterBtn')">Seleccionar todo</button>
+            </div>
+          </div>
+        </div>
+        <div id="chartFiscalRU" class="chart"></div>
+      </div>
     </div>
   </div>
   <script>
-    let filtrosDisponibles = {}, filtrosGlobales = {}, filtrosGrafica = {};
-    const fechaInicioEl = document.getElementById("fechaInicio"), fechaFinEl = document.getElementById("fechaFin"), sedeFilterEl = document.getElementById("sedeFilter"), responsableFilterEl = document.getElementById("responsableFilter"), statusEl = document.getElementById("status");
+    let filtrosDisponibles = {}, filtrosDisponiblesFiscal = {}, filtrosGlobales = {}, filtrosGrafica = {}, filtrosGraficaFiscal = {};
+    const fechaInicioEl = document.getElementById("fechaInicio"), fechaFinEl = document.getElementById("fechaFin"), sedeGlobalFilterEl = document.getElementById("sedeGlobalFilter"), responsableFilterEl = document.getElementById("responsableFilter"), estadoFilterEl = document.getElementById("estadoFilter"), tipoFilterEl = document.getElementById("tipoFilter"), statusEl = document.getElementById("status");
     
     window.addEventListener('DOMContentLoaded', async () => { await cargarFiltros(); await cargarDatos(); });
     
     async function cargarFiltros() {
+      // Filtros para Indicadores OYMM
       const r = await fetch('/api/indicadores/filtros'); filtrosDisponibles = await r.json();
-      populateFilter(sedeFilterEl, filtrosDisponibles.sedes, filtrosDisponibles.sedes);
+      populateFilter(sedeGlobalFilterEl, filtrosDisponibles.sedes, filtrosDisponibles.sedes);
       populateFilter(responsableFilterEl, filtrosDisponibles.responsables, filtrosDisponibles.responsables);
-      updateToggleButton('sedeFilter', 'sedeFilterBtn'); updateToggleButton('responsableFilter', 'responsableFilterBtn');
+      updateToggleButton('sedeGlobalFilter', 'sedeGlobalFilterBtn'); updateToggleButton('responsableFilter', 'responsableFilterBtn');
+      
+      // Filtros para Fiscal RU
+      const r2 = await fetch('/api/fiscal-ru/filtros'); filtrosDisponiblesFiscal = await r2.json();
+      populateFilter(estadoFilterEl, filtrosDisponiblesFiscal.estados, filtrosDisponiblesFiscal.estados);
+      populateFilter(tipoFilterEl, filtrosDisponiblesFiscal.tipos_inventario, filtrosDisponiblesFiscal.tipos_inventario);
+      updateToggleButton('estadoFilter', 'estadoFilterBtn'); updateToggleButton('tipoFilter', 'tipoFilterBtn');
     }
     
     function populateFilter(selectEl, options, selectedValues = []) {
@@ -126,29 +166,54 @@
       selectEl.addEventListener('click', e => e.preventDefault());
     }
     
-    enableClickToggleSelection(sedeFilterEl); enableClickToggleSelection(responsableFilterEl);
-    sedeFilterEl.addEventListener("change", () => { updateToggleButton('sedeFilter', 'sedeFilterBtn'); aplicarFiltrosGrafica(); });
+    enableClickToggleSelection(sedeGlobalFilterEl); enableClickToggleSelection(responsableFilterEl); enableClickToggleSelection(estadoFilterEl); enableClickToggleSelection(tipoFilterEl);
+    sedeGlobalFilterEl.addEventListener("change", () => { updateToggleButton('sedeGlobalFilter', 'sedeGlobalFilterBtn'); aplicarFiltroSedeGlobal(); });
     responsableFilterEl.addEventListener("change", () => { updateToggleButton('responsableFilter', 'responsableFilterBtn'); aplicarFiltrosGrafica(); });
+    estadoFilterEl.addEventListener("change", () => { updateToggleButton('estadoFilter', 'estadoFilterBtn'); aplicarFiltrosGraficaFiscal(); });
+    tipoFilterEl.addEventListener("change", () => { updateToggleButton('tipoFilter', 'tipoFilterBtn'); aplicarFiltrosGraficaFiscal(); });
     
     // Aplicar filtro global de tiempo
     async function aplicarFiltroGlobal() {
       filtrosGlobales = {};
       if (fechaInicioEl.value) filtrosGlobales.fecha_inicio = fechaInicioEl.value;
       if (fechaFinEl.value) filtrosGlobales.fecha_fin = fechaFinEl.value;
+      // Incluir sede global
+      const sedes = getSelectedOptions(sedeGlobalFilterEl);
+      if (sedes.length > 0 && sedes.length < filtrosDisponibles.sedes.length) filtrosGlobales.sedes = sedes.join(",");
       await cargarDatos();
     }
     
-    // Aplicar filtros específicos de la gráfica (sin recargar todo)
+    // Aplicar filtro de Sede Global (compartido entre todas las gráficas)
+    async function aplicarFiltroSedeGlobal() {
+      const sedes = getSelectedOptions(sedeGlobalFilterEl);
+      if (sedes.length > 0 && sedes.length < filtrosDisponibles.sedes.length) {
+        filtrosGlobales.sedes = sedes.join(",");
+      } else {
+        delete filtrosGlobales.sedes;
+      }
+      // Actualizar ambas gráficas
+      await Promise.all([actualizarGraficas(), actualizarGraficaFiscalRU()]);
+    }
+    
+    // Aplicar filtros específicos de la gráfica OYMM (sin recargar todo)
     async function aplicarFiltrosGrafica() {
       filtrosGrafica = {};
-      const sedes = getSelectedOptions(sedeFilterEl), resp = getSelectedOptions(responsableFilterEl);
-      if (sedes.length > 0 && sedes.length < filtrosDisponibles.sedes.length) filtrosGrafica.sedes = sedes.join(",");
+      const resp = getSelectedOptions(responsableFilterEl);
       if (resp.length > 0 && resp.length < filtrosDisponibles.responsables.length) filtrosGrafica.responsables = resp.join(",");
       await actualizarGraficas();
     }
     
+    // Aplicar filtros específicos de Fiscal RU
+    async function aplicarFiltrosGraficaFiscal() {
+      filtrosGraficaFiscal = {};
+      const estados = getSelectedOptions(estadoFilterEl), tipos = getSelectedOptions(tipoFilterEl);
+      if (estados.length > 0 && estados.length < filtrosDisponiblesFiscal.estados.length) filtrosGraficaFiscal.estado = estados.join(",");
+      if (tipos.length > 0 && tipos.length < filtrosDisponiblesFiscal.tipos_inventario.length) filtrosGraficaFiscal.tipo_inventario = tipos.join(",");
+      await actualizarGraficaFiscalRU();
+    }
+    
     async function cargarDatos() {
-      setStatus('🔄 Cargando...'); await Promise.all([actualizarKPIs(), actualizarGraficas()]); setStatus('✅ OK'); setTimeout(() => setStatus(''), 2000);
+      setStatus('🔄 Cargando...'); await Promise.all([actualizarKPIs(), actualizarGraficas(), actualizarGraficaFiscalRU()]); setStatus('✅ OK'); setTimeout(() => setStatus(''), 2000);
     }
     
     function combinarFiltros() {
@@ -176,6 +241,18 @@
       ];
       const layout = { barmode: 'group', xaxis: { title: 'Sede' }, yaxis: { title: 'Costo ($)', tickformat: '$,.0f', separatethousands: true }, yaxis2: { title: 'Desviación (%)', overlaying: 'y', side: 'right', tickformat: '.2f', showgrid: false }, legend: { x: 0.5, y: -0.2, xanchor: 'center', orientation: 'h' }, margin: { t: 30, b: 80, l: 150, r: 80 } };
       Plotly.newPlot('chartPrincipal', traces, layout, { responsive: true });
+    }
+    
+    async function actualizarGraficaFiscalRU() {
+      const filtros = { ...filtrosGlobales, ...filtrosGraficaFiscal };
+      const r = await fetch(`/api/fiscal-ru/grafico/por-sede?${new URLSearchParams(filtros)}`), data = await r.json();
+      const sedes = data.map(d => d.sede), costosInv = data.map(d => d.costo_inventario), desv = data.map(d => d.desviacion);
+      const traces = [
+        { x: sedes, y: costosInv, name: 'Costo Inventario', type: 'bar', marker: { color: '#10b981' } },
+        { x: sedes, y: desv, name: 'Desviación %', type: 'scatter', mode: 'lines+markers', yaxis: 'y2', line: { color: '#f59e0b', width: 3 }, marker: { size: 8, color: '#f59e0b' } }
+      ];
+      const layout = { barmode: 'group', xaxis: { title: 'Sede' }, yaxis: { title: 'Costo ($)', tickformat: '$,.0f', separatethousands: true }, yaxis2: { title: 'Desviación (%)', overlaying: 'y', side: 'right', tickformat: '.2f', showgrid: false }, legend: { x: 0.5, y: -0.2, xanchor: 'center', orientation: 'h' }, margin: { t: 30, b: 80, l: 150, r: 80 } };
+      Plotly.newPlot('chartFiscalRU', traces, layout, { responsive: true });
     }
     
     function getSelectedOptions(selectEl) { return Array.from(selectEl.options).filter(opt => opt.selected).map(opt => opt.value); }
