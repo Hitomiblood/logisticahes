@@ -1,0 +1,2160 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8" />
+  <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate" />
+  <meta http-equiv="Pragma" content="no-cache" />
+  <meta http-equiv="Expires" content="0" />
+  <title>Dashboard Compras - Informe Base</title>
+
+  <!-- Librería para leer Excel en el navegador -->
+  <script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
+  <!-- Plotly para gráficas interactivas -->
+  <script src="https://cdn.plot.ly/plotly-2.35.2.min.js"></script>
+
+  <style>
+    * {
+      box-sizing: border-box;
+    }
+
+    body {
+      font-family: system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+      margin: 0;
+      background: #f4f5f7;
+      color: #222;
+      display: flex;
+    }
+    
+    /* Sidebar */
+    .sidebar {
+      width: 280px;
+      background: linear-gradient(180deg, #0a2540 0%, #1c4e80 100%);
+      min-height: 100vh;
+      padding: 1rem 0;
+      box-shadow: 4px 0 20px rgba(0, 0, 0, 0.3);
+      position: fixed;
+      left: 0;
+      top: 0;
+      z-index: 100;
+      display: flex;
+      flex-direction: column;
+      overflow-y: auto;
+    }
+    
+    .sidebar-header {
+      text-align: center;
+      padding: 0 1rem 1rem;
+      border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+      margin-bottom: 0.5rem;
+    }
+    
+    .sidebar-header img {
+      width: 60px;
+      height: auto;
+      margin-bottom: 0.3rem;
+    }
+    
+    .sidebar-header h2 {
+      color: white;
+      font-size: 0.95rem;
+      font-weight: 600;
+      margin: 0 0 0.8rem 0;
+    }
+    
+    .btn-back {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      gap: 0.4rem;
+      padding: 0.5rem 1rem;
+      background: rgba(255, 255, 255, 0.15);
+      color: white;
+      border: 1px solid rgba(255, 255, 255, 0.3);
+      border-radius: 6px;
+      font-size: 0.8rem;
+      font-weight: 500;
+      text-decoration: none;
+      transition: all 0.3s ease;
+      cursor: pointer;
+      margin: 0 1rem;
+      width: calc(100% - 2rem);
+    }
+    
+    .btn-back:hover {
+      background: rgba(255, 255, 255, 0.25);
+      border-color: rgba(255, 255, 255, 0.5);
+    }
+    
+    .sidebar-filters {
+      padding: 0.8rem 1rem;
+      flex: 1;
+      overflow-y: auto;
+      max-height: calc(106vh - 350px);
+    }
+    
+    .sidebar-filters::-webkit-scrollbar {
+      width: 6px;
+    }
+    
+    .sidebar-filters::-webkit-scrollbar-track {
+      background: rgba(255, 255, 255, 0.05);
+      border-radius: 3px;
+    }
+    
+    .sidebar-filters::-webkit-scrollbar-thumb {
+      background: rgba(255, 255, 255, 0.3);
+      border-radius: 3px;
+    }
+    
+    .sidebar-filters::-webkit-scrollbar-thumb:hover {
+      background: rgba(255, 255, 255, 0.5);
+    }
+    
+    .sidebar-filters h3 {
+      color: rgba(255, 255, 255, 0.9);
+      font-size: 0.75rem;
+      text-transform: uppercase;
+      letter-spacing: 0.05em;
+      margin: 0 0 0.6rem 0;
+      padding-bottom: 0.4rem;
+      border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+    }
+    
+    .filter-group {
+      margin-bottom: 0.8rem;
+    }
+    
+    .filter-group label {
+      display: block;
+      color: rgba(255, 255, 255, 0.8);
+      font-size: 0.75rem;
+      font-weight: 500;
+      margin-bottom: 0.3rem;
+    }
+    
+    .filter-group input[type="file"] {
+      width: 100%;
+      padding: 0.3rem;
+      border-radius: 4px;
+      border: 1px solid rgba(255, 255, 255, 0.2);
+      font-size: 0.75rem;
+      background: rgba(255, 255, 255, 0.1);
+      color: white;
+      box-sizing: border-box;
+    }
+    
+    .filter-group .filter-search {
+      width: 100%;
+      padding: 0.3rem 0.5rem;
+      border-radius: 4px;
+      border: 1px solid rgba(255, 255, 255, 0.2);
+      font-size: 0.75rem;
+      background: rgba(255, 255, 255, 0.1);
+      color: white;
+      box-sizing: border-box;
+      margin-bottom: 0.3rem;
+    }
+    
+    .filter-group .filter-search::placeholder {
+      color: rgba(255, 255, 255, 0.5);
+    }
+    
+    .filter-group select {
+      width: 100%;
+      height: 90px;
+      padding: 0.2rem;
+      border-radius: 4px;
+      border: 1px solid rgba(255, 255, 255, 0.2);
+      font-size: 0.75rem;
+      background: rgba(255, 255, 255, 0.95);
+      box-sizing: border-box;
+      overflow-y: auto;
+    }
+    
+    .filter-group select option {
+      padding: 0.3rem 0.5rem;
+      cursor: pointer;
+    }
+    
+    .filter-group select option:hover {
+      background: #e0f2fe;
+    }
+    
+    .filter-group select option:checked {
+      background: linear-gradient(180deg, #0ea5e9 0%, #0284c7 100%);
+      color: white;
+      font-weight: 500;
+    }
+    
+    .filter-group .btn-filter {
+      width: 100%;
+      padding: 0.35rem 0.5rem;
+      margin-top: 0.3rem;
+      border-radius: 4px;
+      border: none;
+      font-size: 0.7rem;
+      font-weight: 500;
+      background: rgba(255, 255, 255, 0.2);
+      color: white;
+      cursor: pointer;
+      transition: background 0.2s;
+    }
+    
+    .filter-group .btn-filter:hover {
+      background: rgba(255, 255, 255, 0.3);
+    }
+    
+    .filter-group .date-input {
+      width: 100%;
+      padding: 0.35rem 0.5rem;
+      border-radius: 4px;
+      border: 1px solid rgba(255, 255, 255, 0.2);
+      font-size: 0.75rem;
+      background: rgba(255, 255, 255, 0.95);
+      box-sizing: border-box;
+      margin-bottom: 0.3rem;
+      cursor: pointer;
+    }
+    
+    .sidebar-actions {
+      padding: 0.8rem 1rem;
+      border-top: 1px solid rgba(255, 255, 255, 0.1);
+    }
+    
+    .sidebar-actions button {
+      width: 100%;
+      padding: 0.5rem;
+      border-radius: 6px;
+      border: none;
+      font-size: 0.8rem;
+      font-weight: 600;
+      cursor: pointer;
+      margin-bottom: 0.4rem;
+      transition: all 0.2s;
+    }
+    
+    .sidebar-actions .btn-apply {
+      background: #14b8a6;
+      color: white;
+    }
+    
+    .sidebar-actions .btn-apply:hover {
+      background: #0d9488;
+    }
+    
+    .sidebar-actions .btn-reset {
+      background: rgba(255, 255, 255, 0.15);
+      color: white;
+    }
+    
+    .sidebar-actions .btn-reset:hover {
+      background: rgba(255, 255, 255, 0.25);
+    }
+    
+    .sidebar-footer {
+      padding: 0.6rem 1rem;
+      border-top: 1px solid rgba(255, 255, 255, 0.1);
+      text-align: center;
+    }
+    
+    .sidebar-footer p {
+      color: rgba(255, 255, 255, 0.5);
+      font-size: 0.6rem;
+      margin: 0;
+    }
+    
+    #status {
+      color: rgba(255, 255, 255, 0.8);
+      font-size: 0.7rem;
+      margin-top: 0.3rem;
+    }
+    
+    .main-wrapper {
+      margin-left: 280px;
+      flex: 1;
+      min-height: 100vh;
+    }
+    
+    @media (max-width: 992px) {
+      .sidebar {
+        width: 240px;
+      }
+      .main-wrapper {
+        margin-left: 240px;
+      }
+    }
+
+    header {
+      background: linear-gradient(135deg, #1c4e80, #00a3cc);
+      color: #fff;
+      padding: 1.2rem 2rem;
+      box-shadow: 0 2px 8px rgba(0,0,0,0.15);
+      display: flex;
+      align-items: center;
+      gap: 1.5rem;
+    }
+
+    header .logo {
+      height: 80px;
+      width: auto;
+      background: white;
+      border-radius: 8px;
+      padding: 8px;
+    }
+
+    header .header-text {
+      flex: 1;
+      text-align: center;
+    }
+
+    header h1 {
+      margin: 0;
+      font-size: 1.6rem;
+    }
+
+    header p {
+      margin: 0.2rem 0 0;
+      opacity: 0.9;
+    }
+
+    .container {
+      padding: 1.5rem 2rem 2rem;
+      max-width: 1600px;
+      margin: 0 auto;
+    }
+
+    .card {
+      background: #fff;
+      border-radius: 12px;
+      padding: 1rem 1.2rem;
+      box-shadow: 0 1px 4px rgba(0,0,0,0.08);
+      margin-bottom: 1rem;
+    }
+
+    .kpi-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+      gap: 0.8rem;
+      margin-bottom: 1.5rem;
+    }
+
+    .kpi {
+      background: #fff;
+      border-radius: 10px;
+      padding: 0.8rem 0.9rem;
+      box-shadow: 0 1px 4px rgba(0,0,0,0.06);
+      border-left: 4px solid #1c4e80;
+    }
+
+    .kpi.accent1 {
+      border-left-color: #14b8a6;
+    }
+
+    .kpi.accent2 {
+      border-left-color: #f59e0b;
+    }
+
+    .kpi.accent3 {
+      border-left-color: #ef4444;
+    }
+
+    .kpi label {
+      font-size: 0.75rem;
+      text-transform: uppercase;
+      letter-spacing: 0.04em;
+      color: #555;
+      margin: 0;
+      margin-bottom: 0.3rem;
+      font-weight: 600;
+    }
+
+    .kpi-value {
+      font-size: 1.3rem;
+      font-weight: 700;
+      color: #1c4e80;
+    }
+
+    .kpi-sub {
+      font-size: 0.8rem;
+      color: #777;
+      margin-top: 0.15rem;
+    }
+
+    .charts-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(450px, 1fr));
+      gap: 1rem;
+      margin-top: 1rem;
+    }
+
+    .chart-card {
+      background: #fff;
+      border-radius: 12px;
+      padding: 1rem;
+      box-shadow: 0 1px 4px rgba(0,0,0,0.08);
+    }
+
+    .chart-title {
+      font-weight: 600;
+      font-size: 0.95rem;
+      margin: 0 0 0.5rem 0;
+      color: #1c4e80;
+    }
+
+    .chart {
+      width: 100%;
+      height: 350px;
+      position: relative;
+    }
+
+    .chart-loader {
+      position: absolute;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      background: rgba(255, 255, 255, 0.95);
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      z-index: 10;
+      border-radius: 8px;
+    }
+
+    .chart-loader.hidden {
+      display: none;
+    }
+
+    .spinner {
+      border: 4px solid #f3f4f6;
+      border-top: 4px solid #1c4e80;
+      border-radius: 50%;
+      width: 40px;
+      height: 40px;
+      animation: spin 1s linear infinite;
+    }
+
+    @keyframes spin {
+      0% { transform: rotate(0deg); }
+      100% { transform: rotate(360deg); }
+    }
+
+    .loader-text {
+      margin-top: 1rem;
+      color: #666;
+      font-size: 0.9rem;
+      font-weight: 500;
+    }
+
+    .loading {
+      text-align: center;
+      padding: 2rem;
+      color: #666;
+    }
+
+    .error {
+      background: #fee2e2;
+      color: #991b1b;
+      padding: 1rem;
+      border-radius: 8px;
+      margin: 1rem 0;
+    }
+  </style>
+</head>
+<body>
+  <!-- Sidebar de Filtros -->
+  <div class="sidebar">
+    <div class="sidebar-header">
+      <img src="img/logo.png" alt="Logo HESEGO" />
+      <h2>Dashboard Compras</h2>
+      <a href="index.html" class="btn-back">← Regresar al Inicio</a>
+    </div>
+
+    <div class="sidebar-filters">
+      <h3>📊 Estado de Datos</h3>
+      <div class="filter-group">
+        <label>Conexión Backend</label>
+        <p id="status" style="color: rgba(255, 255, 255, 0.9); font-size: 0.8rem; margin: 0.3rem 0;">Cargando...</p>
+        <button class="btn-filter" id="btnReloadData">🔄 Recargar Datos</button>
+      </div>
+      
+      <div class="filter-group" style="margin-top: 0.5rem; border-top: 1px solid rgba(255, 255, 255, 0.1); padding-top: 0.5rem;">
+        <label>Cargar Excel Manual (Opcional)</label>
+        <input type="file" id="excelFile" accept=".xlsx,.xls" style="font-size: 0.65rem;" />
+      </div>
+
+      <h3 style="margin-top: 1rem;">🔍 Filtros Aplicables</h3>
+
+      <!-- Rango de Fechas -->
+      <div class="filter-group">
+        <label>📅 Rango de Fechas OC</label>
+        <input type="date" id="dateStart" class="date-input" placeholder="Fecha inicio" />
+        <input type="date" id="dateEnd" class="date-input" placeholder="Fecha fin" />
+        <small style="color: rgba(255,255,255,0.6); font-size: 0.65rem; display: block; margin-top: 0.2rem;">
+          Filtra por fecha de Órdenes de Compra
+        </small>
+      </div>
+
+      <!-- Proceso -->
+      <div class="filter-group">
+        <label>💼 Proceso</label>
+        <input type="text" class="filter-search" id="processSearch" placeholder="Buscar proceso..." />
+        <select id="processFilter" multiple></select>
+        <button class="btn-filter" onclick="toggleAllOptions('processFilter')">Seleccionar Todo</button>
+        <small style="color: rgba(255,255,255,0.6); font-size: 0.65rem; display: block; margin-top: 0.2rem;">
+          Aplica a gráficos de descuentos
+        </small>
+      </div>
+
+      <!-- Proveedor -->
+      <div class="filter-group">
+        <label>🏢 Proveedor</label>
+        <input type="text" class="filter-search" id="supplierSearch" placeholder="Buscar proveedor..." />
+        <select id="supplierFilter" multiple></select>
+        <button class="btn-filter" onclick="toggleAllOptions('supplierFilter')">Seleccionar Todo</button>
+        <small style="color: rgba(255,255,255,0.6); font-size: 0.65rem; display: block; margin-top: 0.2rem;">
+          Aplica a gráficos de descuentos y proveedores
+        </small>
+      </div>
+    </div>
+
+    <div class="sidebar-actions">
+      <button class="btn-apply" onclick="applyFilters()">Aplicar Filtros</button>
+      <button class="btn-reset" onclick="resetFilters()">Limpiar Filtros</button>
+    </div>
+
+    <div class="sidebar-footer">
+      <p>Dashboard de Compras</p>
+      <p>HESEGO 2024</p>
+    </div>
+  </div>
+
+  <!-- Main Content -->
+  <div class="main-wrapper">
+    <header>
+      <img src="img/logo.png" alt="Logo" class="logo" />
+      <div class="header-text">
+        <h1>📋 Dashboard de Compras</h1>
+        <p>Análisis Integral de Requisiciones y Órdenes de Compra</p>
+      </div>
+      <a href="index.html" class="btn-back" style="margin-left: auto; margin-right: 0;">← Volver</a>
+    </header>
+
+    <div class="container">
+      <!-- Dashboard Content Area -->
+      <div id="dashboardContent">
+        <!-- Sección: Gráficas Descuentos -->
+        <div class="card" style="margin-bottom: 2rem;">
+          <h2 style="color: #1c4e80; font-size: 1.4rem; margin: 0 0 1.5rem 0; border-bottom: 3px solid #1c4e80; padding-bottom: 0.5rem;">
+            📊 Gráficas Descuentos
+          </h2>
+          
+          <div class="charts-grid">
+            <!-- Gráfico 1: % Total Descuentos por Proceso -->
+            <div class="chart-card">
+              <h3 class="chart-title">💰 % Total Descuentos por Proceso</h3>
+              <div id="chartPercentDiscounts" class="chart">
+                <div class="chart-loader" id="loaderPercentDiscounts">
+                  <div class="spinner"></div>
+                  <div class="loader-text">Cargando datos...</div>
+                </div>
+              </div>
+            </div>
+            
+            <!-- Gráfico 2: OC Procesadas vs Items Procesados -->
+            <div class="chart-card">
+              <h3 class="chart-title">📊 OC PROCESADAS VS ITEMS PROCESADOS</h3>
+              <div id="chartOCvsItems" class="chart" style="height: 400px;">
+                <div class="chart-loader" id="loaderOCvsItems">
+                  <div class="spinner"></div>
+                  <div class="loader-text">Cargando datos...</div>
+                </div>
+              </div>
+            </div>
+            
+            <!-- Gráfico 3: Top 10 Proveedores con Descuentos -->
+            <div class="chart-card" style="grid-column: span 2;">
+              <h3 class="chart-title">🏆 TOP 10 DCTOS PROVEEDORES</h3>
+              <div id="chartTopSuppliersDiscounts" class="chart" style="height: 400px;">
+                <div class="chart-loader" id="loaderTopSuppliersDiscounts">
+                  <div class="spinner"></div>
+                  <div class="loader-text">Cargando datos...</div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Sección: Gráficos Gerenciales -->
+        <div class="card" style="margin-bottom: 2rem;">
+          <h2 style="color: #1c4e80; font-size: 1.4rem; margin: 0 0 1.5rem 0; border-bottom: 3px solid #1c4e80; padding-bottom: 0.5rem;">
+            📈 Gráficos Gerenciales
+          </h2>
+          
+          <div class="charts-grid">
+            <!-- Gráfico 1: Promedio Días Aprobación RQ -->
+            <div class="chart-card" style="grid-column: span 2;">
+              <h3 class="chart-title">⏱️ PROMEDIO DÍAS APROBACIÓN RQ</h3>
+              <div id="chartAvgApprovalDays" class="chart" style="height: 400px;">
+                <div class="chart-loader" id="loaderAvgApprovalDays">
+                  <div class="spinner"></div>
+                  <div class="loader-text">Cargando datos...</div>
+                </div>
+              </div>
+            </div>
+            
+            <!-- Gráfico 2: Promedio Días Generación OC -->
+            <div class="chart-card" style="grid-column: span 2;">
+              <h3 class="chart-title">🚀 PROMEDIO DÍAS GENERACIÓN OC</h3>
+              <div id="chartAvgGenerationDays" class="chart" style="height: 400px;">
+                <div class="chart-loader" id="loaderAvgGenerationDays">
+                  <div class="spinner"></div>
+                  <div class="loader-text">Cargando datos...</div>
+                </div>
+              </div>
+            </div>
+            
+            <!-- Gráfico 3: Promedio Días Aprobación Gerencia -->
+            <div class="chart-card">
+              <h3 class="chart-title">🏢 PROM DÍAS APROBACIÓN GERENCIA</h3>
+              <div id="chartAvgApprovalManagement" class="chart" style="height: 350px;">
+                <div class="chart-loader" id="loaderAvgApprovalManagement">
+                  <div class="spinner"></div>
+                  <div class="loader-text">Cargando datos...</div>
+                </div>
+              </div>
+            </div>
+            
+            <!-- Gráfico 4: Cantidad Pendiente Aprobar RQ -->
+            <div class="chart-card">
+              <h3 class="chart-title">📋 CANT. PENDIENTE APROBAR RQ</h3>
+              <div id="chartPendingRQ" class="chart" style="height: 350px;">
+                <div class="chart-loader" id="loaderPendingRQ">
+                  <div class="spinner"></div>
+                  <div class="loader-text">Cargando datos...</div>
+                </div>
+              </div>
+            </div>
+            
+            <!-- Gráfico 5: Promedio Días Recepción Servicio -->
+            <div class="chart-card">
+              <h3 class="chart-title">📦 PROMEDIO DÍAS RECEPCIÓN SERVICIO</h3>
+              <div id="chartAvgReceptionService" class="chart" style="height: 350px;">
+                <div class="chart-loader" id="loaderAvgReceptionService">
+                  <div class="spinner"></div>
+                  <div class="loader-text">Cargando datos...</div>
+                </div>
+              </div>
+            </div>
+            
+            <!-- Gráfico 6: Cantidad Pendiente Aprobar OC -->
+            <div class="chart-card">
+              <h3 class="chart-title">📄 CANT. PTE APROBAR OC</h3>
+              <div id="chartPendingOC" class="chart" style="height: 350px;">
+                <div class="chart-loader" id="loaderPendingOC">
+                  <div class="spinner"></div>
+                  <div class="loader-text">Cargando datos...</div>
+                </div>
+              </div>
+            </div>
+            
+            <!-- Gráfico 7: Promedio Días Entrada Almacén -->
+            <div class="chart-card" style="grid-column: span 2;">
+              <h3 class="chart-title">🏭 PROMEDIO DÍAS ENTRADA ALMACÉN</h3>
+              <div id="chartAvgWarehouseEntry" class="chart" style="height: 350px;">
+                <div class="chart-loader" id="loaderAvgWarehouseEntry">
+                  <div class="spinner"></div>
+                  <div class="loader-text">Cargando datos...</div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    let allData = [];
+    let filteredData = [];
+    let rawData = {};
+    
+    // API FastAPI en puerto 8000
+    const API_BASE = '/api/compras';
+
+    // Función para cargar datos desde el backend (scope global)
+    window.loadDataFromBackend = async function() {
+      try {
+        document.getElementById('status').textContent = 'Cargando datos...';
+        
+        // Verificar datos cargados
+        const loadResponse = await fetch(`${API_BASE}/load`);
+        const loadResult = await loadResponse.json();
+        
+        if (!loadResult.success) {
+          throw new Error('Error cargando datos');
+        }
+        
+        // Obtener opciones de filtros
+        const filtersResponse = await fetch(`${API_BASE}/filters`);
+        const filtersResult = await filtersResponse.json();
+        
+        if (filtersResult.success) {
+          initializeFiltersFromAPI(filtersResult.filters);
+        }
+        
+        const counts = loadResult.counts;
+        document.getElementById('status').textContent = `✓ BD: ${counts.traza_req_oc.toLocaleString()} traza + ${counts.oc_descuentos.toLocaleString()} OC`;
+        
+        // Cargar dashboard inicial
+        await applyFilters();
+        
+      } catch (error) {
+        document.getElementById('status').textContent = '✗ Error al cargar: ' + error.message;
+        console.error(error);
+      }
+    };
+
+    // Cargar datos al iniciar la página
+    window.addEventListener('DOMContentLoaded', async () => {
+      // Configurar botón de recarga
+      const btnReload = document.getElementById('btnReloadData');
+      if (btnReload) {
+        btnReload.addEventListener('click', async () => {
+          await window.loadDataFromBackend();
+        });
+      }
+      
+      // Cargar datos inicial
+      await window.loadDataFromBackend();
+    });
+
+    // Inicializar filtros desde la API
+    function initializeFiltersFromAPI(filters) {
+      // Solo llenar filtros que existen en el HTML
+      fillSelect('processFilter', filters.procesos || []);
+      fillSelect('supplierFilter', filters.proveedores || []);
+    }
+
+    // Cargar archivo Excel (mantener por compatibilidad)
+    document.getElementById('excelFile').addEventListener('change', async (e) => {
+      const file = e.target.files[0];
+      if (!file) return;
+
+      try {
+        document.getElementById('status').textContent = 'Leyendo archivo...';
+        const arrayBuffer = await file.arrayBuffer();
+        const workbook = XLSX.read(arrayBuffer, { type: 'array' });
+        
+        // Leer hojas principales
+        rawData = {};
+        const sheetsToLoad = ['TRAZA REQ OC', 'OC DESCUENTOS', 'BASE OC GENERADAS', 'OC pendiente entrada almacen'];
+        
+        for (const sheetName of sheetsToLoad) {
+          if (workbook.SheetNames.includes(sheetName)) {
+            rawData[sheetName] = XLSX.utils.sheet_to_json(workbook.Sheets[sheetName]);
+          }
+        }
+
+        document.getElementById('status').textContent = '✓ Archivo cargado';
+        initializeFilters();
+        applyFilters();
+      } catch (error) {
+        document.getElementById('status').textContent = '✗ Error al cargar';
+        console.error(error);
+      }
+    });
+
+    function initializeFilters() {
+      const allStates = new Set();
+      const allProcesses = new Set();
+      const allSuppliers = new Set();
+      const allDocTypes = new Set();
+
+      // Recolectar valores únicos de todas las hojas
+      Object.values(rawData).forEach(sheet => {
+        sheet.forEach(row => {
+          if (row.Estado) allStates.add(row.Estado);
+          if (row.Proceso) allProcesses.add(row.Proceso);
+          if (row['Nombre Proveedor']) allSuppliers.add(row['Nombre Proveedor']);
+          if (row['Tipo Documento']) allDocTypes.add(row['Tipo Documento']);
+        });
+      });
+
+      // Llenar selectores
+      fillSelect('stateFilter', Array.from(allStates).sort());
+      fillSelect('processFilter', Array.from(allProcesses).sort());
+      fillSelect('supplierFilter', Array.from(allSuppliers).sort());
+      fillSelect('docTypeFilter', Array.from(allDocTypes).sort());
+    }
+
+    function fillSelect(selectId, items) {
+      const select = document.getElementById(selectId);
+      if (!select) {
+        console.warn(`Elemento ${selectId} no encontrado, omitiendo`);
+        return;
+      }
+      select.innerHTML = items.map(item => `<option value="${item}">${item}</option>`).join('');
+      
+      // Guardar items originales para búsqueda
+      select.dataset.allItems = JSON.stringify(items);
+    }
+
+    // Configurar búsqueda en filtros
+    function setupFilterSearch() {
+      const searchInputs = [
+        { searchId: 'stateSearch', selectId: 'stateFilter' },
+        { searchId: 'processSearch', selectId: 'processFilter' },
+        { searchId: 'supplierSearch', selectId: 'supplierFilter' }
+      ];
+
+      searchInputs.forEach(({ searchId, selectId }) => {
+        const searchInput = document.getElementById(searchId);
+        if (searchInput) {
+          searchInput.addEventListener('input', (e) => {
+            filterSelectOptions(selectId, e.target.value);
+          });
+        }
+      });
+    }
+
+    function filterSelectOptions(selectId, searchTerm) {
+      const select = document.getElementById(selectId);
+      const allItems = JSON.parse(select.dataset.allItems || '[]');
+      
+      const filtered = allItems.filter(item => 
+        item.toLowerCase().includes(searchTerm.toLowerCase())
+      );
+      
+      // Guardar selección actual
+      const currentSelection = Array.from(select.selectedOptions).map(o => o.value);
+      
+      // Actualizar opciones
+      select.innerHTML = filtered.map(item => {
+        const selected = currentSelection.includes(item) ? 'selected' : '';
+        return `<option value="${item}" ${selected}>${item}</option>`;
+      }).join('');
+    }
+
+    function toggleAllOptions(selectId) {
+      const select = document.getElementById(selectId);
+      const allSelected = Array.from(select.options).every(opt => opt.selected);
+      Array.from(select.options).forEach(opt => opt.selected = !allSelected);
+    }
+
+    // Inicializar búsqueda al cargar
+    window.addEventListener('DOMContentLoaded', () => {
+      setupFilterSearch();
+    });
+
+    async function applyFilters() {
+      console.log('🔄 === applyFilters INICIADO ===');
+      try {
+        // Obtener filtros
+        const filters = getFilters();
+        console.log('🔄 Filtros obtenidos:', filters);
+        
+        // Actualizar dashboard completo con todos los gráficos
+        await updateDashboardFromAPI(filters);
+        
+        console.log('✅ Filtros aplicados exitosamente');
+      } catch (error) {
+        console.error('❌ Error aplicando filtros:', error);
+      }
+    }
+    
+    function getFilters() {
+      return {
+        dateStart: document.getElementById('dateStart').value,
+        dateEnd: document.getElementById('dateEnd').value,
+        processes: Array.from(document.getElementById('processFilter').selectedOptions).map(o => o.value),
+        suppliers: Array.from(document.getElementById('supplierFilter').selectedOptions).map(o => o.value)
+      };
+    }
+
+    async function applyFiltersOld() {
+      try {
+        // Recolectar filtros
+        const filters = {
+          dateStart: document.getElementById('dateStart').value,
+          dateEnd: document.getElementById('dateEnd').value,
+          states: Array.from(document.getElementById('stateFilter').selectedOptions).map(o => o.value),
+          processes: Array.from(document.getElementById('processFilter').selectedOptions).map(o => o.value),
+          suppliers: Array.from(document.getElementById('supplierFilter').selectedOptions).map(o => o.value),
+          docTypes: Array.from(document.getElementById('docTypeFilter').selectedOptions).map(o => o.value)
+        };
+
+        // Log para depuración
+        console.log('Aplicando filtros:', filters);
+        document.getElementById('status').textContent = 'Aplicando filtros...';
+
+        // Actualizar dashboard usando la API
+        await updateDashboardFromAPI(filters);
+        
+        document.getElementById('status').textContent = '✓ Filtros aplicados';
+
+      } catch (error) {
+        console.error('Error aplicando filtros:', error);
+        document.getElementById('status').textContent = '✗ Error aplicando filtros';
+      }
+    }
+
+    async function updateDashboardFromAPI(filters) {
+      console.log('🚀 === updateDashboardFromAPI INICIADO ===');
+      console.log('🚀 Filters:', filters);
+      
+      try {
+        // Obtener KPIs
+        console.log('📊 Obteniendo KPIs...');
+        const kpisResponse = await fetch(`${API_BASE}/kpis`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(filters)
+        });
+        const kpisResult = await kpisResponse.json();
+        
+        if (kpisResult.success) {
+          console.log('✅ KPIs obtenidos:', kpisResult.kpis);
+          updateKPIsFromAPI(kpisResult.kpis);
+        }
+
+        // Obtener datos de gráficos
+        console.log('📈 Iniciando carga de gráficos...');
+        await updateChartsFromAPI(filters);
+        console.log('✅ Gráficos completados');
+
+      } catch (error) {
+        console.error('❌ Error actualizando dashboard:', error);
+      }
+    }
+
+    function updateKPIsFromAPI(kpis) {
+      // Actualizar KPIs solo si los elementos existen
+      const kpiElements = [
+        { id: 'kpiTotalOC', value: kpis.totalOC.toLocaleString() },
+        { id: 'kpiTotalRQ', value: kpis.totalRQ.toLocaleString() },
+        { id: 'kpiTotalItems', value: kpis.totalItems.toLocaleString() },
+        { id: 'kpiTotalSpend', value: '₡' + kpis.totalSpend.toLocaleString('es-CR', {maximumFractionDigits: 0}) },
+        { id: 'kpiDispatched', value: kpis.percentDispatched.toFixed(1) + '%' }
+      ];
+      
+      kpiElements.forEach(({ id, value }) => {
+        const element = document.getElementById(id);
+        if (element) {
+          element.textContent = value;
+        } else {
+          console.warn(`⚠️ Elemento KPI no encontrado: ${id}`);
+        }
+      });
+    }
+
+    // Funciones auxiliares para manejar loaders
+    function showLoader(loaderId) {
+      const loader = document.getElementById(loaderId);
+      if (loader) loader.classList.remove('hidden');
+    }
+
+    function hideLoader(loaderId) {
+      const loader = document.getElementById(loaderId);
+      if (loader) loader.classList.add('hidden');
+    }
+
+    async function updateChartsFromAPI(filters) {
+      console.log('=== updateChartsFromAPI INICIADO ===');
+      console.log('Filters recibidos:', filters);
+      
+      // Solo cargar gráficos que existen en el DOM
+      const chartPromises = [];
+      
+      // Gráficos de la sección "Gráficas Descuentos"
+      if (document.getElementById('chartOCvsItems')) {
+        chartPromises.push(updateChartOCvsItemsAPI(filters).catch(e => console.error('Error chart OC vs Items:', e)));
+      }
+      if (document.getElementById('chartPercentDiscounts')) {
+        chartPromises.push(updateChartPercentDiscountsAPI(filters).catch(e => console.error('Error chart percent discounts:', e)));
+      }
+      if (document.getElementById('chartTopSuppliersDiscounts')) {
+        chartPromises.push(updateChartTopSuppliersDiscountsAPI(filters).catch(e => console.error('Error chart top suppliers:', e)));
+      }
+      
+      // Gráficos de la sección "Gráficos Gerenciales"
+      if (document.getElementById('chartAvgApprovalDays')) {
+        chartPromises.push(updateChartAvgApprovalDaysAPI(filters).catch(e => console.error('Error chart avg approval days:', e)));
+      }
+      if (document.getElementById('chartAvgGenerationDays')) {
+        chartPromises.push(updateChartAvgGenerationDaysAPI(filters).catch(e => console.error('Error chart avg generation days:', e)));
+      }
+      if (document.getElementById('chartAvgApprovalManagement')) {
+        chartPromises.push(updateChartAvgApprovalManagementAPI(filters).catch(e => console.error('Error chart avg approval management:', e)));
+      }
+      if (document.getElementById('chartPendingRQ')) {
+        chartPromises.push(updateChartPendingRQAPI(filters).catch(e => console.error('Error chart pending RQ:', e)));
+      }
+      if (document.getElementById('chartAvgReceptionService')) {
+        chartPromises.push(updateChartAvgReceptionServiceAPI(filters).catch(e => console.error('Error chart avg reception service:', e)));
+      }
+      if (document.getElementById('chartPendingOC')) {
+        chartPromises.push(updateChartPendingOCAPI(filters).catch(e => console.error('Error chart pending OC:', e)));
+      }
+      if (document.getElementById('chartAvgWarehouseEntry')) {
+        chartPromises.push(updateChartAvgWarehouseEntryAPI(filters).catch(e => console.error('Error chart avg warehouse entry:', e)));
+      }
+      
+      // Otros gráficos (solo si existen en el HTML)
+      if (document.getElementById('chartTrendOC')) {
+        chartPromises.push(updateChartTrendOCAPI(filters).catch(e => console.error('Error chart trend OC:', e)));
+      }
+      if (document.getElementById('chartOCByState')) {
+        chartPromises.push(updateChartOCByStateAPI(filters).catch(e => console.error('Error chart OC by state:', e)));
+      }
+      
+      console.log('Total de gráficos a cargar:', chartPromises.length);
+      await Promise.allSettled(chartPromises);
+      console.log('=== updateChartsFromAPI COMPLETADO ===');
+    }
+
+    async function updateChartOCvsItemsAPI(filters) {
+      showLoader('loaderOCvsItems');
+      console.log('🚀 Actualizando gráfico OC vs Items con filtros:', filters);
+      try {
+        const response = await fetch(`${API_BASE}/charts/oc-vs-items-by-process`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(filters)
+        });
+        const result = await response.json();
+        
+        if (result.success && result.data) {
+          const { procesos, totalOC, totalItems, total } = result.data;
+          
+          // Crear dos trazas para las barras agrupadas
+          const trace1 = {
+            x: procesos,
+            y: totalOC,
+            name: 'Total Ordenes Compras',
+            type: 'bar',
+            marker: {
+              color: '#2e5f8a',  // Azul oscuro
+              line: { color: '#1c4560', width: 1 }
+            },
+            text: totalOC,
+            textposition: 'outside',
+            textfont: { size: 10, color: '#333', weight: 'bold' },
+            hovertemplate: '<b>%{x}</b><br>OC: %{y}<extra></extra>'
+          };
+          
+          const trace2 = {
+            x: procesos,
+            y: totalItems,
+            name: 'Total Items Procesados',
+            type: 'bar',
+            marker: {
+              color: '#7db9de',  // Azul claro
+              line: { color: '#5a9bc5', width: 1 }
+            },
+            text: totalItems,
+            textposition: 'outside',
+            textfont: { size: 10, color: '#333', weight: 'bold' },
+            hovertemplate: '<b>%{x}</b><br>Items: %{y}<extra></extra>'
+          };
+          
+          const layout = {
+            title: {
+              text: `OC PROCESADAS VS ITEMS PROCESADOS<br><br><span style="font-size:28px; color:#999; font-weight:bold;">${total}</span>`,
+              font: { size: 12, color: '#333', weight: 'bold' },
+              x: 0.5,
+              xanchor: 'center'
+            },
+            barmode: 'group',
+            xaxis: { 
+              title: '',
+              tickangle: -15,
+              tickfont: { size: 9 },
+              automargin: true
+            },
+            yaxis: { 
+              title: '',
+              range: [0, Math.max(...totalItems) * 1.15]
+            },
+            margin: { l: 60, r: 40, t: 100, b: 120 },
+            plot_bgcolor: '#f0f0f0',
+            paper_bgcolor: 'white',
+            showlegend: true,
+            legend: {
+              x: 0.5,
+              y: -0.25,
+              xanchor: 'center',
+              orientation: 'h',
+              font: { size: 10 }
+            }
+          };
+          
+          Plotly.newPlot('chartOCvsItems', [trace1, trace2], layout, { responsive: true, displayModeBar: false });
+          hideLoader('loaderOCvsItems');
+        }
+      } catch (error) {
+        console.error('Error en gráfico OC vs Items:', error);
+        hideLoader('loaderOCvsItems');
+      }
+    }
+
+    async function updateChartPercentDiscountsAPI(filters) {
+      showLoader('loaderPercentDiscounts');
+      try {
+        const response = await fetch(`${API_BASE}/charts/percent-discounts-by-process`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(filters)
+        });
+        const result = await response.json();
+        
+        if (result.success && result.data) {
+          const { procesos, percentages, average } = result.data;
+          
+          // Crear gráfico de barras verticales
+          const trace = {
+            x: procesos,
+            y: percentages,
+            type: 'bar',
+            marker: { 
+              color: '#1fb2dd',  // Color azul similar a la imagen
+              line: { color: '#1890c7', width: 1 }
+            },
+            text: percentages.map(p => `${p}%`),
+            textposition: 'outside',
+            textfont: { size: 11, color: '#333', weight: 'bold' },
+            hovertemplate: '<b>%{x}</b><br>%{y:.1f}%<extra></extra>'
+          };
+          
+          const layout = {
+            title: {
+                text: `% Total Descuentos<br><br><span style="font-size:28px; color:#999; font-weight:bold;">${average}%</span>`,
+              font: { size: 12, color: '#333' },
+              x: 0.5,
+              xanchor: 'center',
+              y: 0.90,
+              yanchor: 'top'
+            },
+            xaxis: { 
+              title: '',
+              tickangle: -15,
+              tickfont: { size: 9 },
+              automargin: true
+            },
+            yaxis: { 
+              title: '',
+              tickformat: '.1f',
+              range: [0, Math.max(...percentages, 1) * 1.2],
+              showgrid: true,
+              gridcolor: '#e5e5e5'
+            },
+            margin: { l: 50, r: 40, t: 120, b: 100 },
+            plot_bgcolor: '#f0f0f0',
+            paper_bgcolor: 'white',
+            showlegend: false
+          };
+          
+          Plotly.newPlot('chartPercentDiscounts', [trace], layout, { responsive: true, displayModeBar: false });
+          hideLoader('loaderPercentDiscounts');
+        }
+      } catch (error) {
+        console.error('Error en gráfico % Descuentos:', error);
+        hideLoader('loaderPercentDiscounts');
+      }
+    }
+
+    async function updateChartTopSuppliersDiscountsAPI(filters) {
+      showLoader('loaderTopSuppliersDiscounts');
+      try {
+        const response = await fetch(`${API_BASE}/charts/top-suppliers-discounts`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(filters)
+        });
+        const result = await response.json();
+        
+        if (result.success && result.data) {
+          const { proveedores, montos, percentages } = result.data;
+          
+          // Formatear montos para display
+          const montosFormateados = montos.map(m => `₡${m.toLocaleString('es-CR', {maximumFractionDigits: 0})}`);
+          const pctFormateados = percentages.map(p => `${p.toFixed(2)}%`);
+          
+          // Crear gráfico de línea con marcadores
+          const trace = {
+            x: proveedores,
+            y: montos,
+            type: 'scatter',
+            mode: 'lines+markers+text',
+            line: {
+              color: '#2196f3',
+              width: 3,
+              shape: 'linear'
+            },
+            marker: {
+              color: '#2196f3',
+              size: 10,
+              line: { color: '#1976d2', width: 2 }
+            },
+            text: montosFormateados,
+            textposition: 'top center',
+            textfont: { size: 9, color: '#000', weight: 'bold' },
+            hovertemplate: '<b>%{x}</b><br>Monto: %{text}<br>Porcentaje: ' + pctFormateados.map((p, i) => p).join('<br>Porcentaje: ') + '<extra></extra>'
+          };
+          
+          // Crear anotaciones para los porcentajes (segunda fila)
+          const annotations = proveedores.map((prov, i) => ({
+            x: prov,
+            y: montos[i],
+            text: pctFormateados[i],
+            showarrow: false,
+            yshift: -25,
+            font: { size: 9, color: '#000', weight: 'bold' },
+            xanchor: 'center'
+          }));
+          
+          const layout = {
+            title: {
+              text: 'TOP 10 DCTOS PROVEEDORES',
+              font: { size: 14, color: '#333', weight: 'bold' },
+              x: 0.5,
+              xanchor: 'center'
+            },
+            xaxis: {
+              title: '',
+              tickangle: -45,
+              tickfont: { size: 8 },
+              automargin: true
+            },
+            yaxis: {
+              title: '',
+              tickformat: ',.0f',
+              range: [0, Math.max(...montos) * 1.25],
+              showgrid: true,
+              gridcolor: '#e5e5e5'
+            },
+            annotations: annotations,
+            margin: { l: 80, r: 40, t: 80, b: 150 },
+            plot_bgcolor: '#f0f0f0',
+            paper_bgcolor: 'white',
+            showlegend: false
+          };
+          
+          Plotly.newPlot('chartTopSuppliersDiscounts', [trace], layout, { responsive: true, displayModeBar: false });
+          hideLoader('loaderTopSuppliersDiscounts');
+        }
+      } catch (error) {
+        console.error('Error en gráfico Top Proveedores Descuentos:', error);
+        hideLoader('loaderTopSuppliersDiscounts');
+      }
+    }
+
+    async function updateChartAvgGenerationDaysAPI(filters) {
+      console.log('=== Iniciando updateChartAvgGenerationDaysAPI ===');
+      console.log('Filters:', filters);
+      
+      showLoader('loaderAvgGenerationDays');
+      try {
+        console.log('Haciendo fetch a:', `${API_BASE}/charts/avg-generation-days`);
+        const response = await fetch(`${API_BASE}/charts/avg-generation-days`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(filters)
+        });
+        
+        console.log('Response status:', response.status);
+        const result = await response.json();
+        console.log('Result:', result);
+        
+        if (result.success && result.data) {
+          const { aprobadores, promedios } = result.data;
+          console.log('Aprobadores:', aprobadores);
+          console.log('Promedios:', promedios);
+          
+          // Crear gráfico de barras horizontales
+          const trace = {
+            x: promedios,
+            y: aprobadores,
+            type: 'bar',
+            orientation: 'h',
+            marker: {
+              color: '#14b8a6',
+              line: { color: '#0d9488', width: 1 }
+            },
+            text: promedios.map(p => p.toFixed(1)),
+            textposition: 'outside',
+            textfont: { size: 11, color: '#000', weight: 'bold' },
+            hovertemplate: '<b>%{y}</b><br>Promedio: %{x:.1f} días<extra></extra>'
+          };
+          
+          const layout = {
+            title: {
+              text: 'PROMEDIO DÍAS GENERACIÓN OC',
+              font: { size: 14, color: '#333', weight: 'bold' },
+              x: 0.5,
+              xanchor: 'center'
+            },
+            xaxis: {
+              title: 'Días Promedio',
+              tickfont: { size: 10 },
+              showgrid: true,
+              gridcolor: '#e5e5e5'
+            },
+            yaxis: {
+              title: '',
+              tickfont: { size: 9 },
+              automargin: true
+            },
+            margin: { l: 150, r: 60, t: 60, b: 60 },
+            plot_bgcolor: '#f8f9fa',
+            paper_bgcolor: 'white',
+            showlegend: false
+          };
+          
+          console.log('Creando gráfico con Plotly...');
+          await Plotly.newPlot('chartAvgGenerationDays', [trace], layout, { responsive: true, displayModeBar: false });
+          console.log('Gráfico creado exitosamente');
+          hideLoader('loaderAvgGenerationDays');
+        } else {
+          console.error('Sin datos o error en result:', result);
+          hideLoader('loaderAvgGenerationDays');
+        }
+      } catch (error) {
+        console.error('Error en gráfico Promedio Días Generación OC:', error);
+        console.error('Error stack:', error.stack);
+        hideLoader('loaderAvgGenerationDays');
+      }
+    }
+
+    async function updateChartAvgApprovalManagementAPI(filters) {
+      showLoader('loaderAvgApprovalManagement');
+      try {
+        const response = await fetch(`${API_BASE}/charts/avg-approval-management-days`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(filters)
+        });
+        const result = await response.json();
+        
+        if (result.success && result.data) {
+          const { aprobadores, promedios } = result.data;
+          const trace = {
+            x: aprobadores,
+            y: promedios,
+            type: 'bar',
+            marker: { color: '#0ea5e9' },
+            text: promedios.map(p => p.toFixed(1)),
+            textposition: 'outside'
+          };
+          const layout = {
+            xaxis: { title: '', tickangle: -45 },
+            yaxis: { 
+              title: 'Días Promedio',
+              range: [0, Math.max(...promedios) * 1.15]
+            },
+            margin: { l: 50, r: 30, t: 50, b: 100 },
+            showlegend: false
+          };
+          await Plotly.newPlot('chartAvgApprovalManagement', [trace], layout, { responsive: true, displayModeBar: false });
+        }
+        hideLoader('loaderAvgApprovalManagement');
+      } catch (error) {
+        console.error('Error en gráfico aprobación gerencia:', error);
+        hideLoader('loaderAvgApprovalManagement');
+      }
+    }
+
+    async function updateChartPendingRQAPI(filters) {
+      showLoader('loaderPendingRQ');
+      try {
+        const response = await fetch(`${API_BASE}/charts/pending-approve-rq`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(filters)
+        });
+        const result = await response.json();
+        
+        if (result.success && result.data) {
+          const { aprobadores, cantidades } = result.data;
+          const trace = {
+            x: aprobadores,
+            y: cantidades,
+            type: 'bar',
+            marker: { 
+              color: '#f59e0b',
+              line: { color: '#d97706', width: 1 }
+            },
+            text: cantidades.map(v => v.toLocaleString()),
+            textposition: 'none',  // No mostrar dentro de la barra
+            textfont: { size: 10, weight: 'bold' },
+            hovertemplate: '<b>%{x}</b><br>Pendientes: %{y:,}<extra></extra>'
+          };
+          const layout = {
+            xaxis: { 
+              title: 'Aprobador',
+              tickangle: -45,
+              tickfont: { size: 9 },
+              automargin: true
+            },
+            yaxis: { 
+              title: 'Cantidad Pendiente',
+              tickformat: ',',
+              gridcolor: '#e5e7eb'
+            },
+            margin: { l: 60, r: 30, t: 40, b: 100 },
+            plot_bgcolor: '#fffbeb',
+            paper_bgcolor: 'white',
+            showlegend: false
+          };
+          await Plotly.newPlot('chartPendingRQ', [trace], layout, { responsive: true, displayModeBar: false });
+        }
+        hideLoader('loaderPendingRQ');
+      } catch (error) {
+        console.error('Error en gráfico pendiente RQ:', error);
+        hideLoader('loaderPendingRQ');
+      }
+    }
+
+    async function updateChartAvgReceptionServiceAPI(filters) {
+      showLoader('loaderAvgReceptionService');
+      try {
+        const response = await fetch(`${API_BASE}/charts/avg-reception-service-days`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(filters)
+        });
+        const result = await response.json();
+        
+        if (result.success && result.data) {
+          const { usuarios, promedios } = result.data;
+          const trace = {
+            x: usuarios,
+            y: promedios,
+            type: 'bar',
+            marker: { 
+              color: '#06b6d4',
+              line: { color: '#0891b2', width: 1 }
+            },
+            text: promedios.map(p => p.toFixed(1) + 'd'),
+            textposition: 'outside',
+            textfont: { size: 10, weight: 'bold' },
+            hovertemplate: '<b>%{x}</b><br>Promedio: %{y:.1f} días<extra></extra>'
+          };
+          const layout = {
+            xaxis: { 
+              title: 'Usuario',
+              tickangle: -45,
+              tickfont: { size: 9 },
+              automargin: true
+            },
+            yaxis: { 
+              title: 'Días Promedio',
+              gridcolor: '#e5e7eb',
+              range: [0, Math.max(...promedios) * 1.15]
+            },
+            margin: { l: 60, r: 30, t: 60, b: 100 },
+            plot_bgcolor: '#ecfeff',
+            paper_bgcolor: 'white',
+            showlegend: false
+          };
+          await Plotly.newPlot('chartAvgReceptionService', [trace], layout, { responsive: true, displayModeBar: false });
+        }
+        hideLoader('loaderAvgReceptionService');
+      } catch (error) {
+        console.error('Error en gráfico recepción servicio:', error);
+        hideLoader('loaderAvgReceptionService');
+      }
+    }
+
+    async function updateChartPendingOCAPI(filters) {
+      showLoader('loaderPendingOC');
+      try {
+        const response = await fetch(`${API_BASE}/charts/pending-approve-oc`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(filters)
+        });
+        const result = await response.json();
+        
+        if (result.success && result.data) {
+          const { aprobadores, cantidades } = result.data;
+          const trace = {
+            x: ['PTE APROBACIÓN'],
+            y: [cantidades.reduce((a, b) => a + b, 0)],
+            type: 'bar',
+            marker: { color: '#0ea5e9' },
+            text: [cantidades.reduce((a, b) => a + b, 0)],
+            textposition: 'outside',
+            textfont: { size: 24, weight: 'bold' }
+          };
+          const layout = {
+            xaxis: { title: '' },
+            yaxis: { 
+              title: 'Cantidad', 
+              showticklabels: false,
+              range: [0, cantidades.reduce((a, b) => a + b, 0) * 1.15]
+            },
+            margin: { l: 50, r: 30, t: 80, b: 60 },
+            showlegend: false
+          };
+          await Plotly.newPlot('chartPendingOC', [trace], layout, { responsive: true, displayModeBar: false });
+        }
+        hideLoader('loaderPendingOC');
+      } catch (error) {
+        console.error('Error en gráfico pendiente OC:', error);
+        hideLoader('loaderPendingOC');
+      }
+    }
+
+    async function updateChartAvgWarehouseEntryAPI(filters) {
+      showLoader('loaderAvgWarehouseEntry');
+      try {
+        const response = await fetch(`${API_BASE}/charts/avg-warehouse-entry-days`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(filters)
+        });
+        const result = await response.json();
+        
+        if (result.success && result.data) {
+          const { usuarios, promedios } = result.data;
+          const trace = {
+            x: usuarios,
+            y: promedios,
+            type: 'bar',
+            marker: { 
+              color: '#10b981',
+              line: { color: '#059669', width: 1 }
+            },
+            text: promedios.map(p => p.toFixed(1) + 'd'),
+            textposition: 'outside',
+            textfont: { size: 10, weight: 'bold' },
+            hovertemplate: '<b>%{x}</b><br>Promedio: %{y:.1f} días<extra></extra>'
+          };
+          const layout = {
+            xaxis: { 
+              title: 'Usuario',
+              tickangle: -45,
+              tickfont: { size: 9 },
+              automargin: true
+            },
+            yaxis: { 
+              title: 'Días Promedio',
+              gridcolor: '#e5e7eb',
+              range: [0, Math.max(...promedios) * 1.15]
+            },
+            margin: { l: 60, r: 30, t: 60, b: 100 },
+            plot_bgcolor: '#f0fdf4',
+            paper_bgcolor: 'white',
+            showlegend: false
+          };
+          await Plotly.newPlot('chartAvgWarehouseEntry', [trace], layout, { responsive: true, displayModeBar: false });
+        }
+        hideLoader('loaderAvgWarehouseEntry');
+      } catch (error) {
+        console.error('Error en gráfico entrada almacén:', error);
+        hideLoader('loaderAvgWarehouseEntry');
+      }
+    }
+
+    async function updateChartAvgApprovalDaysAPI(filters) {
+      console.log('=== Iniciando updateChartAvgApprovalDaysAPI ===');
+      console.log('Filters:', filters);
+      console.log('API_BASE:', API_BASE);
+      
+      showLoader('loaderAvgApprovalDays');
+      try {
+        console.log('Haciendo fetch a:', `${API_BASE}/charts/avg-approval-days`);
+        const response = await fetch(`${API_BASE}/charts/avg-approval-days`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(filters)
+        });
+        
+        console.log('Response status:', response.status);
+        const result = await response.json();
+        console.log('Result:', result);
+        
+        if (result.success && result.data) {
+          const { aprobadores, promedios } = result.data;
+          console.log('Aprobadores:', aprobadores);
+          console.log('Promedios:', promedios);
+          
+          // Crear gráfico de barras horizontales
+          const trace = {
+            x: promedios,
+            y: aprobadores,
+            type: 'bar',
+            orientation: 'h',
+            marker: {
+              color: '#0ea5e9',
+              line: { color: '#0284c7', width: 1 }
+            },
+            text: promedios.map(p => p.toFixed(1)),
+            textposition: 'outside',
+            textfont: { size: 11, color: '#000', weight: 'bold' },
+            hovertemplate: '<b>%{y}</b><br>Promedio: %{x:.1f} días<extra></extra>'
+          };
+          
+          const layout = {
+            title: {
+              text: 'PROMEDIO DÍAS APROBACIÓN RQ',
+              font: { size: 14, color: '#333', weight: 'bold' },
+              x: 0.5,
+              xanchor: 'center'
+            },
+            xaxis: {
+              title: 'Días Promedio',
+              tickfont: { size: 10 },
+              showgrid: true,
+              gridcolor: '#e5e5e5'
+            },
+            yaxis: {
+              title: '',
+              tickfont: { size: 9 },
+              automargin: true
+            },
+            margin: { l: 150, r: 60, t: 60, b: 60 },
+            plot_bgcolor: '#f8f9fa',
+            paper_bgcolor: 'white',
+            showlegend: false
+          };
+          
+          console.log('Creando gráfico con Plotly...');
+          await Plotly.newPlot('chartAvgApprovalDays', [trace], layout, { responsive: true, displayModeBar: false });
+          console.log('Gráfico creado exitosamente');
+          hideLoader('loaderAvgApprovalDays');
+        } else {
+          console.error('Sin datos o error en result:', result);
+          hideLoader('loaderAvgApprovalDays');
+        }
+      } catch (error) {
+        console.error('Error en gráfico Promedio Días Aprobación:', error);
+        console.error('Error stack:', error.stack);
+        hideLoader('loaderAvgApprovalDays');
+      }
+    }
+
+    async function updateChartOCByStateAPI(filters) {
+      try {
+        const response = await fetch(`${API_BASE}/charts/oc-by-state`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(filters)
+        });
+        const result = await response.json();
+        
+        if (result.success && result.data) {
+          const trace = {
+            x: result.data.values,
+            y: result.data.labels,
+            type: 'bar',
+            orientation: 'h',
+            marker: { color: '#f59e0b' },
+            text: result.data.values.map(String),
+            textposition: 'outside',
+            textfont: { size: 11, color: '#222' }
+          };
+
+          const layout = {
+            xaxis: { title: 'Cantidad' },
+            yaxis: { title: '', automargin: true },
+            margin: { l: 150, r: 40, t: 20, b: 40 },
+            height: 350
+          };
+
+          Plotly.newPlot('chartOCByState', [trace], layout, {responsive: true});
+        }
+      } catch (error) {
+        console.error('Error en gráfico OC por Estado:', error);
+      }
+    }
+
+    async function updateChartTrendOCAPI(filters) {
+      try {
+        const response = await fetch(`${API_BASE}/charts/trend-oc`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(filters)
+        });
+        const result = await response.json();
+        
+        if (result.success && result.data) {
+          const trace = {
+            x: result.data.labels,
+            y: result.data.values,
+            type: 'scatter',
+            mode: 'lines+markers',
+            line: { color: '#1c4e80', width: 3 },
+            marker: { size: 8 }
+          };
+
+          const layout = {
+            xaxis: { title: 'Mes' },
+            yaxis: { title: 'OC Generadas' },
+            margin: { b: 100 },
+            height: 350
+          };
+
+          Plotly.newPlot('chartTrendOC', [trace], layout, {responsive: true});
+        }
+      } catch (error) {
+        console.error('Error en gráfico Tendencia OC:', error);
+      }
+    }
+
+    async function updateChartDiscountsByProcessAPI(filters) {
+      try {
+        const response = await fetch(`${API_BASE}/charts/discounts-by-process`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(filters)
+        });
+        const result = await response.json();
+        
+        if (result.success && result.data) {
+          const trace = {
+            labels: result.data.labels,
+            values: result.data.values,
+            type: 'pie',
+            marker: {
+              colors: ['#14b8a6', '#f59e0b', '#ef4444', '#8b5cf6', '#06b6d4']
+            }
+          };
+
+          const layout = {
+            height: 350,
+            margin: { t: 30, b: 30, l: 30, r: 30 }
+          };
+
+          Plotly.newPlot('chartDiscountsByProcess', [trace], layout, {responsive: true});
+        }
+      } catch (error) {
+        console.error('Error en gráfico Descuentos:', error);
+      }
+    }
+
+    async function updateChartTopSuppliersAPI(filters) {
+      try {
+        const response = await fetch(`${API_BASE}/charts/top-suppliers`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(filters)
+        });
+        const result = await response.json();
+        
+        if (result.success && result.data) {
+          const trace = {
+            x: result.data.values,
+            y: result.data.labels,
+            type: 'bar',
+            orientation: 'h',
+            marker: { color: '#f59e0b' }
+          };
+
+          const layout = {
+            xaxis: { title: 'Monto (₡)' },
+            yaxis: { title: 'Proveedor' },
+            margin: { l: 150 },
+            height: 350
+          };
+
+          Plotly.newPlot('chartTopSuppliers', [trace], layout, {responsive: true});
+        }
+      } catch (error) {
+        console.error('Error en gráfico Top Proveedores:', error);
+      }
+    }
+
+    async function updateChartDaysByStageAPI(filters) {
+      try {
+        const response = await fetch(`${API_BASE}/charts/days-by-stage`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(filters)
+        });
+        const result = await response.json();
+        
+        if (result.success && result.data) {
+          const trace = {
+            x: result.data.labels,
+            y: result.data.values,
+            type: 'bar',
+            marker: { color: '#ef4444' }
+          };
+
+          const layout = {
+            yaxis: { title: 'Días Promedio' },
+            xaxis: { tickangle: -45 },
+            margin: { b: 100 },
+            height: 350
+          };
+
+          Plotly.newPlot('chartDaysByStage', [trace], layout, {responsive: true});
+        }
+      } catch (error) {
+        console.error('Error en gráfico Días por Etapa:', error);
+      }
+    }
+
+    async function updateChartSpendByProcessAPI(filters) {
+      try {
+        const response = await fetch(`${API_BASE}/charts/spend-by-process`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(filters)
+        });
+        const result = await response.json();
+        
+        if (result.success && result.data) {
+          const trace = {
+            x: result.data.labels,
+            y: result.data.values,
+            type: 'bar',
+            marker: { color: '#0d9488' }
+          };
+
+          const layout = {
+            yaxis: { title: 'Monto (₡)' },
+            xaxis: { tickangle: -45 },
+            margin: { b: 100 },
+            height: 350
+          };
+
+          Plotly.newPlot('chartSpendByProcess', [trace], layout, {responsive: true});
+        }
+      } catch (error) {
+        console.error('Error en gráfico Gasto por Proceso:', error);
+      }
+    }
+
+    function resetFilters() {
+      // Limpiar fechas
+      const dateStart = document.getElementById('dateStart');
+      const dateEnd = document.getElementById('dateEnd');
+      if (dateStart) dateStart.value = '';
+      if (dateEnd) dateEnd.value = '';
+      
+      // Limpiar selectores que existen
+      const processFilter = document.getElementById('processFilter');
+      const supplierFilter = document.getElementById('supplierFilter');
+      
+      if (processFilter) {
+        processFilter.querySelectorAll('option').forEach(o => o.selected = false);
+      }
+      if (supplierFilter) {
+        supplierFilter.querySelectorAll('option').forEach(o => o.selected = false);
+      }
+      
+      // Limpiar búsquedas
+      const processSearch = document.getElementById('processSearch');
+      const supplierSearch = document.getElementById('supplierSearch');
+      if (processSearch) processSearch.value = '';
+      if (supplierSearch) supplierSearch.value = '';
+      
+      // Restaurar todas las opciones después de limpiar búsqueda
+      if (processFilter && processFilter.dataset.allItems) {
+        const allItems = JSON.parse(processFilter.dataset.allItems);
+        processFilter.innerHTML = allItems.map(item => `<option value="${item}">${item}</option>`).join('');
+      }
+      if (supplierFilter && supplierFilter.dataset.allItems) {
+        const allItems = JSON.parse(supplierFilter.dataset.allItems);
+        supplierFilter.innerHTML = allItems.map(item => `<option value="${item}">${item}</option>`).join('');
+      }
+      
+      // Aplicar filtros vacíos
+      applyFilters();
+    }
+
+    function updateDashboard() {
+      // Esta función ahora solo se usa para compatibilidad con carga local
+      updateKPIs();
+      updateCharts();
+    }
+
+    function updateKPIs() {
+      const ocData = rawData['BASE OC GENERADAS'] || [];
+      const rqData = rawData['TRAZA REQ OC'] || [];
+      const discountData = rawData['OC DESCUENTOS'] || [];
+
+      const totalOC = new Set(ocData.map(r => r['Orden Compra|Numero OC'])).size;
+      const totalRQ = new Set(rqData.map(r => r['Requisición|Numero'])).size;
+      const totalItems = ocData.length;
+      const totalSpend = ocData.reduce((sum, row) => sum + (parseFloat(row.Total) || 0), 0);
+      const dispatched = ocData.filter(r => r.Estado === 'DESPACHADO').length;
+
+      document.getElementById('kpiTotalOC').textContent = totalOC.toLocaleString();
+      document.getElementById('kpiTotalRQ').textContent = totalRQ.toLocaleString();
+      document.getElementById('kpiTotalItems').textContent = totalItems.toLocaleString();
+      document.getElementById('kpiTotalSpend').textContent = '₡' + totalSpend.toLocaleString('es-CR', {maximumFractionDigits: 0});
+      document.getElementById('kpiDispatched').textContent = ((dispatched / totalOC) * 100).toFixed(1) + '%';
+    }
+
+    function updateCharts() {
+      updateChartOCByState();
+      updateChartTrendOC();
+      updateChartDiscountsByProcess();
+      updateChartTopSuppliers();
+      updateChartDaysByStage();
+      updateChartSpendByProcess();
+    }
+
+    function updateChartOCByState() {
+      const ocData = rawData['BASE OC GENERADAS'] || [];
+      const states = {};
+      ocData.forEach(row => {
+        states[row.Estado] = (states[row.Estado] || 0) + 1;
+      });
+
+      const trace = {
+        x: Object.values(states),
+        y: Object.keys(states),
+        type: 'bar',
+        orientation: 'h',
+        marker: { color: '#14b8a6' }
+      };
+
+      const layout = {
+        xaxis: { title: 'Cantidad' },
+        yaxis: { title: 'Estado' },
+        margin: { l: 100 },
+        height: 350
+      };
+
+      Plotly.newPlot('chartOCByState', [trace], layout, {responsive: true});
+    }
+
+    function updateChartTrendOC() {
+      const ocData = rawData['BASE OC GENERADAS'] || [];
+      const months = {};
+
+      ocData.forEach(row => {
+        if (row['Fecha|Fecha']) {
+          const date = new Date(row['Fecha|Fecha']);
+          const month = date.toLocaleString('es-CR', { month: 'short', year: 'numeric' });
+          months[month] = (months[month] || 0) + 1;
+        }
+      });
+
+      const sortedMonths = Object.keys(months).sort();
+      const trace = {
+        x: sortedMonths,
+        y: sortedMonths.map(m => months[m]),
+        type: 'scatter',
+        mode: 'lines+markers',
+        line: { color: '#1c4e80', width: 3 },
+        marker: { size: 8 }
+      };
+
+      const layout = {
+        xaxis: { title: 'Mes' },
+        yaxis: { title: 'OC Generadas' },
+        margin: { b: 100 },
+        height: 350
+      };
+
+      Plotly.newPlot('chartTrendOC', [trace], layout, {responsive: true});
+    }
+
+    // Funciones de compatibilidad para carga local de Excel
+    function updateKPIs() {
+      const ocData = rawData['BASE OC GENERADAS'] || [];
+      const rqData = rawData['TRAZA REQ OC'] || [];
+      const discountData = rawData['OC DESCUENTOS'] || [];
+
+      const totalOC = new Set(ocData.map(r => r['Orden Compra|Numero OC'])).size;
+      const totalRQ = new Set(rqData.map(r => r['Requisición|Numero'])).size;
+      const totalItems = ocData.length;
+      const totalSpend = ocData.reduce((sum, row) => sum + (parseFloat(row.Total) || 0), 0);
+      const dispatched = ocData.filter(r => r.Estado === 'DESPACHADO').length;
+
+      document.getElementById('kpiTotalOC').textContent = totalOC.toLocaleString();
+      document.getElementById('kpiTotalRQ').textContent = totalRQ.toLocaleString();
+      document.getElementById('kpiTotalItems').textContent = totalItems.toLocaleString();
+      document.getElementById('kpiTotalSpend').textContent = '₡' + totalSpend.toLocaleString('es-CR', {maximumFractionDigits: 0});
+      document.getElementById('kpiDispatched').textContent = ((dispatched / totalOC) * 100).toFixed(1) + '%';
+    }
+
+    function updateCharts() {
+      updateChartOCByState();
+      updateChartTrendOC();
+      updateChartDiscountsByProcess();
+      updateChartTopSuppliers();
+      updateChartDaysByStage();
+      updateChartSpendByProcess();
+    }
+
+    function updateChartOCByState() {
+      const ocData = rawData['BASE OC GENERADAS'] || [];
+      const states = {};
+      ocData.forEach(row => {
+        states[row.Estado] = (states[row.Estado] || 0) + 1;
+      });
+
+      const trace = {
+        x: Object.values(states),
+        y: Object.keys(states),
+        type: 'bar',
+        orientation: 'h',
+        marker: { color: '#14b8a6' }
+      };
+
+      const layout = {
+        xaxis: { title: 'Cantidad' },
+        yaxis: { title: 'Estado' },
+        margin: { l: 100 },
+        height: 350
+      };
+
+      Plotly.newPlot('chartOCByState', [trace], layout, {responsive: true});
+    }
+
+    function updateChartTrendOC() {
+      const ocData = rawData['BASE OC GENERADAS'] || [];
+      const months = {};
+
+      ocData.forEach(row => {
+        if (row['Fecha|Fecha']) {
+          const date = new Date(row['Fecha|Fecha']);
+          const month = date.toLocaleString('es-CR', { month: 'short', year: 'numeric' });
+          months[month] = (months[month] || 0) + 1;
+        }
+      });
+
+      const sortedMonths = Object.keys(months).sort();
+      const trace = {
+        x: sortedMonths,
+        y: sortedMonths.map(m => months[m]),
+        type: 'scatter',
+        mode: 'lines+markers',
+        line: { color: '#1c4e80', width: 3 },
+        marker: { size: 8 }
+      };
+
+      const layout = {
+        xaxis: { title: 'Mes' },
+        yaxis: { title: 'OC Generadas' },
+        margin: { b: 100 },
+        height: 350
+      };
+
+      Plotly.newPlot('chartTrendOC', [trace], layout, {responsive: true});
+    }
+
+    function updateChartDiscountsByProcess() {
+      const discountData = rawData['OC DESCUENTOS'] || [];
+      const processes = {};
+
+      discountData.forEach(row => {
+        if (row.Proceso) {
+          processes[row.Proceso] = (processes[row.Proceso] || 0) + (parseFloat(row['Total Dcto']) || 0);
+        }
+      });
+
+      const trace = {
+        labels: Object.keys(processes),
+        values: Object.values(processes),
+        type: 'pie'
+      };
+
+      const layout = {
+        height: 350
+      };
+
+      Plotly.newPlot('chartDiscountsByProcess', [trace], layout, {responsive: true});
+    }
+
+    function updateChartTopSuppliers() {
+      const ocData = rawData['BASE OC GENERADAS'] || [];
+      const suppliers = {};
+
+      ocData.forEach(row => {
+        if (row['Nombre Proveedor']) {
+          suppliers[row['Nombre Proveedor']] = (suppliers[row['Nombre Proveedor']] || 0) + (parseFloat(row.Total) || 0);
+        }
+      });
+
+      const sorted = Object.entries(suppliers).sort((a, b) => b[1] - a[1]).slice(0, 10);
+
+      const trace = {
+        x: sorted.map(s => s[1]),
+        y: sorted.map(s => s[0]),
+        type: 'bar',
+        orientation: 'h',
+        marker: { color: '#f59e0b' }
+      };
+
+      const layout = {
+        xaxis: { title: 'Monto' },
+        yaxis: { title: 'Proveedor' },
+        margin: { l: 150 },
+        height: 350
+      };
+
+      Plotly.newPlot('chartTopSuppliers', [trace], layout, {responsive: true});
+    }
+
+    function updateChartDaysByStage() {
+      const rqData = rawData['TRAZA REQ OC'] || [];
+      const stages = {
+        'Aprobación RQ': [],
+        'Generación OC': [],
+        'Aprobación OC': [],
+        'Recepción': []
+      };
+
+      rqData.forEach(row => {
+        if (row['DÍAS APROBAR RQ']) stages['Aprobación RQ'].push(parseFloat(row['DÍAS APROBAR RQ']));
+        if (row['DÍAS GENERAR OC']) stages['Generación OC'].push(parseFloat(row['DÍAS GENERAR OC']));
+        if (row['DÍAS APROBACIÓN OC']) stages['Aprobación OC'].push(parseFloat(row['DÍAS APROBACIÓN OC']));
+        if (row['DÍAS RECEPCIÓN SERVICIO']) stages['Recepción'].push(parseFloat(row['DÍAS RECEPCIÓN SERVICIO']));
+      });
+
+      const averages = Object.entries(stages).map(([stage, values]) => ({
+        stage,
+        avg: values.length > 0 ? values.reduce((a, b) => a + b, 0) / values.length : 0
+      }));
+
+      const trace = {
+        x: averages.map(a => a.stage),
+        y: averages.map(a => a.avg),
+        type: 'bar',
+        marker: { color: '#ef4444' }
+      };
+
+      const layout = {
+        yaxis: { title: 'Días Promedio' },
+        height: 350
+      };
+
+      Plotly.newPlot('chartDaysByStage', [trace], layout, {responsive: true});
+    }
+
+    function updateChartSpendByProcess() {
+      const ocData = rawData['BASE OC GENERADAS'] || [];
+      const processes = {};
+
+      ocData.forEach(row => {
+        if (row.Proceso) {
+          processes[row.Proceso] = (processes[row.Proceso] || 0) + (parseFloat(row.Total) || 0);
+        }
+      });
+
+      const trace = {
+        x: Object.keys(processes),
+        y: Object.values(processes),
+        type: 'bar',
+        marker: { color: '#0d9488' }
+      };
+
+      const layout = {
+        yaxis: { title: 'Monto (₡)' },
+        height: 350
+      };
+
+      Plotly.newPlot('chartSpendByProcess', [trace], layout, {responsive: true});
+    }
+  </script>
+</body>
+</html>

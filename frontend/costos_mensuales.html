@@ -1,0 +1,1989 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8" />
+  <title>Dashboard Costos Mensuales - Vehículos</title>
+
+  <!-- Librería para leer Excel en el navegador -->
+  <script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
+  <!-- Plotly para gráficas interactivas -->
+  <script src="https://cdn.plot.ly/plotly-2.35.2.min.js"></script>
+
+  <style>
+    body {
+      font-family: system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+      margin: 0;
+      background: #f4f5f7;
+      color: #222;
+      display: flex;
+    }
+    
+    /* Sidebar */
+    .sidebar {
+      width: 280px;
+      background: linear-gradient(180deg, #0a2540 0%, #1c4e80 100%);
+      height: 100vh;
+      padding: 1rem 0;
+      box-shadow: 4px 0 20px rgba(0, 0, 0, 0.3);
+      position: fixed;
+      left: 0;
+      top: 0;
+      z-index: 100;
+      display: flex;
+      flex-direction: column;
+      overflow: hidden;
+    }
+    
+    .sidebar-header {
+      text-align: center;
+      padding: 0 1rem 1rem;
+      border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+      margin-bottom: 0.5rem;
+      flex-shrink: 0;
+    }
+    
+    .sidebar-header img {
+      width: 60px;
+      height: auto;
+      margin-bottom: 0.3rem;
+    }
+    
+    .sidebar-header h2 {
+      color: white;
+      font-size: 0.95rem;
+      font-weight: 600;
+      margin: 0 0 0.8rem 0;
+    }
+    
+    .btn-back {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      gap: 0.4rem;
+      padding: 0.5rem 1rem;
+      background: rgba(255, 255, 255, 0.15);
+      color: white;
+      border: 1px solid rgba(255, 255, 255, 0.3);
+      border-radius: 6px;
+      font-size: 0.8rem;
+      font-weight: 500;
+      text-decoration: none;
+      transition: all 0.3s ease;
+      cursor: pointer;
+    }
+    
+    .btn-back:hover {
+      background: rgba(255, 255, 255, 0.25);
+      border-color: rgba(255, 255, 255, 0.5);
+    }
+    
+    .sidebar-filters {
+      padding: 0.8rem 1rem;
+      flex: 1;
+      overflow-y: auto;
+      min-height: 0;
+    }
+    
+    .sidebar-filters h3 {
+      color: rgba(255, 255, 255, 0.9);
+      font-size: 0.75rem;
+      text-transform: uppercase;
+      letter-spacing: 0.05em;
+      margin: 0 0 0.6rem 0;
+      padding-bottom: 0.4rem;
+      border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+    }
+    
+    .filter-group {
+      margin-bottom: 0.8rem;
+    }
+    
+    .filter-group label {
+      display: block;
+      color: rgba(255, 255, 255, 0.8);
+      font-size: 0.75rem;
+      font-weight: 500;
+      margin-bottom: 0.3rem;
+    }
+    
+    .filter-group input[type="file"] {
+      width: 100%;
+      padding: 0.3rem;
+      border-radius: 4px;
+      border: 1px solid rgba(255, 255, 255, 0.2);
+      font-size: 0.75rem;
+      background: rgba(255, 255, 255, 0.1);
+      color: white;
+      box-sizing: border-box;
+    }
+    
+    .filter-group .filter-search {
+      width: 100%;
+      padding: 0.3rem 0.5rem;
+      border-radius: 4px;
+      border: 1px solid rgba(255, 255, 255, 0.2);
+      font-size: 0.75rem;
+      background: rgba(255, 255, 255, 0.1);
+      color: white;
+      box-sizing: border-box;
+      margin-bottom: 0.3rem;
+    }
+    
+    .filter-group .filter-search::placeholder {
+      color: rgba(255, 255, 255, 0.5);
+    }
+    
+    .filter-group select {
+      width: 100%;
+      height: 70px;
+      padding: 0.2rem;
+      border-radius: 4px;
+      border: 1px solid rgba(255, 255, 255, 0.2);
+      font-size: 0.75rem;
+      background: rgba(255, 255, 255, 0.95);
+      box-sizing: border-box;
+    }
+    
+    .filter-group .btn-filter {
+      width: 100%;
+      padding: 0.35rem 0.5rem;
+      margin-top: 0.3rem;
+      border-radius: 4px;
+      border: none;
+      font-size: 0.7rem;
+      font-weight: 500;
+      background: rgba(255, 255, 255, 0.2);
+      color: white;
+      cursor: pointer;
+      transition: background 0.2s;
+    }
+    
+    .filter-group .btn-filter:hover {
+      background: rgba(255, 255, 255, 0.3);
+    }
+    
+    .filter-group input[type="date"] {
+      width: 100%;
+      padding: 0.35rem 0.5rem;
+      border-radius: 4px;
+      border: 1px solid rgba(255, 255, 255, 0.2);
+      font-size: 0.75rem;
+      background: rgba(255, 255, 255, 0.95);
+      box-sizing: border-box;
+      margin-bottom: 0.3rem;
+    }
+    
+    .sidebar-actions {
+      padding: 0.8rem 1rem;
+      border-top: 1px solid rgba(255, 255, 255, 0.1);
+      flex-shrink: 0;
+    }
+    
+    .sidebar-actions button {
+      width: 100%;
+      padding: 0.5rem;
+      border-radius: 6px;
+      border: none;
+      font-size: 0.8rem;
+      font-weight: 600;
+      cursor: pointer;
+      margin-bottom: 0.4rem;
+      transition: all 0.2s;
+    }
+    
+    .sidebar-actions .btn-apply {
+      background: #14b8a6;
+      color: white;
+    }
+    
+    .sidebar-actions .btn-apply:hover {
+      background: #0d9488;
+    }
+    
+    .sidebar-actions .btn-reset {
+      background: rgba(255, 255, 255, 0.15);
+      color: white;
+    }
+    
+    .sidebar-actions .btn-reset:hover {
+      background: rgba(255, 255, 255, 0.25);
+    }
+    
+    .sidebar-footer {
+      padding: 0.6rem 1rem;
+      border-top: 1px solid rgba(255, 255, 255, 0.1);
+      text-align: center;
+      flex-shrink: 0;
+    }
+    
+    .sidebar-footer p {
+      color: rgba(255, 255, 255, 0.5);
+      font-size: 0.6rem;
+      margin: 0;
+    }
+    
+    #status {
+      color: rgba(255, 255, 255, 0.8);
+      font-size: 0.7rem;
+      margin-top: 0.3rem;
+    }
+    
+    .main-wrapper {
+      margin-left: 280px;
+      flex: 1;
+      min-height: 100vh;
+      overflow-x: hidden;
+      max-width: calc(100vw - 280px);
+    }
+    
+    @media (max-width: 992px) {
+      .sidebar {
+        width: 240px;
+      }
+      .main-wrapper {
+        margin-left: 240px;
+      }
+    }
+    
+    header {
+      background: linear-gradient(135deg, #14532d, #16a34a);
+      color: #fff;
+      padding: 1.2rem 2rem;
+      box-shadow: 0 2px 8px rgba(0,0,0,0.15);
+    }
+    header h1 {
+      margin: 0;
+      font-size: 1.6rem;
+    }
+    header p {
+      margin: 0.2rem 0 0;
+      opacity: 0.9;
+    }
+    .container {
+      padding: 1.5rem 2rem 2rem 2rem;
+      max-width: calc(100% - 1rem);
+      margin: 0 auto;
+      overflow-x: hidden;
+      box-sizing: border-box;
+    }
+    .card {
+      background: #fff;
+      border-radius: 12px;
+      padding: 1rem 1.2rem;
+      box-shadow: 0 1px 4px rgba(0,0,0,0.08);
+      margin-bottom: 1rem;
+    }
+    #controls {
+      display: grid;
+      grid-template-columns: 1.5fr 1fr 1fr 1fr 1fr;
+      gap: 1rem;
+      align-items: flex-end;
+    }
+    label {
+      font-size: 0.85rem;
+      font-weight: 600;
+      margin-bottom: 0.25rem;
+      display: block;
+    }
+    input[type="file"],
+    select,
+    input[type="date"],
+    button {
+      width: 100%;
+      padding: 0.4rem 0.6rem;
+      border-radius: 8px;
+      border: 1px solid #d0d7de;
+      font-size: 0.9rem;
+      box-sizing: border-box;
+    }
+    select[multiple] {
+      height: 90px;
+    }
+    button {
+      cursor: pointer;
+      font-weight: 600;
+      border: none;
+      background: #14532d;
+      color: #fff;
+      transition: transform 0.05s ease, box-shadow 0.1s ease, background 0.15s ease;
+    }
+    button:hover {
+      background: #166534;
+      box-shadow: 0 2px 6px rgba(0,0,0,0.2);
+      transform: translateY(-1px);
+    }
+    button.secondary {
+      background: #e1e4e8;
+      color: #111;
+      margin-top: 0.4rem;
+    }
+    button.secondary:hover {
+      background: #d0d7de;
+    }
+    .filter-search {
+      width: 100%;
+      padding: 0.3rem 0.5rem;
+      border-radius: 6px;
+      border: 1px solid #d0d7de;
+      font-size: 0.8rem;
+      box-sizing: border-box;
+      margin-bottom: 0.3rem;
+    }
+    .filter-search::placeholder {
+      color: #999;
+    }
+    .kpi-grid {
+      display: grid;
+      grid-template-columns: repeat(4, minmax(0, 1fr));
+      gap: 0.8rem;
+      margin-top: 1rem;
+    }
+    .kpi {
+      background: #fff;
+      border-radius: 10px;
+      padding: 0.8rem 0.9rem;
+      box-shadow: 0 1px 4px rgba(0,0,0,0.06);
+    }
+    .kpi label {
+      font-size: 0.75rem;
+      text-transform: uppercase;
+      letter-spacing: 0.04em;
+      color: #555;
+      margin-bottom: 0.15rem;
+    }
+    .kpi-value {
+      font-size: 1.1rem;
+      font-weight: 700;
+    }
+    .kpi-sub {
+      font-size: 0.8rem;
+      color: #777;
+      margin-top: 0.15rem;
+    }
+    .charts-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 1rem;
+      margin-top: 1rem;
+      margin-right: 0;
+    }
+    .chart-card {
+      background: #fff;
+      border-radius: 12px;
+      padding: 0.5rem 0.6rem 0.8rem;
+      box-shadow: 0 1px 4px rgba(0,0,0,0.08);
+      overflow: hidden;
+      min-width: 0;
+      position: relative;
+    }
+    .chart-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 0.3rem;
+    }
+    .chart-title {
+      font-weight: 600;
+      font-size: 0.95rem;
+      margin: 0.1rem 0 0.2rem 0.2rem;
+    }
+    .chart-expand-btn {
+      background: #f0f0f0;
+      border: none;
+      border-radius: 4px;
+      padding: 0.2rem 0.5rem;
+      cursor: pointer;
+      font-size: 0.75rem;
+      color: #555;
+      transition: all 0.2s;
+    }
+    .chart-expand-btn:hover {
+      background: #14b8a6;
+      color: white;
+    }
+    .chart-container {
+      overflow-x: auto;
+      overflow-y: hidden;
+      scrollbar-width: thin;
+      scrollbar-color: #14b8a6 #e5e5e5;
+    }
+    .chart-container::-webkit-scrollbar {
+      height: 8px;
+    }
+    .chart-container::-webkit-scrollbar-track {
+      background: #e5e5e5;
+      border-radius: 4px;
+    }
+    .chart-container::-webkit-scrollbar-thumb {
+      background: #14b8a6;
+      border-radius: 4px;
+    }
+    .chart-container::-webkit-scrollbar-thumb:hover {
+      background: #0d9488;
+    }
+    .chart {
+      width: 100%;
+      min-width: 500px;
+      height: 340px;
+    }
+    .full-width-chart {
+      margin-top: 1rem;
+      margin-left: 0;
+      margin-right: 0;
+    }
+    
+    /* Modal para zoom de gráfico */
+    .chart-modal {
+      display: none;
+      position: fixed;
+      top: 0;
+      left: 0;
+      width: 100vw;
+      height: 100vh;
+      background: rgba(0, 0, 0, 0.8);
+      z-index: 9999;
+      justify-content: center;
+      align-items: center;
+      padding: 2rem;
+      box-sizing: border-box;
+    }
+    .chart-modal.active {
+      display: flex;
+    }
+    .chart-modal-content {
+      background: white;
+      border-radius: 12px;
+      width: 95%;
+      height: 90%;
+      padding: 1rem;
+      position: relative;
+      display: flex;
+      flex-direction: column;
+    }
+    .chart-modal-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 0.5rem;
+    }
+    .chart-modal-title {
+      font-size: 1.2rem;
+      font-weight: 600;
+    }
+    .chart-modal-close {
+      background: #ef4444;
+      color: white;
+      border: none;
+      border-radius: 6px;
+      padding: 0.4rem 1rem;
+      cursor: pointer;
+      font-size: 0.9rem;
+      font-weight: 600;
+    }
+    .chart-modal-close:hover {
+      background: #dc2626;
+    }
+    .chart-modal-body {
+      flex: 1;
+      overflow: auto;
+    }
+    #modalChart {
+      width: 100%;
+      height: 100%;
+      min-height: 500px;
+    }
+    
+    #status {
+      font-size: 0.85rem;
+      color: #555;
+      margin-top: 0.4rem;
+    }
+    /* Tabla detalle */
+    .table-container {
+      margin-top: 1.2rem;
+      background: #fff;
+      border-radius: 12px;
+      box-shadow: 0 1px 4px rgba(0,0,0,0.08);
+      padding: 0.8rem;
+      max-height: 400px;
+      overflow: auto;
+    }
+    table {
+      border-collapse: collapse;
+      width: 100%;
+      font-size: 0.8rem;
+    }
+    th, td {
+      border-bottom: 1px solid #e1e4e8;
+      padding: 0.35rem 0.45rem;
+      text-align: left;
+      white-space: nowrap;
+    }
+    th {
+      position: sticky;
+      top: 0;
+      background: #f6f8fa;
+      z-index: 1;
+      font-size: 0.78rem;
+      text-transform: uppercase;
+      letter-spacing: 0.03em;
+    }
+    tr:nth-child(even) td {
+      background: #fafbfc;
+    }
+    .badge {
+      display: inline-flex;
+      align-items: center;
+      padding: 0.05rem 0.4rem;
+      border-radius: 999px;
+      font-size: 0.7rem;
+      font-weight: 600;
+      background: #dcfce7;
+      color: #166534;
+    }
+    @media (max-width: 960px) {
+      #controls {
+        grid-template-columns: 1fr;
+      }
+      .kpi-grid {
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+      }
+      .charts-grid {
+        grid-template-columns: 1fr;
+      }
+    }
+  </style>
+</head>
+<body>
+  <!-- Sidebar con filtros -->
+  <nav class="sidebar">
+    <div class="sidebar-header">
+      <img src="img/logo.png" alt="HESEGO Logo" />
+      <h2>Costos Mensuales</h2>
+      <a href="index.html" class="btn-back">← Regresar</a>
+    </div>
+    
+    <div class="sidebar-filters">
+      <h3>📁 Origen de datos</h3>
+      <div class="filter-group">
+        <button type="button" id="loadFromAPIBtn" class="btn-filter" style="background: #3b82f6; margin-bottom: 0.3rem;">🗄️ Cargar desde BD</button>
+        <button type="button" id="loadDataBtn" class="btn-filter" style="background: #14b8a6; margin-bottom: 0.5rem;">📂 Cargar Excel</button>
+        <div id="status"></div>
+      </div>
+      
+      <h3>🔍 Filtros</h3>
+      
+      <div class="filter-group">
+        <label>Rango de fechas</label>
+        <input type="date" id="startDate" />
+        <input type="date" id="endDate" />
+      </div>
+      
+      <div class="filter-group">
+        <label for="catalogoFilter">Catálogo</label>
+        <input type="text" class="filter-search" id="catalogoSearch" placeholder="Buscar..." oninput="filterSelect('catalogoFilter', this.value)">
+        <select id="catalogoFilter" multiple></select>
+        <button type="button" class="btn-filter" id="catalogoFilterBtn" onclick="toggleSelectAll('catalogoFilter', 'catalogoFilterBtn')">Seleccionar todo</button>
+      </div>
+      
+      <div class="filter-group">
+        <label for="ciudadFilter">Ciudad</label>
+        <input type="text" class="filter-search" id="ciudadSearch" placeholder="Buscar..." oninput="filterSelect('ciudadFilter', this.value)">
+        <select id="ciudadFilter" multiple></select>
+        <button type="button" class="btn-filter" id="ciudadFilterBtn" onclick="toggleSelectAll('ciudadFilter', 'ciudadFilterBtn')">Seleccionar todo</button>
+      </div>
+      
+      <div class="filter-group">
+        <label for="terceroFilter">Tercero Nombre</label>
+        <input type="text" class="filter-search" id="terceroSearch" placeholder="Buscar..." oninput="filterSelect('terceroFilter', this.value)">
+        <select id="terceroFilter" multiple></select>
+        <button type="button" class="btn-filter" id="terceroFilterBtn" onclick="toggleSelectAll('terceroFilter', 'terceroFilterBtn')">Seleccionar todo</button>
+      </div>
+    </div>
+    
+    <div class="sidebar-actions">
+      <button id="applyFiltersBtn" class="btn-apply">✓ Aplicar filtros</button>
+      <button id="resetFiltersBtn" class="btn-reset">✕ Limpiar filtros</button>
+    </div>
+    
+    <div class="sidebar-footer">
+      <p>© 2025 HESEGO Ingeniería</p>
+    </div>
+  </nav>
+
+  <div class="main-wrapper">
+    <header>
+      <h1>Dashboard - Costos Mensuales Vehículos</h1>
+      <p>Análisis de costos de operación de la flota</p>
+    </header>
+
+    <div class="container">
+      <!-- KPIs -->
+      <div class="kpi-grid">
+        <div class="kpi">
+          <label>Costo total (Neto)</label>
+          <div class="kpi-value" id="kpiCostoTotal">-</div>
+          <div class="kpi-sub" id="kpiCostoTotalSub"></div>
+        </div>
+        <div class="kpi">
+          <label>Promedio mensual</label>
+          <div class="kpi-value" id="kpiPromedioMensual">-</div>
+          <div class="kpi-sub">Basado en meses con movimiento</div>
+        </div>
+        <div class="kpi">
+          <label>Registros</label>
+          <div class="kpi-value" id="kpiRegistros">-</div>
+          <div class="kpi-sub" id="kpiRegistrosSub"></div>
+        </div>
+        <div class="kpi">
+          <label>Terceros únicos</label>
+          <div class="kpi-value" id="kpiTerceros">-</div>
+          <div class="kpi-sub" id="kpiTercerosSub"></div>
+        </div>
+      </div>
+
+    <!-- Modal para zoom de gráfico -->
+    <div id="chartModal" class="chart-modal">
+      <div class="chart-modal-content">
+        <div class="chart-modal-header">
+          <span class="chart-modal-title" id="modalTitle">Gráfico</span>
+          <button class="chart-modal-close" onclick="closeChartModal()">✕ Cerrar</button>
+        </div>
+        <div class="chart-modal-body">
+          <div id="modalChart"></div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Gráficas -->
+    <div class="charts-grid">
+      <div class="chart-card">
+        <div class="chart-header">
+          <div class="chart-title">Costos mensuales</div>
+          <button class="chart-expand-btn" onclick="expandChart('chart_costos_mensuales', 'Costos mensuales')">🔍 Ampliar</button>
+        </div>
+        <div class="chart-container">
+          <div id="chart_costos_mensuales" class="chart"></div>
+        </div>
+      </div>
+      <div class="chart-card">
+        <div class="chart-header">
+          <div class="chart-title">Costos por catálogo</div>
+          <button class="chart-expand-btn" onclick="expandChart('chart_costos_catalogo', 'Costos por catálogo')">🔍 Ampliar</button>
+        </div>
+        <div class="chart-container">
+          <div id="chart_costos_catalogo" class="chart"></div>
+        </div>
+      </div>
+    </div>
+
+    <div class="chart-card full-width-chart">
+      <div class="chart-header">
+        <div class="chart-title">Top 10 ciudades y terceros por costo</div>
+        <button class="chart-expand-btn" onclick="expandDualChart()">🔍 Ampliar</button>
+      </div>
+      <div class="chart-container">
+        <div style="display:grid; grid-template-columns: 1fr 1fr; gap:0.8rem; min-width: 800px;">
+          <div id="chart_costos_ciudad" class="chart"></div>
+          <div id="chart_costos_terceros" class="chart"></div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Tabla detalle -->
+    <div class="table-container">
+      <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:0.4rem;">
+        <strong>Detalle de registros filtrados</strong>
+        <span id="tableInfo" style="font-size:0.8rem; color:#666;"></span>
+      </div>
+      <table id="detailTable">
+        <thead></thead>
+        <tbody></tbody>
+      </table>
+    </div>
+    </div> <!-- Cierre container -->
+  </div> <!-- Cierre main-wrapper -->
+
+  <script>
+    let rawData = [];
+    let filteredData = [];
+    let chartFilter = { type: null, value: null }; // Filtro adicional desde gráficas
+    let availableOptions = {
+      catalogos: new Set(),
+      ciudades: new Set(),
+      terceros: new Set()
+    };
+
+    const DATE_COL = "Fecha";
+    const COSTO_COL = "Neto";
+    const CATALOGO_COL = "Catalogo";
+    const CIUDAD_COL = "Ciudad|Descripción";
+    const TERCERO_COL = "Tercero|Nombre";
+    const PROYECTO_COL = "Proyecto|Nombre";
+    const DESCRIPCION_COL = "Descripción";
+
+    const detailColumns = [
+      DATE_COL,
+      CATALOGO_COL,
+      COSTO_COL,
+      CIUDAD_COL,
+      PROYECTO_COL,
+      TERCERO_COL,
+      DESCRIPCION_COL
+    ];
+
+    const statusEl = document.getElementById("status");
+    const catalogoFilterEl = document.getElementById("catalogoFilter");
+    const ciudadFilterEl = document.getElementById("ciudadFilter");
+    const terceroFilterEl = document.getElementById("terceroFilter");
+    const startDateEl = document.getElementById("startDate");
+    const endDateEl = document.getElementById("endDate");
+
+    // Variables para almacenar datos de gráficos para el modal
+    let chartDataStore = {};
+
+    // Funciones para el modal de zoom
+    function expandChart(chartId, title) {
+      const modal = document.getElementById('chartModal');
+      const modalTitle = document.getElementById('modalTitle');
+      const modalChart = document.getElementById('modalChart');
+      
+      modalTitle.textContent = title;
+      modal.classList.add('active');
+      
+      // Obtener datos del gráfico original
+      const originalDiv = document.getElementById(chartId);
+      if (originalDiv && originalDiv.data && originalDiv.layout) {
+        const newLayout = {
+          ...originalDiv.layout,
+          width: null,
+          height: null,
+          autosize: true,
+          margin: { l: 60, r: 40, t: 40, b: 80 }
+        };
+        Plotly.newPlot(modalChart, originalDiv.data, newLayout, { responsive: true });
+      }
+      
+      // Cerrar con ESC
+      document.addEventListener('keydown', handleEscKey);
+    }
+
+    function expandDualChart() {
+      const modal = document.getElementById('chartModal');
+      const modalTitle = document.getElementById('modalTitle');
+      const modalChart = document.getElementById('modalChart');
+      
+      modalTitle.textContent = 'Top 10 ciudades y terceros por costo';
+      modal.classList.add('active');
+      
+      // Crear contenedor con dos gráficos
+      modalChart.innerHTML = '<div style="display:grid; grid-template-columns: 1fr 1fr; gap:1rem; height:100%;"><div id="modalCiudad" style="height:100%;"></div><div id="modalTerceros" style="height:100%;"></div></div>';
+      
+      setTimeout(() => {
+        const ciudadDiv = document.getElementById('chart_costos_ciudad');
+        const tercerosDiv = document.getElementById('chart_costos_terceros');
+        
+        if (ciudadDiv && ciudadDiv.data) {
+          const layoutCiudad = { ...ciudadDiv.layout, autosize: true, height: null, width: null };
+          Plotly.newPlot('modalCiudad', ciudadDiv.data, layoutCiudad, { responsive: true });
+        }
+        if (tercerosDiv && tercerosDiv.data) {
+          const layoutTerceros = { ...tercerosDiv.layout, autosize: true, height: null, width: null };
+          Plotly.newPlot('modalTerceros', tercerosDiv.data, layoutTerceros, { responsive: true });
+        }
+      }, 100);
+      
+      document.addEventListener('keydown', handleEscKey);
+    }
+
+    function closeChartModal() {
+      const modal = document.getElementById('chartModal');
+      modal.classList.remove('active');
+      Plotly.purge('modalChart');
+      document.removeEventListener('keydown', handleEscKey);
+    }
+
+    function handleEscKey(e) {
+      if (e.key === 'Escape') {
+        closeChartModal();
+      }
+    }
+
+    // Cerrar modal al hacer clic fuera del contenido
+    document.getElementById('chartModal').addEventListener('click', function(e) {
+      if (e.target === this) {
+        closeChartModal();
+      }
+    });
+
+    // Persistencia con IndexedDB
+    const DB_NAME = 'hesego_costos_db';
+    const DB_VERSION = 1;
+    const STORE_NAME = 'costos_data';
+    let isLoadingFilters = false;
+
+    function openDatabase() {
+      return new Promise((resolve, reject) => {
+        const request = indexedDB.open(DB_NAME, DB_VERSION);
+        request.onerror = () => reject(request.error);
+        request.onsuccess = () => resolve(request.result);
+        request.onupgradeneeded = (event) => {
+          const db = event.target.result;
+          if (!db.objectStoreNames.contains(STORE_NAME)) {
+            db.createObjectStore(STORE_NAME, { keyPath: 'id' });
+          }
+        };
+      });
+    }
+
+    async function saveDataToStorage(data, fileName) {
+      try {
+        const dataToSave = data.map(row => {
+          const newRow = { ...row };
+          delete newRow.__date;
+          return newRow;
+        });
+        
+        const db = await openDatabase();
+        const transaction = db.transaction([STORE_NAME], 'readwrite');
+        const store = transaction.objectStore(STORE_NAME);
+        
+        store.put({
+          id: 'main_data',
+          data: dataToSave,
+          fileName: fileName,
+          savedAt: new Date().toISOString(),
+          recordCount: data.length
+        });
+        
+        transaction.oncomplete = () => {
+          console.log(`✅ Datos guardados: ${data.length} registros`);
+          db.close();
+        };
+        
+        transaction.onerror = () => {
+          console.warn('Error guardando datos:', transaction.error);
+          db.close();
+        };
+      } catch (e) {
+        console.warn('No se pudo guardar en IndexedDB:', e.message);
+      }
+    }
+
+    async function saveFiltersToStorage() {
+      if (isLoadingFilters) return;
+      try {
+        const filters = {
+          id: 'filters',
+          catalogos: getSelectedOptions(catalogoFilterEl),
+          ciudades: getSelectedOptions(ciudadFilterEl),
+          terceros: getSelectedOptions(terceroFilterEl),
+          startDate: startDateEl.value,
+          endDate: endDateEl.value
+        };
+        
+        const db = await openDatabase();
+        const transaction = db.transaction([STORE_NAME], 'readwrite');
+        const store = transaction.objectStore(STORE_NAME);
+        store.put(filters);
+        
+        transaction.oncomplete = () => {
+          console.log('✅ Filtros guardados');
+          db.close();
+        };
+        
+        transaction.onerror = () => {
+          console.warn('Error guardando filtros:', transaction.error);
+          db.close();
+        };
+      } catch (e) {
+        console.warn('Error guardando filtros:', e.message);
+      }
+    }
+
+    async function loadFiltersFromStorage() {
+      try {
+        const db = await openDatabase();
+        const transaction = db.transaction([STORE_NAME], 'readonly');
+        const store = transaction.objectStore(STORE_NAME);
+        const request = store.get('filters');
+        
+        request.onsuccess = () => {
+          const filters = request.result;
+          db.close();
+          
+          if (filters) {
+            isLoadingFilters = true;
+            
+            if (filters.catalogos && filters.catalogos.length > 0) {
+              Array.from(catalogoFilterEl.options).forEach(opt => {
+                opt.selected = filters.catalogos.includes(opt.value);
+              });
+            }
+            
+            if (filters.ciudades && filters.ciudades.length > 0) {
+              Array.from(ciudadFilterEl.options).forEach(opt => {
+                opt.selected = filters.ciudades.includes(opt.value);
+              });
+            }
+            
+            if (filters.terceros && filters.terceros.length > 0) {
+              Array.from(terceroFilterEl.options).forEach(opt => {
+                opt.selected = filters.terceros.includes(opt.value);
+              });
+            }
+            
+            if (filters.startDate) startDateEl.value = filters.startDate;
+            if (filters.endDate) endDateEl.value = filters.endDate;
+            
+            console.log('✅ Filtros restaurados');
+            applyFilters();
+            isLoadingFilters = false;
+          } else {
+            applyFilters();
+          }
+        };
+        
+        request.onerror = () => {
+          console.warn('Error leyendo filtros:', request.error);
+          db.close();
+          applyFilters();
+        };
+      } catch (e) {
+        console.warn('Error cargando filtros:', e.message);
+        isLoadingFilters = false;
+        applyFilters();
+      }
+    }
+
+    async function loadDataFromStorage() {
+      try {
+        console.log('Buscando datos guardados...');
+        
+        const db = await openDatabase();
+        const transaction = db.transaction([STORE_NAME], 'readonly');
+        const store = transaction.objectStore(STORE_NAME);
+        const request = store.get('main_data');
+        
+        request.onsuccess = () => {
+          const result = request.result;
+          db.close();
+          
+          if (result && result.data) {
+            rawData = result.data;
+            
+            rawData.forEach(row => {
+              const d = parseDate(row[DATE_COL]);
+              row.__date = d;
+              row.__dateStr = d ? formatDateISO(d) : null;
+              row.__monthKey = d ? formatMonthKey(d) : null;
+            });
+            
+            console.log(`✅ Datos restaurados: ${rawData.length} registros`);
+            setStatus(`Datos restaurados: ${rawData.length} registros. Archivo: "${result.fileName || 'desconocido'}"`);
+            
+            initFilters();
+            loadFiltersFromStorage();
+          } else {
+            console.log('No hay datos guardados previamente');
+          }
+        };
+        
+        request.onerror = () => {
+          console.warn('Error leyendo datos:', request.error);
+          db.close();
+        };
+      } catch (e) {
+        console.warn('No se pudo cargar desde IndexedDB:', e.message);
+      }
+    }
+
+    const kpiCostoTotalEl = document.getElementById("kpiCostoTotal");
+    const kpiCostoTotalSubEl = document.getElementById("kpiCostoTotalSub");
+    const kpiPromedioMensualEl = document.getElementById("kpiPromedioMensual");
+    const kpiRegistrosEl = document.getElementById("kpiRegistros");
+    const kpiRegistrosSubEl = document.getElementById("kpiRegistrosSub");
+    const kpiTercerosEl = document.getElementById("kpiTerceros");
+    const kpiTercerosSubEl = document.getElementById("kpiTercerosSub");
+
+    const tableInfoEl = document.getElementById("tableInfo");
+    const detailTableHead = document.querySelector("#detailTable thead");
+    const detailTableBody = document.querySelector("#detailTable tbody");
+
+    document.getElementById("loadDataBtn").addEventListener("click", loadFromPath);
+    document.getElementById("loadFromAPIBtn").addEventListener("click", loadFromAPI);
+    document.getElementById("applyFiltersBtn").addEventListener("click", () => {
+      applyFilters();
+      saveFiltersToStorage();
+    });
+    document.getElementById("resetFiltersBtn").addEventListener("click", resetFilters);
+
+    // Función para cargar datos desde la API (Base de Datos)
+    async function loadFromAPI() {
+      console.log("🔄 Iniciando carga desde API...");
+      setStatus("🔄 Conectando con la base de datos...");
+      
+      const API_BASE = window.location.port === "8000" 
+        ? "" 
+        : "http://localhost:8000";
+      
+      try {
+        // Cargar todos los datos
+        const response = await fetch(`${API_BASE}/api/costos/datos?limit=50000`);
+        if (!response.ok) {
+          throw new Error(`Error ${response.status}: ${response.statusText}`);
+        }
+        
+        const result = await response.json();
+        console.log("📊 Registros recibidos:", result.total);
+        
+        if (!result.data || result.data.length === 0) {
+          setStatus("⚠️ La base de datos está vacía. Use 'Cargar Excel' primero.");
+          return;
+        }
+        
+        // Convertir datos de la API al formato esperado por el frontend
+        rawData = result.data.map(row => ({
+          [DATE_COL]: row.fecha,
+          [CATALOGO_COL]: row.catalogo,
+          [CIUDAD_COL]: row.ciudad,
+          [TERCERO_COL]: row.tercero,
+          [COSTO_COL]: row.neto,
+          [PROYECTO_COL]: row.proyecto,
+          [DESCRIPCION_COL]: row.descripcion,
+          __date: row.fecha ? new Date(row.fecha) : null,
+          __dateStr: row.fecha,
+          __monthKey: row.fecha ? row.fecha.substring(0, 7) : null
+        }));
+        
+        setStatus(`✅ Datos cargados desde BD. Registros: ${rawData.length}`);
+        
+        initFilters();
+        applyFilters();
+        
+      } catch (error) {
+        console.error("❌ Error cargando desde API:", error);
+        setStatus(`❌ Error conectando con BD: ${error.message}. ¿Está corriendo el servidor?`);
+      }
+    }
+
+    // Función para cargar archivo desde ruta fija
+    async function loadFromPath() {
+      const filePath = "data/TRANSPORTE/Costos%20mensuales%20-%20Vehiculos.xlsx";
+      console.log("🔄 Iniciando carga desde:", filePath);
+      setStatus("Cargando archivo...");
+      
+      try {
+        console.log("📡 Haciendo fetch...");
+        const response = await fetch(filePath);
+        console.log("📡 Response status:", response.status, response.statusText);
+        
+        if (!response.ok) {
+          console.error("❌ Error en fetch:", response.status, response.statusText);
+          setStatus("❌ No existe el archivo en la ruta: " + filePath);
+          return;
+        }
+        
+        console.log("📦 Obteniendo arrayBuffer...");
+        const arrayBuffer = await response.arrayBuffer();
+        console.log("📦 ArrayBuffer size:", arrayBuffer.byteLength, "bytes");
+        
+        const data = new Uint8Array(arrayBuffer);
+        console.log("📊 Leyendo Excel con XLSX...");
+        const workbook = XLSX.read(data, { type: "array", codepage: 65001 });
+        console.log("📊 Hojas disponibles:", workbook.SheetNames);
+
+        // Buscar hoja "Cto Vehiculos" (o similar)
+        let sheetName = workbook.SheetNames.find(n =>
+          n.toLowerCase().includes("cto vehiculo")
+        );
+        console.log("🔍 Hoja encontrada con 'cto vehiculo':", sheetName);
+        
+        if (!sheetName) {
+          sheetName = workbook.SheetNames[0];
+          console.log("⚠️ Usando primera hoja:", sheetName);
+        }
+
+        const sheet = workbook.Sheets[sheetName];
+        rawData = XLSX.utils.sheet_to_json(sheet, { defval: null });
+        console.log("📋 Registros parseados:", rawData.length);
+        
+        if (rawData.length > 0) {
+          console.log("📋 Primera fila (ejemplo):", rawData[0]);
+          console.log("📋 Columnas:", Object.keys(rawData[0]));
+        }
+
+        if (!rawData.length) {
+          console.error("❌ La hoja está vacía");
+          setStatus("La hoja está vacía.");
+          return;
+        }
+        
+        // Corregir caracteres mal codificados (UTF-8 interpretado como Latin-1)
+        rawData = rawData.map(row => {
+          const newRow = {};
+          for (const key in row) {
+            let value = row[key];
+            if (typeof value === 'string') {
+              value = fixEncoding(value);
+            }
+            newRow[key] = value;
+          }
+          return newRow;
+        });
+
+        // Normalizar fecha
+        rawData.forEach(row => {
+          const d = parseDate(row[DATE_COL]);
+          row.__date = d;
+          row.__dateStr = d ? formatDateISO(d) : null;
+          row.__monthKey = d ? formatMonthKey(d) : null;
+        });
+
+        // Guardar en IndexedDB para persistencia
+        saveDataToStorage(rawData, "Costos mensuales - Vehiculos.xlsx");
+
+        setStatus(`✅ Archivo cargado. Registros: ${rawData.length}. Hoja: "${sheetName}".`);
+
+        initFilters();
+        applyFilters();
+      } catch (error) {
+        setStatus("❌ Error al cargar el archivo: " + error.message);
+      }
+    }
+    
+    // Función para habilitar selección múltiple con clic simple (sin Ctrl)
+    function enableClickToggleSelection(selectEl) {
+      selectEl.addEventListener('mousedown', function(e) {
+        if (e.target.tagName === 'OPTION') {
+          e.preventDefault();
+          const option = e.target;
+          option.selected = !option.selected;
+          selectEl.dispatchEvent(new Event('change'));
+          selectEl.focus(); // Mantener el foco en el select
+        }
+      });
+      
+      // Prevenir que el click default cambie la selección
+      selectEl.addEventListener('click', function(e) {
+        if (e.target.tagName === 'OPTION') {
+          e.preventDefault();
+        }
+      });
+    }
+    
+    // Habilitar selección toggle en todos los filtros
+    enableClickToggleSelection(catalogoFilterEl);
+    enableClickToggleSelection(ciudadFilterEl);
+    enableClickToggleSelection(terceroFilterEl);
+    
+    // Eventos para actualizar filtros encadenados y aplicar automáticamente
+    catalogoFilterEl.addEventListener("change", () => {
+      updateToggleButton('catalogoFilter', 'catalogoFilterBtn');
+      updateCiudadesByCatalogo();
+      updateTercerosByCatalogoYCiudad();
+      applyFilters();
+    });
+    ciudadFilterEl.addEventListener("change", () => {
+      updateToggleButton('ciudadFilter', 'ciudadFilterBtn');
+      updateTercerosByCatalogoYCiudad();
+      applyFilters();
+    });
+    terceroFilterEl.addEventListener("change", () => {
+      updateToggleButton('terceroFilter', 'terceroFilterBtn');
+      applyFilters();
+    });
+
+    // Cargar datos al inicio - primero intentar desde API, luego desde storage local
+    setTimeout(async () => {
+      // Intentar cargar desde API primero
+      const API_BASE = window.location.port === "8000" ? "" : "http://localhost:8000";
+      try {
+        const response = await fetch(`${API_BASE}/api/admin/stats`);
+        if (response.ok) {
+          const stats = await response.json();
+          if (stats.costos_mensuales > 0) {
+            console.log("📊 BD disponible con datos, cargando desde API...");
+            loadFromAPI();
+            return;
+          }
+        }
+      } catch (e) {
+        console.log("⚠️ API no disponible, intentando storage local...");
+      }
+      // Fallback a storage local
+      loadDataFromStorage();
+    }, 100);
+
+    function filterSelect(selectId, searchText) {
+      const selectEl = document.getElementById(selectId);
+      const options = Array.from(selectEl.options);
+      const lowerSearch = searchText.toLowerCase();
+      options.forEach(opt => {
+        const match = opt.textContent.toLowerCase().includes(lowerSearch);
+        opt.style.display = match ? "" : "none";
+      });
+    }
+
+    function toggleSelectAll(selectId, btnId) {
+      const selectEl = document.getElementById(selectId);
+      const btn = document.getElementById(btnId);
+      const visibleOptions = Array.from(selectEl.options).filter(o => o.style.display !== "none");
+      const allSelected = visibleOptions.every(o => o.selected);
+      visibleOptions.forEach(o => o.selected = !allSelected);
+      btn.textContent = allSelected ? "Seleccionar todo" : "Deseleccionar todo";
+    }
+
+    function updateToggleButton(selectId, btnId) {
+      const selectEl = document.getElementById(selectId);
+      const buttonEl = document.getElementById(btnId);
+      const visibleOptions = Array.from(selectEl.options).filter(o => o.style.display !== "none");
+      const allSelected = visibleOptions.length > 0 && visibleOptions.every(o => o.selected);
+      buttonEl.textContent = allSelected ? 'Deseleccionar todo' : 'Seleccionar todo';
+    }
+
+    function setStatus(msg) {
+      statusEl.textContent = msg || "";
+    }
+
+    function excelDateToJSDate(serial) {
+      const utc_days = Math.floor(serial - 25569);
+      const utc_value = utc_days * 86400;
+      const date_info = new Date(utc_value * 1000);
+      return new Date(date_info.getFullYear(), date_info.getMonth(), date_info.getDate());
+    }
+
+    function parseDate(value) {
+      if (!value) return null;
+      if (value instanceof Date) return value;
+      if (typeof value === "number") {
+        return excelDateToJSDate(value);
+      }
+      if (typeof value === "string") {
+        const d = new Date(value);
+        if (!isNaN(d.getTime())) return d;
+      }
+      return null;
+    }
+
+    function formatDateISO(d) {
+      if (!d) return "";
+      const year = d.getFullYear();
+      const month = String(d.getMonth() + 1).padStart(2, "0");
+      const day = String(d.getDate()).padStart(2, "0");
+      return `${year}-${month}-${day}`;
+    }
+
+    function formatMonthKey(d) {
+      if (!d) return "";
+      const y = d.getFullYear();
+      const m = String(d.getMonth() + 1).padStart(2, "0");
+      return `${y}-${m}`;
+    }
+
+    function formatMoney(value) {
+      if (value == null || isNaN(value)) return "-";
+      const absVal = Math.abs(value);
+      let suffix = "";
+      let display = absVal;
+
+      if (absVal >= 1_000_000_000) {
+        display = absVal / 1_000_000_000;
+        suffix = " B";
+      } else if (absVal >= 1_000_000) {
+        display = absVal / 1_000_000;
+        suffix = " M";
+      } else if (absVal >= 1_000) {
+        display = absVal / 1_000;
+        suffix = " K";
+      }
+
+      return (value < 0 ? "-" : "") + display.toFixed(1) + suffix;
+    }
+    
+    // Función para corregir caracteres mal codificados
+    function fixEncoding(str) {
+      if (!str || typeof str !== 'string') return str;
+      
+      // Mapa de caracteres UTF-8 mal interpretados como Latin-1
+      const replacements = [
+        ["Ã¡", "á"],
+        ["Ã©", "é"],
+        ["Ã­", "í"],
+        ["Ã³", "ó"],
+        ["Ãº", "ú"],
+        ["Ã±", "ñ"],
+        ["Ã¼", "ü"],
+        ["Ã\u0081", "Á"],
+        ["Ã‰", "É"],
+        ["Ã\u0091", "Ñ"],
+        ["Ãš", "Ú"],
+        ["Ãœ", "Ü"],
+        ["Âª", "ª"],
+        ["Âº", "º"],
+        ["Â°", "°"]
+      ];
+      
+      let result = str;
+      for (const [bad, good] of replacements) {
+        result = result.split(bad).join(good);
+      }
+      return result;
+    }
+
+    function handleFile(evt) {
+      const file = evt.target.files[0];
+      if (!file) {
+        setStatus("No se seleccionó archivo.");
+        return;
+      }
+      setStatus("Leyendo archivo...");
+      const reader = new FileReader();
+      reader.onload = function(e) {
+        const data = new Uint8Array(e.target.result);
+        const workbook = XLSX.read(data, { type: "array", codepage: 65001 });
+
+        // Buscar hoja "Cto Vehiculos" (o similar)
+        let sheetName = workbook.SheetNames.find(n =>
+          n.toLowerCase().includes("cto vehiculo")
+        );
+        if (!sheetName) {
+          sheetName = workbook.SheetNames[0];
+        }
+
+        const sheet = workbook.Sheets[sheetName];
+        rawData = XLSX.utils.sheet_to_json(sheet, { defval: null });
+
+        if (!rawData.length) {
+          setStatus("La hoja está vacía.");
+          return;
+        }
+        
+        // Corregir caracteres mal codificados (UTF-8 interpretado como Latin-1)
+        rawData = rawData.map(row => {
+          const newRow = {};
+          for (const key in row) {
+            let value = row[key];
+            if (typeof value === 'string') {
+              value = fixEncoding(value);
+            }
+            newRow[key] = value;
+          }
+          return newRow;
+        });
+
+        // Normalizar fecha
+        rawData.forEach(row => {
+          const d = parseDate(row[DATE_COL]);
+          row.__date = d;
+          row.__dateStr = d ? formatDateISO(d) : null;
+          row.__monthKey = d ? formatMonthKey(d) : null;
+        });
+
+        // Guardar en IndexedDB para persistencia
+        saveDataToStorage(rawData, file.name);
+
+        setStatus(`Archivo cargado. Registros: ${rawData.length}. Hoja: "${sheetName}".`);
+
+        initFilters();
+        applyFilters();
+      };
+      reader.onerror = function() {
+        setStatus("Error leyendo el archivo.");
+      };
+      reader.readAsArrayBuffer(file);
+    }
+
+    function getSelectedOptions(selectEl) {
+      return Array.from(selectEl.options)
+        .filter(opt => opt.selected)
+        .map(opt => opt.value);
+    }
+
+    function initFilters() {
+      // Inicializar opciones disponibles desde rawData
+      availableOptions.catalogos = new Set(rawData.map(r => r[CATALOGO_COL]).filter(Boolean));
+      availableOptions.ciudades = new Set(rawData.map(r => r[CIUDAD_COL]).filter(Boolean));
+      availableOptions.terceros = new Set(rawData.map(r => r[TERCERO_COL]).filter(Boolean));
+
+      // Poblar todos los filtros - seleccionar todos por defecto
+      populateFilter(catalogoFilterEl, availableOptions.catalogos, [], true);
+      populateFilter(ciudadFilterEl, availableOptions.ciudades, [], true);
+      populateFilter(terceroFilterEl, availableOptions.terceros, [], true);
+
+      // Rango de fechas global
+      const validDates = rawData
+        .map(r => r.__date)
+        .filter(d => d instanceof Date && !isNaN(d));
+      if (validDates.length) {
+        const minD = new Date(Math.min.apply(null, validDates));
+        const maxD = new Date(Math.max.apply(null, validDates));
+        startDateEl.value = formatDateISO(minD);
+        endDateEl.value = formatDateISO(maxD);
+      }
+      
+      // Actualizar botones de toggle
+      updateToggleButton('catalogoFilter', 'catalogoFilterBtn');
+      updateToggleButton('ciudadFilter', 'ciudadFilterBtn');
+      updateToggleButton('terceroFilter', 'terceroFilterBtn');
+    }
+
+    function populateFilter(selectEl, optionsSet, selectedValues = [], selectAllByDefault = false) {
+      const currentSearch = selectEl.previousElementSibling?.value || "";
+      selectEl.innerHTML = "";
+      const sortedOptions = Array.from(optionsSet).sort();
+      sortedOptions.forEach(val => {
+        const opt = document.createElement("option");
+        opt.value = val;
+        opt.textContent = val;
+        // Seleccionar si está en selectedValues o si selectAllByDefault es true
+        opt.selected = selectAllByDefault || selectedValues.includes(val);
+        selectEl.appendChild(opt);
+      });
+      if (currentSearch) {
+        filterSelect(selectEl.id, currentSearch);
+      }
+    }
+
+    function updateChainedFilters() {
+      // Obtener selecciones actuales
+      const selectedCatalogos = getSelectedOptions(catalogoFilterEl);
+      const selectedCiudades = getSelectedOptions(ciudadFilterEl);
+      const selectedTerceros = getSelectedOptions(terceroFilterEl);
+
+      // Filtrar rawData basado en selecciones actuales
+      let tempFiltered = rawData.filter(row => {
+        if (selectedCatalogos.length > 0 && !selectedCatalogos.includes(String(row[CATALOGO_COL]))) return false;
+        if (selectedCiudades.length > 0 && !selectedCiudades.includes(String(row[CIUDAD_COL]))) return false;
+        if (selectedTerceros.length > 0 && !selectedTerceros.includes(String(row[TERCERO_COL]))) return false;
+        return true;
+      });
+
+      // Actualizar opciones disponibles basadas en filtro temporal
+      const newCatalogos = new Set(tempFiltered.map(r => r[CATALOGO_COL]).filter(Boolean));
+      const newCiudades = new Set(tempFiltered.map(r => r[CIUDAD_COL]).filter(Boolean));
+      const newTerceros = new Set(tempFiltered.map(r => r[TERCERO_COL]).filter(Boolean));
+
+      // Repoblar filtros manteniendo selecciones válidas
+      populateFilter(catalogoFilterEl, newCatalogos, selectedCatalogos.filter(s => newCatalogos.has(s)));
+      populateFilter(ciudadFilterEl, newCiudades, selectedCiudades.filter(s => newCiudades.has(s)));
+      populateFilter(terceroFilterEl, newTerceros, selectedTerceros.filter(s => newTerceros.has(s)));
+      
+      // Guardar filtros
+      saveFiltersToStorage();
+    }
+    
+    // Filtrar ciudades según catálogos seleccionados
+    function updateCiudadesByCatalogo() {
+      const selectedCatalogos = getSelectedOptions(catalogoFilterEl);
+      
+      // Si no hay catálogos seleccionados, mostrar todas las ciudades
+      let dataFiltrada = rawData;
+      if (selectedCatalogos.length > 0) {
+        dataFiltrada = rawData.filter(row => selectedCatalogos.includes(String(row[CATALOGO_COL])));
+      }
+      
+      const ciudadesDisponibles = new Set(dataFiltrada.map(r => r[CIUDAD_COL]).filter(Boolean));
+      const selectedCiudades = getSelectedOptions(ciudadFilterEl);
+      
+      // Mantener solo las ciudades que siguen siendo válidas
+      const ciudadesValidas = selectedCiudades.filter(c => ciudadesDisponibles.has(c));
+      
+      // Repoblar con todas seleccionadas si no hay selección previa válida
+      if (ciudadesValidas.length === 0) {
+        populateFilter(ciudadFilterEl, ciudadesDisponibles, [], true);
+      } else {
+        populateFilter(ciudadFilterEl, ciudadesDisponibles, ciudadesValidas);
+      }
+      updateToggleButton('ciudadFilter', 'ciudadFilterBtn');
+    }
+    
+    // Filtrar terceros según catálogos y ciudades seleccionados
+    function updateTercerosByCatalogoYCiudad() {
+      const selectedCatalogos = getSelectedOptions(catalogoFilterEl);
+      const selectedCiudades = getSelectedOptions(ciudadFilterEl);
+      
+      let dataFiltrada = rawData;
+      if (selectedCatalogos.length > 0) {
+        dataFiltrada = dataFiltrada.filter(row => selectedCatalogos.includes(String(row[CATALOGO_COL])));
+      }
+      if (selectedCiudades.length > 0) {
+        dataFiltrada = dataFiltrada.filter(row => selectedCiudades.includes(String(row[CIUDAD_COL])));
+      }
+      
+      const tercerosDisponibles = new Set(dataFiltrada.map(r => r[TERCERO_COL]).filter(Boolean));
+      const selectedTerceros = getSelectedOptions(terceroFilterEl);
+      
+      // Mantener solo los terceros que siguen siendo válidos
+      const tercerosValidos = selectedTerceros.filter(t => tercerosDisponibles.has(t));
+      
+      // Repoblar con todos seleccionados si no hay selección previa válida
+      if (tercerosValidos.length === 0) {
+        populateFilter(terceroFilterEl, tercerosDisponibles, [], true);
+      } else {
+        populateFilter(terceroFilterEl, tercerosDisponibles, tercerosValidos);
+      }
+      updateToggleButton('terceroFilter', 'terceroFilterBtn');
+    }
+
+    function applyFilters() {
+      if (!rawData.length) return;
+
+      const selectedCatalogos = getSelectedOptions(catalogoFilterEl);
+      const selectedCiudades = getSelectedOptions(ciudadFilterEl);
+      const selectedTerceros = getSelectedOptions(terceroFilterEl);
+      const startFilter = startDateEl.value ? new Date(startDateEl.value) : null;
+      const endFilter = endDateEl.value ? new Date(endDateEl.value) : null;
+
+      filteredData = rawData.filter(row => {
+        // Fecha
+        if (startFilter || endFilter) {
+          const d = row.__date;
+          if (!(d instanceof Date) || isNaN(d)) return false;
+          if (startFilter && d < startFilter) return false;
+          if (endFilter && d > endFilter) return false;
+        }
+        // Catálogo
+        if (selectedCatalogos.length > 0) {
+          const cat = row[CATALOGO_COL];
+          if (!selectedCatalogos.includes(String(cat))) return false;
+        }
+        // Ciudad
+        if (selectedCiudades.length > 0) {
+          const ci = row[CIUDAD_COL];
+          if (!selectedCiudades.includes(String(ci))) return false;
+        }
+        // Tercero
+        if (selectedTerceros.length > 0) {
+          const ter = row[TERCERO_COL];
+          if (!selectedTerceros.includes(String(ter))) return false;
+        }
+        return true;
+      });
+
+      // Limpiar filtro de gráfica al aplicar nuevos filtros
+      chartFilter = { type: null, value: null };
+      
+      setStatus(`Registros filtrados: ${filteredData.length}`);
+      updateKPIs();
+      drawCharts();
+      renderTable();
+    }
+
+    function resetFilters() {
+      if (!rawData.length) return;
+
+      Array.from(catalogoFilterEl.options).forEach(o => (o.selected = false));
+      Array.from(ciudadFilterEl.options).forEach(o => (o.selected = false));
+      Array.from(terceroFilterEl.options).forEach(o => (o.selected = false));
+
+      // Limpiar búsquedas
+      document.getElementById("catalogoSearch").value = "";
+      document.getElementById("ciudadSearch").value = "";
+      document.getElementById("terceroSearch").value = "";
+
+      const validDates = rawData
+        .map(r => r.__date)
+        .filter(d => d instanceof Date && !isNaN(d));
+      if (validDates.length) {
+        const minD = new Date(Math.min.apply(null, validDates));
+        const maxD = new Date(Math.max.apply(null, validDates));
+        startDateEl.value = formatDateISO(minD);
+        endDateEl.value = formatDateISO(maxD);
+      } else {
+        startDateEl.value = "";
+        endDateEl.value = "";
+      }
+
+      // Reinicializar filtros encadenados
+      initFilters();
+      applyFilters();
+    }
+
+    function sumNumeric(arr, col) {
+      return arr.reduce((acc, r) => {
+        const val = parseFloat(r[col]);
+        if (!isNaN(val)) return acc + val;
+        return acc;
+      }, 0);
+    }
+
+    function updateKPIs() {
+      if (!filteredData.length) {
+        kpiCostoTotalEl.textContent = "-";
+        kpiCostoTotalSubEl.textContent = "";
+        kpiPromedioMensualEl.textContent = "-";
+        kpiRegistrosEl.textContent = "-";
+        kpiRegistrosSubEl.textContent = "";
+        kpiTercerosEl.textContent = "-";
+        kpiTercerosSubEl.textContent = "";
+        return;
+      }
+
+      const totalCosto = sumNumeric(filteredData, COSTO_COL);
+      kpiCostoTotalEl.textContent = formatMoney(totalCosto);
+      kpiCostoTotalSubEl.textContent = `Suma Neto: ${totalCosto.toLocaleString("es-CO", { maximumFractionDigits: 0 })}`;
+
+      // Meses con movimiento
+      const meses = new Set(
+        filteredData.map(r => r.__monthKey).filter(Boolean)
+      );
+      const mesesCount = meses.size || 1;
+      const promedioMensual = totalCosto / mesesCount;
+      kpiPromedioMensualEl.textContent = formatMoney(promedioMensual);
+
+      // Registros
+      kpiRegistrosEl.textContent = filteredData.length;
+      const catalogosUsados = new Set(
+        filteredData.map(r => r[CATALOGO_COL]).filter(Boolean)
+      );
+      kpiRegistrosSubEl.textContent = `Catálogos: ${Array.from(catalogosUsados).join(", ")}`;
+
+      // Terceros
+      const terceros = new Set(
+        filteredData.map(r => r[TERCERO_COL]).filter(Boolean)
+      );
+      kpiTercerosEl.textContent = terceros.size;
+      kpiTercerosSubEl.textContent = `Ej: ${Array.from(terceros).slice(0, 3).join(", ")}${terceros.size > 3 ? "..." : ""}`;
+    }
+
+    function drawCharts() {
+      if (!filteredData.length) {
+        Plotly.purge("chart_costos_mensuales");
+        Plotly.purge("chart_costos_catalogo");
+        Plotly.purge("chart_costos_ciudad");
+        Plotly.purge("chart_costos_terceros");
+        return;
+      }
+
+      drawCostosMensuales();
+      drawCostosPorCatalogo();
+      drawCostosPorCiudad();
+      drawCostosPorTercero();
+      addChartClickFilters();
+    }
+
+    // Interactividad para filtrar al hacer clic en las gráficas
+    function addChartClickFilters() {
+      // Catálogo
+      const catalogoDiv = document.getElementById("chart_costos_catalogo");
+      if (catalogoDiv) {
+        catalogoDiv.on("plotly_click", function(e) {
+          if (e.points && e.points[0] && e.points[0].x) {
+            const cat = e.points[0].x;
+            Array.from(catalogoFilterEl.options).forEach(opt => {
+              opt.selected = (opt.value === cat);
+            });
+            applyFilters();
+          }
+        });
+      }
+      // Ciudad
+      const ciudadDiv = document.getElementById("chart_costos_ciudad");
+      if (ciudadDiv) {
+        ciudadDiv.on("plotly_click", function(e) {
+          if (e.points && e.points[0] && e.points[0].y) {
+            // Extraer solo el nombre de ciudad (sin placas)
+            const label = e.points[0].y;
+            const ciudad = label.split(" (")[0];
+            Array.from(ciudadFilterEl.options).forEach(opt => {
+              opt.selected = (opt.value === ciudad);
+            });
+            applyFilters();
+          }
+        });
+      }
+      // Tercero
+      const terceroDiv = document.getElementById("chart_costos_terceros");
+      if (terceroDiv) {
+        terceroDiv.on("plotly_click", function(e) {
+          if (e.points && e.points[0] && e.points[0].y) {
+            // No hay select de terceros, pero podrías mostrar solo los registros de ese tercero en la tabla
+            // Si quieres agregar un filtro visual, se puede agregar un select de terceros
+            // Por ahora, solo filtra en la tabla
+            const tercero = e.points[0].y;
+            filteredData = filteredData.filter(r => r[TERCERO_COL] === tercero);
+            setStatus(`Filtrado por tercero: ${tercero}`);
+            updateKPIs();
+            drawCharts();
+            renderTable();
+          }
+        });
+      }
+      // Placa (si existe una gráfica de placas)
+      const placaDiv = document.getElementById("chart_costos_placa");
+      const placaFilterEl = document.getElementById("placaFilter");
+      if (placaDiv && placaFilterEl) {
+        placaDiv.on("plotly_click", function(e) {
+          if (e.points && e.points[0] && e.points[0].y) {
+            const placa = e.points[0].y;
+            Array.from(placaFilterEl.options).forEach(opt => {
+              opt.selected = (opt.value === placa);
+            });
+            applyFilters();
+          }
+        });
+      }
+    }
+
+    function drawCostosMensuales() {
+      const map = {};
+      filteredData.forEach(r => {
+        const key = r.__monthKey;
+        if (!key) return;
+        if (!map[key]) map[key] = 0;
+        const val = parseFloat(r[COSTO_COL]);
+        if (!isNaN(val)) map[key] += val;
+      });
+
+      const meses = Object.keys(map).sort();
+      const valores = meses.map(m => map[m]);
+
+      const trace = {
+        x: meses,
+        y: valores,
+        type: "bar",
+        hovertemplate: "%{x}<br>Costo: %{y:,.0f}<extra></extra>"
+      };
+
+      const layout = {
+        margin: { t: 20, r: 10, b: 50, l: 60 },
+        yaxis: {
+          title: "Costo Neto"
+        },
+        xaxis: {
+          title: "Mes",
+          tickangle: -45
+        }
+      };
+
+      Plotly.newPlot("chart_costos_mensuales", [trace], layout, { responsive: true });
+    }
+
+    function drawCostosPorCatalogo() {
+      const map = {};
+      filteredData.forEach(r => {
+        const cat = r[CATALOGO_COL] || "Sin catálogo";
+        if (!map[cat]) map[cat] = 0;
+        const val = parseFloat(r[COSTO_COL]);
+        if (!isNaN(val)) map[cat] += val;
+      });
+
+      const cats = Object.keys(map).sort();
+      const valores = cats.map(c => map[c]);
+
+      const trace = {
+        x: cats,
+        y: valores,
+        type: "bar",
+        hovertemplate: "%{x}<br>Costo: %{y:,.0f}<br><i>Click para filtrar</i><extra></extra>"
+      };
+
+      const layout = {
+        margin: { t: 20, r: 10, b: 80, l: 60 },
+        yaxis: { title: "Costo Neto" },
+        xaxis: { tickangle: -40 }
+      };
+
+      Plotly.newPlot("chart_costos_catalogo", [trace], layout, { responsive: true });
+      
+      // Agregar evento de click
+      document.getElementById("chart_costos_catalogo").on('plotly_click', function(data) {
+        if (data.points && data.points.length > 0) {
+          const clickedCatalogo = data.points[0].x;
+          if (chartFilter.type === 'catalogo' && chartFilter.value === clickedCatalogo) {
+            chartFilter = { type: null, value: null };
+          } else {
+            chartFilter = { type: 'catalogo', value: clickedCatalogo };
+          }
+          renderTableWithChartFilter();
+        }
+      });
+    }
+
+    function drawCostosPorCiudad() {
+      const map = {};
+      const placasPorCiudad = {};
+      filteredData.forEach(r => {
+        const ci = r[CIUDAD_COL] || "Sin ciudad";
+        if (!map[ci]) map[ci] = 0;
+        const val = parseFloat(r[COSTO_COL]);
+        if (!isNaN(val)) map[ci] += val;
+        // Guardar placas asociadas
+        if (!placasPorCiudad[ci]) placasPorCiudad[ci] = new Set();
+        if (r["Placa"]) placasPorCiudad[ci].add(r["Placa"]);
+      });
+
+      let entries = Object.entries(map);
+      entries.sort((a, b) => b[1] - a[1]);
+      entries = entries.slice(0, 10);
+
+      // Mostrar ciudad + placas
+      const ciudades = entries.map(e => {
+        const ci = e[0];
+        const placas = placasPorCiudad[ci] ? Array.from(placasPorCiudad[ci]).slice(0, 2).join(", ") : "";
+        return placas ? `${ci} (${placas})` : ci;
+      });
+      const valores = entries.map(e => e[1]);
+
+      const trace = {
+        x: valores,
+        y: ciudades,
+        type: "bar",
+        orientation: "h",
+        hovertemplate: "Ciudad: %{y}<br>Costo: %{x:,.0f}<br><i>Click para filtrar</i><extra></extra>"
+      };
+
+      const layout = {
+        margin: { t: 20, r: 10, b: 40, l: 100 },
+        xaxis: { title: "Costo Neto (Top 10 ciudades)", type: "log" }
+      };
+
+      Plotly.newPlot("chart_costos_ciudad", [trace], layout, { responsive: true });
+      
+      // Agregar evento de click
+      document.getElementById("chart_costos_ciudad").on('plotly_click', function(data) {
+        if (data.points && data.points.length > 0) {
+          const clickedLabel = data.points[0].y;
+          const clickedCiudad = clickedLabel.split(" (")[0];
+          if (chartFilter.type === 'ciudad' && chartFilter.value === clickedCiudad) {
+            chartFilter = { type: null, value: null };
+          } else {
+            chartFilter = { type: 'ciudad', value: clickedCiudad };
+          }
+          renderTableWithChartFilter();
+        }
+      });
+    }
+
+    function drawCostosPorTercero() {
+      const map = {};
+      filteredData.forEach(r => {
+        const t = r[TERCERO_COL] || "Sin tercero";
+        if (!map[t]) map[t] = 0;
+        const val = parseFloat(r[COSTO_COL]);
+        if (!isNaN(val)) map[t] += val;
+      });
+
+      let entries = Object.entries(map);
+      entries.sort((a, b) => b[1] - a[1]);
+      entries = entries.slice(0, 10);
+
+      const terceros = entries.map(e => e[0]);
+      const valores = entries.map(e => e[1]);
+
+      const trace = {
+        x: valores,
+        y: terceros.map(t => t.length > 22 ? t.replace(/(.{22})/g, '$1<br>') : t),
+        type: "bar",
+        orientation: "h",
+        hovertemplate: "Tercero: %{y}<br>Costo: %{x:,.0f}<br><i>Click para filtrar</i><extra></extra>",
+        customdata: terceros  // Guardar nombres completos sin saltos de línea
+      };
+
+      const layout = {
+        margin: { t: 20, r: 10, b: 40, l: 320 }, // margen izquierdo aún mayor
+        xaxis: { title: "Costo Neto (Top 10 terceros)", type: "log" },
+        width: 900 // ancho más amplio para evitar corte de texto
+      };
+
+      Plotly.newPlot("chart_costos_terceros", [trace], layout, { responsive: true });
+      
+      // Agregar evento de click
+      document.getElementById("chart_costos_terceros").on('plotly_click', function(data) {
+        if (data.points && data.points.length > 0) {
+          const clickedTercero = data.points[0].customdata || data.points[0].y.replace(/<br>/g, '');
+          if (chartFilter.type === 'tercero' && chartFilter.value === clickedTercero) {
+            chartFilter = { type: null, value: null };
+          } else {
+            chartFilter = { type: 'tercero', value: clickedTercero };
+          }
+          renderTableWithChartFilter();
+        }
+      });
+    }
+
+    function renderTableWithChartFilter() {
+      let dataToRender = filteredData;
+      
+      // Aplicar filtro de gráfica si existe
+      if (chartFilter.type === 'catalogo' && chartFilter.value) {
+        dataToRender = filteredData.filter(r => String(r[CATALOGO_COL]) === chartFilter.value || (r[CATALOGO_COL] == null && chartFilter.value === "Sin catálogo"));
+      } else if (chartFilter.type === 'ciudad' && chartFilter.value) {
+        dataToRender = filteredData.filter(r => String(r[CIUDAD_COL]) === chartFilter.value || (r[CIUDAD_COL] == null && chartFilter.value === "Sin ciudad"));
+      } else if (chartFilter.type === 'tercero' && chartFilter.value) {
+        dataToRender = filteredData.filter(r => String(r[TERCERO_COL]) === chartFilter.value || (r[TERCERO_COL] == null && chartFilter.value === "Sin tercero"));
+      }
+      
+      // Limpiar filtro de gráfica al aplicar nuevos filtros
+      if (dataToRender.length === 0 && chartFilter.type) {
+        chartFilter = { type: null, value: null };
+        dataToRender = filteredData;
+      }
+      
+      detailTableHead.innerHTML = "";
+      detailTableBody.innerHTML = "";
+
+      const theadRow = document.createElement("tr");
+      detailColumns.forEach(col => {
+        const th = document.createElement("th");
+        th.textContent = col;
+        theadRow.appendChild(th);
+      });
+      detailTableHead.appendChild(theadRow);
+
+      const maxRows = 300;
+      const rowsToShow = dataToRender.slice(0, maxRows);
+
+      rowsToShow.forEach(r => {
+        const tr = document.createElement("tr");
+        detailColumns.forEach(col => {
+          const td = document.createElement("td");
+          let val = r[col];
+
+          if (col === DATE_COL) {
+            val = r.__date ? formatDateISO(r.__date) : "";
+          }
+          if (col === COSTO_COL) {
+            const num = parseFloat(val);
+            td.textContent = isNaN(num)
+              ? ""
+              : num.toLocaleString("es-CO", { minimumFractionDigits: 0 });
+          } else if (col === CATALOGO_COL && val) {
+            const span = document.createElement("span");
+            span.className = "badge";
+            span.textContent = val;
+            td.appendChild(span);
+          } else {
+            td.textContent = val == null ? "" : String(val);
+          }
+          tr.appendChild(td);
+        });
+        detailTableBody.appendChild(tr);
+      });
+
+      const total = dataToRender.length;
+      let filterInfo = "";
+      if (chartFilter.type === 'catalogo') {
+        filterInfo = ` | Filtro gráfica: Catálogo "${chartFilter.value}" (click de nuevo para quitar)`;
+      } else if (chartFilter.type === 'ciudad') {
+        filterInfo = ` | Filtro gráfica: Ciudad "${chartFilter.value}" (click de nuevo para quitar)`;
+      } else if (chartFilter.type === 'tercero') {
+        filterInfo = ` | Filtro gráfica: Tercero "${chartFilter.value}" (click de nuevo para quitar)`;
+      }
+      
+      if (total > maxRows) {
+        tableInfoEl.textContent = `Mostrando ${rowsToShow.length} de ${total} registros (límite para vista rápida)${filterInfo}.`;
+      } else {
+        tableInfoEl.textContent = `Registros mostrados: ${total}${filterInfo}.`;
+      }
+    }
+    
+    // Mantener compatibilidad con llamadas antiguas
+    function renderTable() {
+      renderTableWithChartFilter();
+    }
+  </script>
+  </div>
+</body>
+</html>

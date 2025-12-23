@@ -1,0 +1,9 @@
+2025/12/20-08:56:28.115 127a0 Reusing MANIFEST C:\Users\guiog\OneDrive\Documentos\Logisticahes\.playwright_session\Default\Local Storage\leveldb/MANIFEST-000001
+2025/12/20-08:56:28.119 127a0 Recovering log #3
+2025/12/20-08:56:28.120 127a0 Reusing old log C:\Users\guiog\OneDrive\Documentos\Logisticahes\.playwright_session\Default\Local Storage\leveldb/000003.log 
+2025/12/20-08:57:28.129 790c Level-0 table #5: started
+2025/12/20-08:57:28.152 790c Level-0 table #5: 114148 bytes OK
+2025/12/20-08:57:28.167 790c Delete type=0 #3
+2025/12/20-08:58:02.571 790c Level-0 table #7: started
+2025/12/20-08:58:02.583 790c Level-0 table #7: 231571 bytes OK
+2025/12/20-08:58:02.587 790c Delete type=0 #4

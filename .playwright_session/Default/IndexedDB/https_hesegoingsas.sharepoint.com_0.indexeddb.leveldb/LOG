@@ -1,0 +1,5 @@
+2025/12/20-08:58:00.569 1145c Creating DB C:\Users\guiog\OneDrive\Documentos\Logisticahes\.playwright_session\Default\IndexedDB\https_hesegoingsas.sharepoint.com_0.indexeddb.leveldb since it was missing.
+2025/12/20-08:58:00.572 1145c Reusing MANIFEST C:\Users\guiog\OneDrive\Documentos\Logisticahes\.playwright_session\Default\IndexedDB\https_hesegoingsas.sharepoint.com_0.indexeddb.leveldb/MANIFEST-000001
+2025/12/20-08:58:08.362 50d4 Level-0 table #5: started
+2025/12/20-08:58:08.395 50d4 Level-0 table #5: 2262950 bytes OK
+2025/12/20-08:58:08.398 50d4 Delete type=0 #3

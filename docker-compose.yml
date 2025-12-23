@@ -13,18 +13,21 @@ services:
     networks:
       - web
     depends_on:
-      - rclone-sync
+      - webhook-server
 
-  # Servicio Rclone - Sincroniza archivos de SharePoint
-  rclone-sync:
+  # Servidor Webhook - Recibe archivos desde Power Automate
+  webhook-server:
     build:
       context: .
-      dockerfile: Dockerfile.rclone
-    container_name: rclone-sync
+      dockerfile: Dockerfile.webhook
+    container_name: webhook-server
     restart: unless-stopped
+    ports:
+      - "5000:5000"
     volumes:
-      - sharepoint_data:/data
-      - ./rclone/rclone.conf:/config/rclone.conf:ro
+      - sharepoint_data:/app/data
+    environment:
+      - WEBHOOK_SECRET=${WEBHOOK_SECRET:-hesego_logistica_2024}
     networks:
       - web
 
