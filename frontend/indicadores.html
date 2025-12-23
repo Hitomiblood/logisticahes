@@ -142,11 +142,26 @@
         </div>
         <div id="chartBrigadas" class="chart"></div>
       </div>
+      
+      <div class="chart-card">
+        <div class="chart-header">
+          <h3 class="chart-title">⚠️ Errores Movimientos</h3>
+          <div class="chart-filters">
+            <div class="chart-filter-group">
+              <label>Error:</label>
+              <input type="text" class="filter-search" id="errorSearch" placeholder="Buscar..." onkeyup="filterSelect('errorFilter', this.value)" />
+              <select multiple id="errorFilter"></select>
+              <button class="btn-filter-chart" id="errorFilterBtn" onclick="toggleSelectAll('errorFilter', 'errorFilterBtn')">Seleccionar todo</button>
+            </div>
+          </div>
+        </div>
+        <div id="chartErrores" class="chart"></div>
+      </div>
     </div>
   </div>
   <script>
-    let filtrosDisponibles = {}, filtrosDisponiblesFiscal = {}, filtrosGlobales = {}, filtrosGrafica = {}, filtrosGraficaFiscal = {};
-    const fechaInicioEl = document.getElementById("fechaInicio"), fechaFinEl = document.getElementById("fechaFin"), sedeGlobalFilterEl = document.getElementById("sedeGlobalFilter"), responsableFilterEl = document.getElementById("responsableFilter"), estadoFilterEl = document.getElementById("estadoFilter"), tipoFilterEl = document.getElementById("tipoFilter"), statusEl = document.getElementById("status");
+    let filtrosDisponibles = {}, filtrosDisponiblesFiscal = {}, filtrosDisponiblesErrores = {}, filtrosGlobales = {}, filtrosGrafica = {}, filtrosGraficaFiscal = {}, filtrosGraficaErrores = {};
+    const fechaInicioEl = document.getElementById("fechaInicio"), fechaFinEl = document.getElementById("fechaFin"), sedeGlobalFilterEl = document.getElementById("sedeGlobalFilter"), responsableFilterEl = document.getElementById("responsableFilter"), estadoFilterEl = document.getElementById("estadoFilter"), tipoFilterEl = document.getElementById("tipoFilter"), errorFilterEl = document.getElementById("errorFilter"), statusEl = document.getElementById("status");
     
     window.addEventListener('DOMContentLoaded', async () => { await cargarFiltros(); await cargarDatos(); });
     
@@ -162,6 +177,11 @@
       populateFilter(estadoFilterEl, filtrosDisponiblesFiscal.estados, filtrosDisponiblesFiscal.estados);
       populateFilter(tipoFilterEl, filtrosDisponiblesFiscal.tipos_inventario, filtrosDisponiblesFiscal.tipos_inventario);
       updateToggleButton('estadoFilter', 'estadoFilterBtn'); updateToggleButton('tipoFilter', 'tipoFilterBtn');
+      
+      // Filtros para Errores
+      const r3 = await fetch('/api/errores/filtros'); filtrosDisponiblesErrores = await r3.json();
+      populateFilter(errorFilterEl, filtrosDisponiblesErrores.tipos_error, filtrosDisponiblesErrores.tipos_error);
+      updateToggleButton('errorFilter', 'errorFilterBtn');
     }
     
     function populateFilter(selectEl, options, selectedValues = []) {
@@ -173,11 +193,12 @@
       selectEl.addEventListener('click', e => e.preventDefault());
     }
     
-    enableClickToggleSelection(sedeGlobalFilterEl); enableClickToggleSelection(responsableFilterEl); enableClickToggleSelection(estadoFilterEl); enableClickToggleSelection(tipoFilterEl);
+    enableClickToggleSelection(sedeGlobalFilterEl); enableClickToggleSelection(responsableFilterEl); enableClickToggleSelection(estadoFilterEl); enableClickToggleSelection(tipoFilterEl); enableClickToggleSelection(errorFilterEl);
     sedeGlobalFilterEl.addEventListener("change", () => { updateToggleButton('sedeGlobalFilter', 'sedeGlobalFilterBtn'); aplicarFiltroSedeGlobal(); });
     responsableFilterEl.addEventListener("change", () => { updateToggleButton('responsableFilter', 'responsableFilterBtn'); aplicarFiltrosGrafica(); });
     estadoFilterEl.addEventListener("change", () => { updateToggleButton('estadoFilter', 'estadoFilterBtn'); aplicarFiltrosGraficaFiscal(); });
     tipoFilterEl.addEventListener("change", () => { updateToggleButton('tipoFilter', 'tipoFilterBtn'); aplicarFiltrosGraficaFiscal(); });
+    errorFilterEl.addEventListener("change", () => { updateToggleButton('errorFilter', 'errorFilterBtn'); aplicarFiltrosGraficaErrores(); });
     
     // Aplicar filtro global de tiempo
     async function aplicarFiltroGlobal() {
@@ -199,7 +220,7 @@
         delete filtrosGlobales.sedes;
       }
       // Actualizar todas las gráficas
-      await Promise.all([actualizarGraficas(), actualizarGraficaFiscalRU(), actualizarGraficaBrigadas()]);
+      await Promise.all([actualizarGraficas(), actualizarGraficaFiscalRU(), actualizarGraficaBrigadas(), actualizarGraficaErrores()]);
     }
     
     // Aplicar filtros específicos de la gráfica OYMM (sin recargar todo)
@@ -219,8 +240,16 @@
       await actualizarGraficaFiscalRU();
     }
     
+    // Aplicar filtros específicos de Errores
+    async function aplicarFiltrosGraficaErrores() {
+      filtrosGraficaErrores = {};
+      const errores = getSelectedOptions(errorFilterEl);
+      if (errores.length > 0 && errores.length < filtrosDisponiblesErrores.tipos_error.length) filtrosGraficaErrores.errores = errores.join(",");
+      await actualizarGraficaErrores();
+    }
+    
     async function cargarDatos() {
-      setStatus('🔄 Cargando...'); await Promise.all([actualizarKPIs(), actualizarGraficas(), actualizarGraficaFiscalRU(), actualizarGraficaBrigadas()]); setStatus('✅ OK'); setTimeout(() => setStatus(''), 2000);
+      setStatus('🔄 Cargando...'); await Promise.all([actualizarKPIs(), actualizarGraficas(), actualizarGraficaFiscalRU(), actualizarGraficaBrigadas(), actualizarGraficaErrores()]); setStatus('✅ OK'); setTimeout(() => setStatus(''), 2000);
     }
     
     function combinarFiltros() {
@@ -273,6 +302,39 @@
       ];
       const layout = { barmode: 'group', xaxis: { title: 'Sede' }, yaxis: { title: 'Costo ($)', tickformat: '$,.0f', separatethousands: true }, yaxis2: { title: 'Desviación (%)', overlaying: 'y', side: 'right', tickformat: '.2f', showgrid: false }, legend: { x: 0.5, y: -0.2, xanchor: 'center', orientation: 'h' }, margin: { t: 30, b: 80, l: 150, r: 80 } };
       Plotly.newPlot('chartBrigadas', traces, layout, { responsive: true });
+    }
+    
+    async function actualizarGraficaErrores() {
+      const filtros = { ...filtrosGlobales, ...filtrosGraficaErrores }; // Filtros globales + filtro de Error
+      const r = await fetch(`/api/errores/grafico/por-error?${new URLSearchParams(filtros)}`), data = await r.json();
+      const labels = data.labels, valores = data.valores;
+      
+      // Colores por tipo de error
+      const colores = labels.map(label => {
+        if (label === 'Si') return '#dc2626'; // Rojo para errores confirmados
+        if (label === 'Revisar') return '#f59e0b'; // Naranja para revisar
+        if (label === 'Validar') return '#8b5cf6'; // Púrpura para validar
+        return '#10b981'; // Verde para sin error
+      });
+      
+      const traces = [{
+        y: labels,
+        x: valores,
+        type: 'bar',
+        orientation: 'h',
+        marker: { color: colores },
+        text: valores.map(v => v.toLocaleString()),
+        textposition: 'outside'
+      }];
+      
+      const layout = { 
+        xaxis: { title: 'Total', tickformat: ',.0f', separatethousands: true },
+        yaxis: { title: 'Error', automargin: true },
+        showlegend: false,
+        margin: { t: 30, b: 80, l: 150, r: 80 }
+      };
+      
+      Plotly.newPlot('chartErrores', traces, layout, { responsive: true });
     }
     
     function getSelectedOptions(selectEl) { return Array.from(selectEl.options).filter(opt => opt.selected).map(opt => opt.value); }

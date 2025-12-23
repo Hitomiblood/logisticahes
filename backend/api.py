@@ -10,7 +10,7 @@ from .database import get_db, init_db
 from .config import BASE_DIR
 
 # Importar routers
-from .routes import costos, operatividad, compras, indicadores, fiscal_ru, brigadas
+from .routes import costos, operatividad, compras, indicadores, fiscal_ru, brigadas, errores
 
 # Rutas de carpetas
 FRONTEND_DIR = BASE_DIR / "frontend"
@@ -43,6 +43,7 @@ app.include_router(compras.router)
 app.include_router(indicadores.router)
 app.include_router(fiscal_ru.router)
 app.include_router(brigadas.router)
+app.include_router(errores.router)
 
 
 @app.on_event("startup")

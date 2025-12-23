@@ -222,6 +222,11 @@ def main():
     except Exception as e:
         print(f"⚠️ Error en Brigadas: {e}")
     
+    try:
+        total += import_errores()
+    except Exception as e:
+        print(f"⚠️ Error en Errores: {e}")
+    
     print("=" * 60)
     print(f"✅ IMPORTACIÓN COMPLETADA - Total: {total:,} registros")
     print(f"📁 Base de datos: {DB_PATH}")
@@ -790,6 +795,105 @@ def import_brigadas():
         
     except Exception as e:
         print(f"❌ Error importando Brigadas: {e}")
+        import traceback
+        traceback.print_exc()
+        raise
+
+
+def import_errores():
+    """Importar datos de Errores Movimientos"""
+    config = EXCEL_FILES["errores"]
+    print(f"📂 Leyendo {config['path']} - Hoja: {config['sheet']}...")
+    
+    try:
+        df = pd.read_excel(config["path"], sheet_name=config["sheet"])
+        print(f"   Registros encontrados: {len(df)}")
+        
+        # Limpiar tabla
+        clear_table("errores")
+        
+        # Mapeo de meses abreviados a nombres completos en español
+        meses_map = {
+            'jan': 'ENERO', 'feb': 'FEBRERO', 'mar': 'MARZO', 'apr': 'ABRIL',
+            'may': 'MAYO', 'jun': 'JUNIO', 'jul': 'JULIO', 'aug': 'AGOSTO',
+            'sep': 'SEPTIEMBRE', 'oct': 'OCTUBRE', 'nov': 'NOVIEMBRE', 'dec': 'DICIEMBRE'
+        }
+        
+        # Extraer mes de la fecha y transformar
+        df['mes_abrev'] = df['Fecha'].dt.strftime('%b').str.lower()  # jun, jul
+        df['mes'] = df['mes_abrev'].map(meses_map)
+        
+        # Transformar Zona a mayúsculas para coincidir con otras tablas
+        df['sede'] = df['Zona'].str.upper()
+        
+        # Preparar registros
+        records = []
+        for _, row in df.iterrows():
+            record = {
+                "mes": row.get('mes'),
+                "sede": row.get('sede'),
+                "error": row.get('Error'),
+                "bodega": row.get('Bodega'),
+                "doc": row.get('DOC'),
+                "fecha": row.get('Fecha').strftime('%Y-%m-%d') if pd.notna(row.get('Fecha')) else None,
+                "tipo_numero": row.get('Tipo numero'),
+                "codigo": row.get('Codigo'),
+                "descripcion": row.get('Descripcion'),
+                "tercero": row.get('Tercero'),
+                "nombre": row.get('Nombre'),
+                "cantidad": row.get('Cantidad'),
+                "costo": row.get('Costo'),
+                "total": row.get('Total'),
+                "cuenta_doc": row.get('Codigo6'),
+                "nombre_cuenta": row.get('Nombre7'),
+                "observaciones": row.get('OBS')
+            }
+            
+            # Convertir NaN a None
+            for key, value in record.items():
+                if pd.isna(value):
+                    record[key] = None
+                elif isinstance(value, str):
+                    record[key] = fix_encoding(value.strip())
+            
+            records.append(record)
+        
+        # Insertar en BD
+        with get_db() as conn:
+            cursor = conn.cursor()
+            for record in records:
+                cursor.execute('''
+                    INSERT INTO errores 
+                    (mes, sede, error, bodega, doc, fecha, tipo_numero, codigo,
+                     descripcion, tercero, nombre, cantidad, costo, total,
+                     cuenta_doc, nombre_cuenta, observaciones)
+                    VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+                ''', (
+                    record["mes"],
+                    record["sede"],
+                    record["error"],
+                    record["bodega"],
+                    record["doc"],
+                    record["fecha"],
+                    record["tipo_numero"],
+                    record["codigo"],
+                    record["descripcion"],
+                    record["tercero"],
+                    record["nombre"],
+                    record["cantidad"],
+                    record["costo"],
+                    record["total"],
+                    record["cuenta_doc"],
+                    record["nombre_cuenta"],
+                    record["observaciones"]
+                ))
+            conn.commit()
+        
+        print(f"✅ Errores: {len(records)} registros importados")
+        return len(records)
+        
+    except Exception as e:
+        print(f"❌ Error importando Errores: {e}")
         import traceback
         traceback.print_exc()
         raise

@@ -302,6 +302,34 @@ def init_db():
         cursor.execute('CREATE INDEX IF NOT EXISTS idx_brigadas_sede ON brigadas(sede)')
         cursor.execute('CREATE INDEX IF NOT EXISTS idx_brigadas_estado ON brigadas(estado)')
         
+        # Tabla para Errores Movimientos
+        cursor.execute('''
+            CREATE TABLE IF NOT EXISTS errores (
+                id INTEGER PRIMARY KEY AUTOINCREMENT,
+                mes TEXT,
+                sede TEXT,
+                error TEXT,
+                bodega TEXT,
+                doc TEXT,
+                fecha TEXT,
+                tipo_numero TEXT,
+                codigo INTEGER,
+                descripcion TEXT,
+                tercero INTEGER,
+                nombre TEXT,
+                cantidad INTEGER,
+                costo REAL,
+                total REAL,
+                cuenta_doc TEXT,
+                nombre_cuenta TEXT,
+                observaciones TEXT,
+                created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+            )
+        ''')
+        cursor.execute('CREATE INDEX IF NOT EXISTS idx_errores_mes ON errores(mes)')
+        cursor.execute('CREATE INDEX IF NOT EXISTS idx_errores_sede ON errores(sede)')
+        cursor.execute('CREATE INDEX IF NOT EXISTS idx_errores_error ON errores(error)')
+        
         conn.commit()
         print("✅ Base de datos inicializada correctamente")
 

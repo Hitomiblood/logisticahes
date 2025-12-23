@@ -35,6 +35,10 @@ EXCEL_FILES = {
     "brigadas": {
         "path": DATA_DIR / "ALMACENES" / "INDICADORES 2025.xlsx",
         "sheet": "BRIGADAS "
+    },
+    "errores": {
+        "path": DATA_DIR / "ALMACENES" / "INDICADORES 2025.xlsx",
+        "sheet": "ERRORES "
     }
 }
 
