@@ -5,8 +5,8 @@
   <title>Dashboard Inventario OYMM-MATERIALES</title>
   <script src="https://cdn.plot.ly/plotly-2.35.2.min.js"></script>
   <style>
-    body { margin: 0; font-family: system-ui, sans-serif; background: #f4f5f7; display: flex; }
-    .sidebar { width: 280px; background: linear-gradient(180deg, #0a2540, #1c4e80); height: 100vh; padding: 1rem 0; box-shadow: 4px 0 20px rgba(0,0,0,0.3); position: fixed; display: flex; flex-direction: column; overflow: hidden; }
+    body { margin: 0; font-family: system-ui, sans-serif; background: #f4f5f7; }
+    .sidebar { width: 240px; background: linear-gradient(180deg, #0a2540, #1c4e80); height: 100vh; padding: 1rem 0; box-shadow: 4px 0 20px rgba(0,0,0,0.3); position: fixed; display: flex; flex-direction: column; overflow: hidden; }
     .sidebar-header { text-align: center; padding: 0 1rem 1rem; border-bottom: 1px solid rgba(255,255,255,0.1); }
     .sidebar-header img { width: 60px; margin-bottom: 0.3rem; }
     .sidebar-header h2 { color: white; font-size: 0.95rem; font-weight: 600; margin: 0 0 0.8rem 0; }
@@ -16,16 +16,13 @@
     .sidebar-filters h3 { color: rgba(255,255,255,0.9); font-size: 0.75rem; text-transform: uppercase; margin: 0 0 0.6rem 0; padding-bottom: 0.4rem; border-bottom: 1px solid rgba(255,255,255,0.1); }
     .filter-group { margin-bottom: 0.8rem; }
     .filter-group label { display: block; color: rgba(255,255,255,0.8); font-size: 0.75rem; font-weight: 500; margin-bottom: 0.3rem; }
-    .filter-search { width: 100%; padding: 0.3rem 0.5rem; border-radius: 4px; border: 1px solid rgba(255,255,255,0.2); font-size: 0.75rem; background: rgba(255,255,255,0.1); color: white; box-sizing: border-box; margin-bottom: 0.3rem; }
-    .filter-search::placeholder { color: rgba(255,255,255,0.5); }
-    select { width: 100%; height: 90px; padding: 0.2rem; border-radius: 4px; border: 1px solid rgba(255,255,255,0.2); font-size: 0.75rem; background: rgba(255,255,255,0.95); box-sizing: border-box; }
-    .filter-date { width: 100%; padding: 0.4rem 0.5rem; border-radius: 4px; border: 1px solid rgba(255,255,255,0.2); font-size: 0.75rem; background: rgba(255,255,255,0.95); color: #333; box-sizing: border-box; }
-    .btn-filter { width: 100%; padding: 0.35rem 0.5rem; margin-top: 0.3rem; border-radius: 4px; border: none; font-size: 0.7rem; font-weight: 500; background: rgba(255,255,255,0.2); color: white; cursor: pointer; }
-    .btn-filter:hover { background: rgba(255,255,255,0.3); }
-    .sidebar-footer { padding: 0.6rem 1rem; border-top: 1px solid rgba(255,255,255,0.1); text-align: center; }
+    .filter-date-sidebar { width: 100%; padding: 0.4rem 0.5rem; border-radius: 4px; border: 1px solid rgba(255,255,255,0.2); font-size: 0.75rem; background: rgba(255,255,255,0.95); color: #333; box-sizing: border-box; }
+    .btn-apply-sidebar { width: 100%; padding: 0.5rem; border-radius: 4px; border: none; font-size: 0.75rem; font-weight: 600; background: rgba(255,255,255,0.25); color: white; cursor: pointer; transition: all 0.3s; margin-top: 0.5rem; }
+    .btn-apply-sidebar:hover { background: rgba(255,255,255,0.35); }
+    .sidebar-footer { padding: 0.6rem 1rem; border-top: 1px solid rgba(255,255,255,0.1); text-align: center; margin-top: auto; }
     .sidebar-footer p { color: rgba(255,255,255,0.5); font-size: 0.6rem; margin: 0; }
     #status { color: rgba(255,255,255,0.8); font-size: 0.7rem; margin-top: 0.3rem; }
-    .main-wrapper { margin-left: 280px; flex: 1; min-height: 100vh; }
+    .main-wrapper { margin-left: 240px; flex: 1; min-height: 100vh; }
     header { background: linear-gradient(135deg, #15803d, #16a34a); color: #fff; padding: 1.2rem 2rem; box-shadow: 0 2px 8px rgba(0,0,0,0.15); }
     header h1 { margin: 0; font-size: 1.6rem; }
     header p { margin: 0.2rem 0 0; opacity: 0.9; }
@@ -34,8 +31,16 @@
     .kpi { background: #fff; border-radius: 10px; padding: 0.8rem; box-shadow: 0 1px 4px rgba(0,0,0,0.06); }
     .kpi label { font-size: 0.75rem; text-transform: uppercase; color: #555; margin-bottom: 0.15rem; display: block; }
     .kpi-value { font-size: 1.1rem; font-weight: 700; color: #16a34a; }
-    .chart-card { background: #fff; border-radius: 12px; padding: 0.5rem 0.6rem 0.8rem; box-shadow: 0 1px 4px rgba(0,0,0,0.08); margin-bottom: 1rem; }
-    .chart-title { font-weight: 600; font-size: 1.1rem; margin: 0.2rem 0 0.5rem 0.2rem; color: #16a34a; }
+    .chart-card { background: #fff; border-radius: 12px; padding: 1rem; box-shadow: 0 1px 4px rgba(0,0,0,0.08); margin-bottom: 1rem; }
+    .chart-header { display: flex; justify-content: space-between; align-items: start; margin-bottom: 0.8rem; }
+    .chart-title { font-weight: 600; font-size: 1.1rem; margin: 0; color: #16a34a; }
+    .chart-filters { display: flex; gap: 0.8rem; align-items: end; }
+    .chart-filter-group { display: flex; flex-direction: column; }
+    .chart-filter-group label { font-size: 0.7rem; color: #555; font-weight: 500; margin-bottom: 0.2rem; }
+    .filter-search { padding: 0.2rem 0.4rem; border-radius: 4px; border: 1px solid #ddd; font-size: 0.7rem; background: #f9fafb; margin-bottom: 0.2rem; }
+    select { height: 70px; padding: 0.2rem; border-radius: 4px; border: 1px solid #ddd; font-size: 0.7rem; background: #fff; min-width: 140px; }
+    .btn-filter-chart { padding: 0.3rem 0.6rem; border-radius: 4px; border: none; font-size: 0.65rem; font-weight: 500; background: #e5e7eb; color: #374151; cursor: pointer; transition: all 0.3s; }
+    .btn-filter-chart:hover { background: #d1d5db; }
     .chart { width: 100%; height: 450px; }
     @keyframes spin { to { transform: rotate(360deg); } }
   </style>
@@ -48,30 +53,16 @@
       <a href="index.html" class="btn-back">← Regresar</a>
     </div>
     <div class="sidebar-filters">
-      <h3>🔍 Filtros</h3>
+      <h3>⏱️ Periodo Global</h3>
       <div class="filter-group">
         <label>Mes Inicio:</label>
-        <input type="month" id="fechaInicio" class="filter-date" />
+        <input type="month" id="fechaInicio" class="filter-date-sidebar" />
       </div>
       <div class="filter-group">
         <label>Mes Fin:</label>
-        <input type="month" id="fechaFin" class="filter-date" />
+        <input type="month" id="fechaFin" class="filter-date-sidebar" />
       </div>
-      <div class="filter-group">
-        <button class="btn-filter" onclick="aplicarFiltrosDinamicos()" style="background: rgba(255,255,255,0.3);">Aplicar Filtro</button>
-      </div>
-      <div class="filter-group">
-        <label>Sede:</label>
-        <input type="text" class="filter-search" id="sedeSearch" placeholder="Buscar..." onkeyup="filterSelect('sedeFilter', this.value)" />
-        <select multiple id="sedeFilter"></select>
-        <button class="btn-filter" id="sedeFilterBtn" onclick="toggleSelectAll('sedeFilter', 'sedeFilterBtn')">Seleccionar todo</button>
-      </div>
-      <div class="filter-group">
-        <label>Responsable:</label>
-        <input type="text" class="filter-search" id="responsableSearch" placeholder="Buscar..." onkeyup="filterSelect('responsableFilter', this.value)" />
-        <select multiple id="responsableFilter"></select>
-        <button class="btn-filter" id="responsableFilterBtn" onclick="toggleSelectAll('responsableFilter', 'responsableFilterBtn')">Seleccionar todo</button>
-      </div>
+      <button class="btn-apply-sidebar" onclick="aplicarFiltroGlobal()">Aplicar Periodo</button>
     </div>
     <div class="sidebar-footer">
       <p>© 2025 HESEGO</p>
@@ -92,13 +83,29 @@
         <div class="kpi"><label>Total Registros</label><div class="kpi-value" id="kpiRegistros">0</div></div>
       </div>
       <div class="chart-card">
-        <h3 class="chart-title">📈 Inventario OYMM por Sede</h3>
+        <div class="chart-header">
+          <h3 class="chart-title">📈 Inventario OYMM por Sede</h3>
+          <div class="chart-filters">
+            <div class="chart-filter-group">
+              <label>Sede:</label>
+              <input type="text" class="filter-search" id="sedeSearch" placeholder="Buscar..." onkeyup="filterSelect('sedeFilter', this.value)" />
+              <select multiple id="sedeFilter"></select>
+              <button class="btn-filter-chart" id="sedeFilterBtn" onclick="toggleSelectAll('sedeFilter', 'sedeFilterBtn')">Seleccionar todo</button>
+            </div>
+            <div class="chart-filter-group">
+              <label>Responsable:</label>
+              <input type="text" class="filter-search" id="responsableSearch" placeholder="Buscar..." onkeyup="filterSelect('responsableFilter', this.value)" />
+              <select multiple id="responsableFilter"></select>
+              <button class="btn-filter-chart" id="responsableFilterBtn" onclick="toggleSelectAll('responsableFilter', 'responsableFilterBtn')">Seleccionar todo</button>
+            </div>
+          </div>
+        </div>
         <div id="chartPrincipal" class="chart"></div>
       </div>
     </div>
   </div>
   <script>
-    let filtrosDisponibles = {}, filtrosActuales = {};
+    let filtrosDisponibles = {}, filtrosGlobales = {}, filtrosGrafica = {};
     const fechaInicioEl = document.getElementById("fechaInicio"), fechaFinEl = document.getElementById("fechaFin"), sedeFilterEl = document.getElementById("sedeFilter"), responsableFilterEl = document.getElementById("responsableFilter"), statusEl = document.getElementById("status");
     
     window.addEventListener('DOMContentLoaded', async () => { await cargarFiltros(); await cargarDatos(); });
@@ -120,25 +127,37 @@
     }
     
     enableClickToggleSelection(sedeFilterEl); enableClickToggleSelection(responsableFilterEl);
-    sedeFilterEl.addEventListener("change", () => { updateToggleButton('sedeFilter', 'sedeFilterBtn'); aplicarFiltrosDinamicos(); });
-    responsableFilterEl.addEventListener("change", () => { updateToggleButton('responsableFilter', 'responsableFilterBtn'); aplicarFiltrosDinamicos(); });
+    sedeFilterEl.addEventListener("change", () => { updateToggleButton('sedeFilter', 'sedeFilterBtn'); aplicarFiltrosGrafica(); });
+    responsableFilterEl.addEventListener("change", () => { updateToggleButton('responsableFilter', 'responsableFilterBtn'); aplicarFiltrosGrafica(); });
     
-    async function aplicarFiltrosDinamicos() {
-      filtrosActuales = {};
-      const sedes = getSelectedOptions(sedeFilterEl), resp = getSelectedOptions(responsableFilterEl);
-      if (fechaInicioEl.value) filtrosActuales.fecha_inicio = fechaInicioEl.value;
-      if (fechaFinEl.value) filtrosActuales.fecha_fin = fechaFinEl.value;
-      if (sedes.length > 0 && sedes.length < filtrosDisponibles.sedes.length) filtrosActuales.sedes = sedes.join(",");
-      if (resp.length > 0 && resp.length < filtrosDisponibles.responsables.length) filtrosActuales.responsables = resp.join(",");
+    // Aplicar filtro global de tiempo
+    async function aplicarFiltroGlobal() {
+      filtrosGlobales = {};
+      if (fechaInicioEl.value) filtrosGlobales.fecha_inicio = fechaInicioEl.value;
+      if (fechaFinEl.value) filtrosGlobales.fecha_fin = fechaFinEl.value;
       await cargarDatos();
+    }
+    
+    // Aplicar filtros específicos de la gráfica (sin recargar todo)
+    async function aplicarFiltrosGrafica() {
+      filtrosGrafica = {};
+      const sedes = getSelectedOptions(sedeFilterEl), resp = getSelectedOptions(responsableFilterEl);
+      if (sedes.length > 0 && sedes.length < filtrosDisponibles.sedes.length) filtrosGrafica.sedes = sedes.join(",");
+      if (resp.length > 0 && resp.length < filtrosDisponibles.responsables.length) filtrosGrafica.responsables = resp.join(",");
+      await actualizarGraficas();
     }
     
     async function cargarDatos() {
       setStatus('🔄 Cargando...'); await Promise.all([actualizarKPIs(), actualizarGraficas()]); setStatus('✅ OK'); setTimeout(() => setStatus(''), 2000);
     }
     
+    function combinarFiltros() {
+      return { ...filtrosGlobales, ...filtrosGrafica };
+    }
+    
     async function actualizarKPIs() {
-      const r = await fetch(`/api/indicadores/kpis?${new URLSearchParams(filtrosActuales)}`), kpis = await r.json();
+      const filtros = combinarFiltros();
+      const r = await fetch(`/api/indicadores/kpis?${new URLSearchParams(filtros)}`), kpis = await r.json();
       document.getElementById('kpiCostoInventario').textContent = formatMoney(kpis.costo_inventario_final);
       document.getElementById('kpiCostoDiferencia').textContent = formatMoney(kpis.costo_diferencia);
       document.getElementById('kpiDesviacion').textContent = kpis.desviacion_promedio.toFixed(2) + '%';
@@ -147,7 +166,8 @@
     }
     
     async function actualizarGraficas() {
-      const r = await fetch(`/api/indicadores/grafico/inventario-por-sede?${new URLSearchParams(filtrosActuales)}`), data = await r.json();
+      const filtros = combinarFiltros();
+      const r = await fetch(`/api/indicadores/grafico/inventario-por-sede?${new URLSearchParams(filtros)}`), data = await r.json();
       const sedes = data.map(d => d.sede), costosInv = data.map(d => d.costo_inventario), costosDif = data.map(d => d.costo_diferencia), desv = data.map(d => d.desviacion_promedio);
       const traces = [
         { x: sedes, y: costosInv, name: 'Costo Inventario', type: 'bar', marker: { color: '#16a34a' } },
