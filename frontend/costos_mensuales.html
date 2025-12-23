@@ -162,7 +162,7 @@
       background: rgba(255, 255, 255, 0.3);
     }
     
-    .filter-group input[type="date"] {
+    .filter-group .date-input {
       width: 100%;
       padding: 0.35rem 0.5rem;
       border-radius: 4px;
@@ -171,6 +171,125 @@
       background: rgba(255, 255, 255, 0.95);
       box-sizing: border-box;
       margin-bottom: 0.3rem;
+      cursor: pointer;
+    }
+    
+    .filter-group .date-input:hover {
+      border-color: rgba(255, 255, 255, 0.5);
+    }
+    
+    .date-picker-container {
+      position: relative;
+    }
+    
+    .date-popup {
+      position: absolute;
+      top: 100%;
+      left: 0;
+      right: 0;
+      background: white;
+      border: 1px solid #d0d7de;
+      border-radius: 8px;
+      box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+      z-index: 100;
+      padding: 0.5rem;
+      display: none;
+    }
+    
+    .date-popup.active {
+      display: block;
+    }
+    
+    .date-popup-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 0.5rem;
+      padding-bottom: 0.3rem;
+      border-bottom: 1px solid #eee;
+    }
+    
+    .date-popup-title {
+      font-weight: 600;
+      font-size: 0.85rem;
+      color: #333;
+    }
+    
+    .date-popup-close {
+      cursor: pointer;
+      font-size: 1.2rem;
+      color: #666;
+    }
+    
+    .year-grid {
+      display: grid;
+      grid-template-columns: repeat(4, 1fr);
+      gap: 0.3rem;
+      margin-bottom: 0.5rem;
+      padding-bottom: 0.5rem;
+      border-bottom: 1px solid #e1e4e8;
+    }
+    
+    .year-btn {
+      padding: 0.4rem;
+      border: 1px solid #e1e4e8;
+      border-radius: 6px;
+      background: #f6f8fa;
+      cursor: pointer;
+      font-size: 0.85rem;
+      text-align: center;
+      transition: all 0.1s;
+      font-weight: 500;
+      color: #333;
+    }
+    
+    .year-btn:hover {
+      background: #1c4e80;
+      color: white;
+      border-color: #1c4e80;
+    }
+    
+    .year-btn.selected {
+      background: #1c4e80;
+      color: white;
+      border-color: #1c4e80;
+    }
+    
+    .month-grid {
+      display: grid;
+      grid-template-columns: repeat(4, 1fr);
+      gap: 0.3rem;
+      margin-bottom: 0.5rem;
+    }
+    
+    .month-btn, .day-btn {
+      padding: 0.4rem;
+      border: 1px solid #e1e4e8;
+      border-radius: 6px;
+      background: #f6f8fa;
+      cursor: pointer;
+      font-size: 0.8rem;
+      text-align: center;
+      transition: all 0.1s;
+      color: #333;
+    }
+    
+    .month-btn:hover, .day-btn:hover {
+      background: #1c4e80;
+      color: white;
+      border-color: #1c4e80;
+    }
+    
+    .month-btn.selected, .day-btn.selected {
+      background: #1c4e80;
+      color: white;
+      border-color: #1c4e80;
+    }
+    
+    .day-grid {
+      display: grid;
+      grid-template-columns: repeat(7, 1fr);
+      gap: 0.2rem;
     }
     
     .sidebar-actions {
@@ -575,8 +694,32 @@
       
       <div class="filter-group">
         <label>Rango de fechas</label>
-        <input type="date" id="startDate" />
-        <input type="date" id="endDate" />
+        <div class="date-picker-container">
+          <input type="text" class="date-input" id="startDateDisplay" placeholder="Desde..." readonly onclick="openDatePicker('start')">
+          <div class="date-popup" id="startDatePopup">
+            <div class="date-popup-header">
+              <span class="date-popup-title">Fecha inicio</span>
+              <span class="date-popup-close" onclick="closeDatePicker('start')">×</span>
+            </div>
+            <div class="year-grid" id="startYearGrid"></div>
+            <div class="month-grid" id="startMonthGrid"></div>
+            <div class="day-grid" id="startDayGrid"></div>
+          </div>
+        </div>
+        <div class="date-picker-container">
+          <input type="text" class="date-input" id="endDateDisplay" placeholder="Hasta..." readonly onclick="openDatePicker('end')">
+          <div class="date-popup" id="endDatePopup">
+            <div class="date-popup-header">
+              <span class="date-popup-title">Fecha fin</span>
+              <span class="date-popup-close" onclick="closeDatePicker('end')">×</span>
+            </div>
+            <div class="year-grid" id="endYearGrid"></div>
+            <div class="month-grid" id="endMonthGrid"></div>
+            <div class="day-grid" id="endDayGrid"></div>
+          </div>
+        </div>
+        <input type="hidden" id="startDate" />
+        <input type="hidden" id="endDate" />
       </div>
       
       <div class="filter-group">
@@ -705,6 +848,177 @@
   </div> <!-- Cierre main-wrapper -->
 
   <script>
+    // =====================================================
+    // Date Picker Personalizado
+    // =====================================================
+    const monthNames = ['Ene', 'Feb', 'Mar', 'Abr', 'May', 'Jun', 'Jul', 'Ago', 'Sep', 'Oct', 'Nov', 'Dic'];
+    
+    const datePickerState = {
+      start: { year: null, month: null, day: null },
+      end: { year: null, month: null, day: null },
+      minYear: 2020,
+      maxYear: new Date().getFullYear() + 1
+    };
+    
+    function initDatePickerYears() {
+      ['start', 'end'].forEach(prefix => {
+        const yearGrid = document.getElementById(prefix + 'YearGrid');
+        if (!yearGrid) return;
+        yearGrid.innerHTML = '';
+        
+        for (let y = datePickerState.minYear; y <= datePickerState.maxYear; y++) {
+          const btn = document.createElement('div');
+          btn.className = 'year-btn';
+          btn.textContent = y;
+          btn.dataset.year = y;
+          if (datePickerState[prefix].year === y) {
+            btn.classList.add('selected');
+          }
+          btn.onclick = () => selectYear(prefix, y);
+          yearGrid.appendChild(btn);
+        }
+      });
+    }
+    
+    function selectYear(prefix, year) {
+      datePickerState[prefix].year = year;
+      
+      const yearGrid = document.getElementById(prefix + 'YearGrid');
+      yearGrid.querySelectorAll('.year-btn').forEach(btn => {
+        btn.classList.toggle('selected', parseInt(btn.dataset.year) === year);
+      });
+      
+      showMonths(prefix);
+    }
+    
+    function openDatePicker(prefix) {
+      const otherPrefix = prefix === 'start' ? 'end' : 'start';
+      document.getElementById(otherPrefix + 'DatePopup').classList.remove('active');
+      
+      const popup = document.getElementById(prefix + 'DatePopup');
+      popup.classList.add('active');
+      
+      if (!datePickerState[prefix].year) {
+        datePickerState[prefix].year = datePickerState.minYear || new Date().getFullYear();
+      }
+      
+      const yearGrid = document.getElementById(prefix + 'YearGrid');
+      if (yearGrid) {
+        yearGrid.querySelectorAll('.year-btn').forEach(btn => {
+          btn.classList.toggle('selected', parseInt(btn.dataset.year) === datePickerState[prefix].year);
+        });
+      }
+      
+      showMonths(prefix);
+    }
+    
+    function closeDatePicker(prefix) {
+      document.getElementById(prefix + 'DatePopup').classList.remove('active');
+    }
+    
+    function showMonths(prefix) {
+      const monthGrid = document.getElementById(prefix + 'MonthGrid');
+      const dayGrid = document.getElementById(prefix + 'DayGrid');
+      
+      let year = datePickerState[prefix].year;
+      if (!year) {
+        year = datePickerState.minYear || new Date().getFullYear();
+        datePickerState[prefix].year = year;
+      }
+      
+      monthGrid.innerHTML = '';
+      dayGrid.innerHTML = '';
+      
+      monthNames.forEach((name, idx) => {
+        const btn = document.createElement('div');
+        btn.className = 'month-btn';
+        if (datePickerState[prefix].month === idx) {
+          btn.classList.add('selected');
+        }
+        btn.textContent = name;
+        btn.onclick = () => selectMonth(prefix, idx);
+        monthGrid.appendChild(btn);
+      });
+      
+      if (datePickerState[prefix].month !== null) {
+        showDays(prefix);
+      }
+    }
+    
+    function selectMonth(prefix, month) {
+      datePickerState[prefix].month = month;
+      showDays(prefix);
+    }
+    
+    function showDays(prefix) {
+      const monthGrid = document.getElementById(prefix + 'MonthGrid');
+      const dayGrid = document.getElementById(prefix + 'DayGrid');
+      const year = datePickerState[prefix].year;
+      const month = datePickerState[prefix].month;
+      
+      monthGrid.querySelectorAll('.month-btn').forEach((btn, idx) => {
+        btn.classList.toggle('selected', idx === month);
+      });
+      
+      const daysInMonth = new Date(year, month + 1, 0).getDate();
+      
+      dayGrid.innerHTML = '';
+      for (let d = 1; d <= daysInMonth; d++) {
+        const btn = document.createElement('div');
+        btn.className = 'day-btn';
+        if (datePickerState[prefix].day === d) {
+          btn.classList.add('selected');
+        }
+        btn.textContent = d;
+        btn.onclick = () => selectDay(prefix, d);
+        dayGrid.appendChild(btn);
+      }
+    }
+    
+    function selectDay(prefix, day) {
+      datePickerState[prefix].day = day;
+      updateDateDisplay(prefix);
+      closeDatePicker(prefix);
+      syncHiddenDates();
+    }
+    
+    function updateDateDisplay(prefix) {
+      const state = datePickerState[prefix];
+      const displayEl = document.getElementById(prefix + 'DateDisplay');
+      if (state.year && state.month !== null && state.day) {
+        displayEl.value = `${state.day} ${monthNames[state.month]} ${state.year}`;
+      }
+    }
+    
+    function syncHiddenDates() {
+      const start = datePickerState.start;
+      const end = datePickerState.end;
+      
+      if (start.year && start.month !== null && start.day) {
+        const d = new Date(start.year, start.month, start.day);
+        document.getElementById('startDate').value = d.toISOString().split('T')[0];
+      }
+      if (end.year && end.month !== null && end.day) {
+        const d = new Date(end.year, end.month, end.day);
+        document.getElementById('endDate').value = d.toISOString().split('T')[0];
+      }
+    }
+    
+    document.addEventListener('click', function(e) {
+      if (!e.target.closest('.date-picker-container')) {
+        closeDatePicker('start');
+        closeDatePicker('end');
+      }
+    });
+    
+    // Inicializar date picker al cargar
+    document.addEventListener('DOMContentLoaded', function() {
+      initDatePickerYears();
+    });
+
+    // =====================================================
+    // Variables y configuración principal
+    // =====================================================
     let rawData = [];
     let filteredData = [];
     let chartFilter = { type: null, value: null }; // Filtro adicional desde gráficas
@@ -1581,6 +1895,14 @@
       document.getElementById("catalogoSearch").value = "";
       document.getElementById("ciudadSearch").value = "";
       document.getElementById("terceroSearch").value = "";
+
+      // Limpiar date picker personalizado
+      datePickerState.start = { year: null, month: null, day: null };
+      datePickerState.end = { year: null, month: null, day: null };
+      const startDisplay = document.getElementById('startDateDisplay');
+      const endDisplay = document.getElementById('endDateDisplay');
+      if (startDisplay) startDisplay.value = '';
+      if (endDisplay) endDisplay.value = '';
 
       const validDates = rawData
         .map(r => r.__date)

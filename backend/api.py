@@ -32,9 +32,11 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
-# Servir archivos estáticos (imágenes y datos)
-app.mount("/img", StaticFiles(directory=str(IMG_DIR)), name="img")
-app.mount("/data", StaticFiles(directory=str(DATA_DIR)), name="data")
+# Servir archivos estáticos (solo si existen los directorios)
+if IMG_DIR.exists():
+    app.mount("/img", StaticFiles(directory=str(IMG_DIR)), name="img")
+if DATA_DIR.exists():
+    app.mount("/data", StaticFiles(directory=str(DATA_DIR)), name="data")
 
 # Incluir routers de API
 app.include_router(costos.router)
