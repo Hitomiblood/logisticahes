@@ -19,6 +19,23 @@
     .filter-date-sidebar { width: 100%; padding: 0.4rem 0.5rem; border-radius: 4px; border: 1px solid rgba(255,255,255,0.2); font-size: 0.75rem; background: rgba(255,255,255,0.95); color: #333; box-sizing: border-box; }
     .btn-apply-sidebar { width: 100%; padding: 0.5rem; border-radius: 4px; border: none; font-size: 0.75rem; font-weight: 600; background: rgba(255,255,255,0.25); color: white; cursor: pointer; transition: all 0.3s; margin-top: 0.5rem; }
     .btn-apply-sidebar:hover { background: rgba(255,255,255,0.35); }
+    .date-input { width: 100%; padding: 0.35rem 0.5rem; border-radius: 4px; border: 1px solid rgba(255,255,255,0.2); font-size: 0.75rem; background: rgba(255,255,255,0.95); box-sizing: border-box; margin-bottom: 0.3rem; cursor: pointer; }
+    .date-input:hover { border-color: rgba(255,255,255,0.5); }
+    .date-picker-container { position: relative; }
+    .date-popup { position: absolute; top: 100%; left: 0; right: 0; background: white; border: 1px solid #d0d7de; border-radius: 8px; box-shadow: 0 4px 12px rgba(0,0,0,0.15); z-index: 100; padding: 0.5rem; display: none; }
+    .date-popup.active { display: block; }
+    .date-popup-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 0.5rem; padding-bottom: 0.3rem; border-bottom: 1px solid #eee; }
+    .date-popup-title { font-weight: 600; font-size: 0.85rem; color: #333; }
+    .date-popup-close { cursor: pointer; font-size: 1.2rem; color: #666; }
+    .year-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 0.3rem; margin-bottom: 0.5rem; padding-bottom: 0.5rem; border-bottom: 1px solid #e1e4e8; }
+    .year-btn { padding: 0.4rem; border: 1px solid #e1e4e8; border-radius: 6px; background: #f6f8fa; cursor: pointer; font-size: 0.85rem; text-align: center; transition: all 0.1s; font-weight: 500; color: #333; }
+    .year-btn:hover { background: #15803d; color: white; border-color: #15803d; }
+    .year-btn.selected { background: #15803d; color: white; border-color: #15803d; }
+    .month-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 0.3rem; margin-bottom: 0.5rem; }
+    .month-btn, .day-btn { padding: 0.4rem; border: 1px solid #e1e4e8; border-radius: 6px; background: #f6f8fa; cursor: pointer; font-size: 0.8rem; text-align: center; transition: all 0.1s; color: #333; }
+    .month-btn:hover, .day-btn:hover { background: #15803d; color: white; border-color: #15803d; }
+    .month-btn.selected, .day-btn.selected { background: #15803d; color: white; border-color: #15803d; }
+    .day-grid { display: grid; grid-template-columns: repeat(7, 1fr); gap: 0.2rem; }
     .filter-search-sidebar { width: 100%; padding: 0.5rem 0.6rem; border-radius: 4px; border: 1px solid rgba(255,255,255,0.2); font-size: 0.75rem; background: rgba(255,255,255,0.1); color: white; box-sizing: border-box; margin-bottom: 0.5rem; transition: all 0.3s; }
     .filter-search-sidebar::placeholder { color: rgba(255,255,255,0.5); }
     .filter-search-sidebar:focus { outline: none; background: rgba(255,255,255,0.15); border-color: rgba(255,255,255,0.4); }
@@ -60,18 +77,42 @@
     <div class="sidebar-header">
       <img src="img/logo.png" alt="HESEGO Logo" />
       <h2>Indicadores OYMM</h2>
-      <a href="index.html" class="btn-back">← Regresar</a>
+      <a href="index.html" class="btn-back">← Regresar al Inicio</a>
     </div>
     <div class="sidebar-filters">
       <h3>⏱️ Periodo Global</h3>
       <div class="filter-group">
-        <label>Mes Inicio:</label>
-        <input type="month" id="fechaInicio" class="filter-date-sidebar" />
+        <label>📅 Fecha Inicio:</label>
+        <div class="date-picker-container">
+          <input type="text" class="date-input" id="fechaInicioDisplay" placeholder="Desde..." readonly onclick="openDatePicker('fechaInicio')">
+          <div class="date-popup" id="fechaInicioDatePopup">
+            <div class="date-popup-header">
+              <span class="date-popup-title">Fecha inicio</span>
+              <span class="date-popup-close" onclick="closeDatePicker('fechaInicio')">×</span>
+            </div>
+            <div class="year-grid" id="fechaInicioYearGrid"></div>
+            <div class="month-grid" id="fechaInicioMonthGrid"></div>
+            <div class="day-grid" id="fechaInicioDayGrid"></div>
+          </div>
+        </div>
       </div>
       <div class="filter-group">
-        <label>Mes Fin:</label>
-        <input type="month" id="fechaFin" class="filter-date-sidebar" />
+        <label>📅 Fecha Fin:</label>
+        <div class="date-picker-container">
+          <input type="text" class="date-input" id="fechaFinDisplay" placeholder="Hasta..." readonly onclick="openDatePicker('fechaFin')">
+          <div class="date-popup" id="fechaFinDatePopup">
+            <div class="date-popup-header">
+              <span class="date-popup-title">Fecha fin</span>
+              <span class="date-popup-close" onclick="closeDatePicker('fechaFin')">×</span>
+            </div>
+            <div class="year-grid" id="fechaFinYearGrid"></div>
+            <div class="month-grid" id="fechaFinMonthGrid"></div>
+            <div class="day-grid" id="fechaFinDayGrid"></div>
+          </div>
+        </div>
       </div>
+      <input type="hidden" id="fechaInicio" />
+      <input type="hidden" id="fechaFin" />
       <button class="btn-apply-sidebar" onclick="aplicarFiltroGlobal()">Aplicar Periodo</button>
       
       <h3 style="margin-top: 1.5rem;">🏢 Sede Global</h3>
@@ -199,7 +240,167 @@
     let filtrosDisponibles = {}, filtrosDisponiblesFiscal = {}, filtrosDisponiblesErrores = {}, filtrosDisponiblesProgramados = {}, filtrosDisponiblesGestion = {}, filtrosGlobales = {}, filtrosGrafica = {}, filtrosGraficaFiscal = {}, filtrosGraficaErrores = {}, filtrosGraficaProgramados = {}, filtrosGraficaGestion = {};
     const fechaInicioEl = document.getElementById("fechaInicio"), fechaFinEl = document.getElementById("fechaFin"), sedeGlobalFilterEl = document.getElementById("sedeGlobalFilter"), responsableFilterEl = document.getElementById("responsableFilter"), estadoFilterEl = document.getElementById("estadoFilter"), tipoFilterEl = document.getElementById("tipoFilter"), errorFilterEl = document.getElementById("errorFilter"), tipoProgFilterEl = document.getElementById("tipoProgFilter"), tipoGestionFilterEl = document.getElementById("tipoGestionFilter"), responsableGestionFilterEl = document.getElementById("responsableGestionFilter"), statusEl = document.getElementById("status");
     
-    window.addEventListener('DOMContentLoaded', async () => { await cargarFiltros(); await cargarDatos(); });
+    // Date Picker State
+    const monthNames = ['Ene', 'Feb', 'Mar', 'Abr', 'May', 'Jun', 'Jul', 'Ago', 'Sep', 'Oct', 'Nov', 'Dic'];
+    const datePickerState = {
+      minYear: 2020,
+      maxYear: new Date().getFullYear(),
+      fechaInicio: { year: null, month: null, day: null },
+      fechaFin: { year: null, month: null, day: null }
+    };
+    
+    function initDatePickerYears() {
+      ['fechaInicio', 'fechaFin'].forEach(prefix => {
+        const yearGrid = document.getElementById(prefix + 'YearGrid');
+        if (!yearGrid) return;
+        yearGrid.innerHTML = '';
+        
+        for (let y = datePickerState.minYear; y <= datePickerState.maxYear; y++) {
+          const btn = document.createElement('div');
+          btn.className = 'year-btn';
+          btn.textContent = y;
+          btn.dataset.year = y;
+          if (datePickerState[prefix].year === y) {
+            btn.classList.add('selected');
+          }
+          btn.onclick = () => selectYear(prefix, y);
+          yearGrid.appendChild(btn);
+        }
+      });
+    }
+    
+    function selectYear(prefix, year) {
+      datePickerState[prefix].year = year;
+      
+      const yearGrid = document.getElementById(prefix + 'YearGrid');
+      yearGrid.querySelectorAll('.year-btn').forEach(btn => {
+        btn.classList.toggle('selected', parseInt(btn.dataset.year) === year);
+      });
+      
+      showMonths(prefix);
+    }
+    
+    function openDatePicker(prefix) {
+      const otherPrefix = prefix === 'fechaInicio' ? 'fechaFin' : 'fechaInicio';
+      document.getElementById(otherPrefix + 'DatePopup').classList.remove('active');
+      
+      const popup = document.getElementById(prefix + 'DatePopup');
+      popup.classList.add('active');
+      
+      if (!datePickerState[prefix].year) {
+        datePickerState[prefix].year = datePickerState.minYear || new Date().getFullYear();
+      }
+      
+      const yearGrid = document.getElementById(prefix + 'YearGrid');
+      if (yearGrid) {
+        yearGrid.querySelectorAll('.year-btn').forEach(btn => {
+          btn.classList.toggle('selected', parseInt(btn.dataset.year) === datePickerState[prefix].year);
+        });
+      }
+      
+      showMonths(prefix);
+    }
+    
+    function closeDatePicker(prefix) {
+      document.getElementById(prefix + 'DatePopup').classList.remove('active');
+    }
+    
+    function showMonths(prefix) {
+      const monthGrid = document.getElementById(prefix + 'MonthGrid');
+      const dayGrid = document.getElementById(prefix + 'DayGrid');
+      
+      let year = datePickerState[prefix].year;
+      if (!year) {
+        year = datePickerState.minYear || new Date().getFullYear();
+        datePickerState[prefix].year = year;
+      }
+      
+      monthGrid.innerHTML = '';
+      dayGrid.innerHTML = '';
+      
+      monthNames.forEach((name, idx) => {
+        const btn = document.createElement('div');
+        btn.className = 'month-btn';
+        if (datePickerState[prefix].month === idx) {
+          btn.classList.add('selected');
+        }
+        btn.textContent = name;
+        btn.onclick = () => selectMonth(prefix, idx);
+        monthGrid.appendChild(btn);
+      });
+      
+      if (datePickerState[prefix].month !== null) {
+        showDays(prefix);
+      }
+    }
+    
+    function selectMonth(prefix, month) {
+      datePickerState[prefix].month = month;
+      showDays(prefix);
+    }
+    
+    function showDays(prefix) {
+      const monthGrid = document.getElementById(prefix + 'MonthGrid');
+      const dayGrid = document.getElementById(prefix + 'DayGrid');
+      const year = datePickerState[prefix].year;
+      const month = datePickerState[prefix].month;
+      
+      monthGrid.querySelectorAll('.month-btn').forEach((btn, idx) => {
+        btn.classList.toggle('selected', idx === month);
+      });
+      
+      const daysInMonth = new Date(year, month + 1, 0).getDate();
+      
+      dayGrid.innerHTML = '';
+      for (let d = 1; d <= daysInMonth; d++) {
+        const btn = document.createElement('div');
+        btn.className = 'day-btn';
+        if (datePickerState[prefix].day === d) {
+          btn.classList.add('selected');
+        }
+        btn.textContent = d;
+        btn.onclick = () => selectDay(prefix, d);
+        dayGrid.appendChild(btn);
+      }
+    }
+    
+    function selectDay(prefix, day) {
+      datePickerState[prefix].day = day;
+      updateDateDisplay(prefix);
+      closeDatePicker(prefix);
+      syncHiddenDates();
+    }
+    
+    function updateDateDisplay(prefix) {
+      const state = datePickerState[prefix];
+      const displayEl = document.getElementById(prefix + 'Display');
+      if (state.year && state.month !== null && state.day) {
+        displayEl.value = `${state.day} ${monthNames[state.month]} ${state.year}`;
+      }
+    }
+    
+    function syncHiddenDates() {
+      const inicio = datePickerState.fechaInicio;
+      const fin = datePickerState.fechaFin;
+      
+      if (inicio.year && inicio.month !== null && inicio.day) {
+        const d = new Date(inicio.year, inicio.month, inicio.day);
+        document.getElementById('fechaInicio').value = d.toISOString().split('T')[0];
+      }
+      if (fin.year && fin.month !== null && fin.day) {
+        const d = new Date(fin.year, fin.month, fin.day);
+        document.getElementById('fechaFin').value = d.toISOString().split('T')[0];
+      }
+    }
+    
+    document.addEventListener('click', function(e) {
+      if (!e.target.closest('.date-picker-container')) {
+        closeDatePicker('fechaInicio');
+        closeDatePicker('fechaFin');
+      }
+    });
+    
+    window.addEventListener('DOMContentLoaded', async () => { initDatePickerYears(); await cargarFiltros(); await cargarDatos(); });
     
     async function cargarFiltros() {
       // Filtros para Indicadores OYMM
@@ -253,8 +454,10 @@
     // Aplicar filtro global de tiempo
     async function aplicarFiltroGlobal() {
       filtrosGlobales = {};
-      if (fechaInicioEl.value) filtrosGlobales.fecha_inicio = fechaInicioEl.value;
-      if (fechaFinEl.value) filtrosGlobales.fecha_fin = fechaFinEl.value;
+      const fechaInicio = fechaInicioEl.value;
+      const fechaFin = fechaFinEl.value;
+      if (fechaInicio) filtrosGlobales.fecha_inicio = fechaInicio;
+      if (fechaFin) filtrosGlobales.fecha_fin = fechaFin;
       // Incluir sede global
       const sedes = getSelectedOptions(sedeGlobalFilterEl);
       if (sedes.length > 0 && sedes.length < filtrosDisponibles.sedes.length) filtrosGlobales.sedes = sedes.join(",");
