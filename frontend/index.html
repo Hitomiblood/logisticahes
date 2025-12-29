@@ -354,6 +354,20 @@
       background: linear-gradient(135deg, #6d28d9, #7c3aed);
       transform: scale(1.02);
     }
+
+    .btn-success {
+      background: linear-gradient(135deg, #10b981, #34d399);
+      color: white;
+    }
+    
+    .btn-success:hover {
+      background: linear-gradient(135deg, #059669, #10b981);
+      transform: scale(1.02);
+    }
+
+    .card-icon.green {
+      background: linear-gradient(135deg, #10b981, #34d399);
+    }
     
     .footer {
       margin-top: 3rem;
@@ -422,7 +436,7 @@
     <!-- Sección ALMACENES -->
     <div class="section active" id="section-almacenes">
       <h3 class="section-title">🏢 ALMACENES</h3>
-      <div class="cards-container" style="grid-template-columns: 1fr;">
+      <div class="cards-container" style="grid-template-columns: repeat(2, 1fr);">
         <!-- Card: Dashboard Operativo Principal -->
         <div class="card">
           <div class="card-icon blue">📊</div>
@@ -440,6 +454,25 @@
              target="_blank" 
              class="btn btn-primary">
             <span>📈</span> Abrir Dashboard
+          </a>
+        </div>
+
+        <!-- Card: Indicadores Almacenes -->
+        <div class="card">
+          <div class="card-icon green">📦</div>
+          <h2>Indicadores Almacenes</h2>
+          <p>
+            Dashboard integral con indicadores OYMM, Fiscal RU, Brigadas, 
+            errores de movimiento, programados vs ejecutados y gestión de procesos.
+          </p>
+          <ul class="card-features">
+            <li>KPIs de cumplimiento OYMM</li>
+            <li>Inventario Fiscal y Brigadas</li>
+            <li>Errores y discrepancias</li>
+            <li>Programados vs Ejecutados</li>
+          </ul>
+          <a href="indicadores.html" class="btn btn-success">
+            <span>📊</span> Abrir Indicadores
           </a>
         </div>
       </div>
