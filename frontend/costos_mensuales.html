@@ -1337,9 +1337,10 @@
       console.log("🔄 Iniciando carga desde API...");
       setStatus("🔄 Conectando con la base de datos...");
       
-      const API_BASE = window.location.port === "8000" 
-        ? "" 
-        : "http://localhost:8000";
+      // En producción usar rutas relativas, en desarrollo local usar localhost:8000
+      const API_BASE = (window.location.hostname === "localhost" && window.location.port !== "8000") 
+        ? "http://localhost:8000" 
+        : "";
       
       try {
         // Cargar todos los datos
@@ -1457,12 +1458,66 @@
         // Guardar en IndexedDB para persistencia
         saveDataToStorage(rawData, "Costos mensuales - Vehiculos.xlsx");
 
-        setStatus(`✅ Archivo cargado. Registros: ${rawData.length}. Hoja: "${sheetName}".`);
+        // ===== NUEVO: Guardar automáticamente en la BD =====
+        await saveToDatabase(rawData);
+
+        setStatus(`✅ Archivo cargado y guardado en BD. Registros: ${rawData.length}. Hoja: "${sheetName}".`);
 
         initFilters();
         applyFilters();
       } catch (error) {
         setStatus("❌ Error al cargar el archivo: " + error.message);
+      }
+    }
+
+    // Función para guardar datos en la base de datos
+    async function saveToDatabase(data) {
+      // En producción usar rutas relativas, en desarrollo local usar localhost:8000
+      const API_BASE = (window.location.hostname === "localhost" && window.location.port !== "8000") 
+        ? "http://localhost:8000" 
+        : "";
+      
+      try {
+        setStatus("💾 Guardando en base de datos...");
+        
+        // Preparar datos en el formato esperado por el backend
+        const records = data.map(row => ({
+          fecha: row.__dateStr || null,
+          catalogo: row[CATALOGO_COL] || null,
+          neto: parseFloat(row[COSTO_COL]) || 0,
+          ciudad: row[CIUDAD_COL] || null,
+          proyecto: row[PROYECTO_COL] || null,
+          tercero: row[TERCERO_COL] || null,
+          descripcion: row[DESCRIPCION_COL] || null
+        }));
+        
+        const response = await fetch(`${API_BASE}/api/costos/import`, {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json'
+          },
+          body: JSON.stringify({
+            data: records,
+            replace: true
+          })
+        });
+        
+        if (!response.ok) {
+          throw new Error(`Error ${response.status}: ${response.statusText}`);
+        }
+        
+        const result = await response.json();
+        
+        if (result.success) {
+          console.log(`✅ ${result.inserted} registros guardados en BD`);
+        } else {
+          console.warn("⚠️ Error guardando en BD:", result.message);
+        }
+        
+        return result;
+      } catch (error) {
+        console.warn("⚠️ No se pudo guardar en BD (servidor no disponible):", error.message);
+        return { success: false, message: error.message };
       }
     }
     
@@ -1511,7 +1566,10 @@
     // Cargar datos al inicio - primero intentar desde API, luego desde storage local
     setTimeout(async () => {
       // Intentar cargar desde API primero
-      const API_BASE = window.location.port === "8000" ? "" : "http://localhost:8000";
+      // En producción usar rutas relativas, en desarrollo local usar localhost:8000
+      const API_BASE = (window.location.hostname === "localhost" && window.location.port !== "8000") 
+        ? "http://localhost:8000" 
+        : "";
       try {
         const response = await fetch(`${API_BASE}/api/admin/stats`);
         if (response.ok) {

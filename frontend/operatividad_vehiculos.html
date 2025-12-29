@@ -1041,9 +1041,10 @@
       console.log("🔄 Iniciando carga desde API...");
       setStatus("🔄 Conectando con la base de datos...");
       
-      const API_BASE = window.location.port === "8000" 
-        ? "" 
-        : "http://localhost:8000";
+      // En producción usar rutas relativas, en desarrollo local usar localhost:8000
+      const API_BASE = (window.location.hostname === "localhost" && window.location.port !== "8000") 
+        ? "http://localhost:8000" 
+        : "";
       
       try {
         // Cargar todos los datos
@@ -2772,7 +2773,10 @@
     
     // Cargar datos al inicio - primero intentar desde API, luego desde storage local
     (async function initLoad() {
-      const API_BASE = window.location.port === "8000" ? "" : "http://localhost:8000";
+      // En producción usar rutas relativas, en desarrollo local usar localhost:8000
+      const API_BASE = (window.location.hostname === "localhost" && window.location.port !== "8000") 
+        ? "http://localhost:8000" 
+        : "";
       try {
         const response = await fetch(`${API_BASE}/api/admin/stats`);
         if (response.ok) {

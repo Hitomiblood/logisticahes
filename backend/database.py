@@ -217,6 +217,163 @@ def init_db():
         cursor.execute('CREATE INDEX IF NOT EXISTS idx_base_oc_fecha ON base_oc_generadas(fecha)')
         cursor.execute('CREATE INDEX IF NOT EXISTS idx_base_oc_estado ON base_oc_generadas(estado)')
         
+        # ========== TABLAS PARA INDICADORES ALMACENES ==========
+        
+        # Tabla para Indicadores de Almacenes (OYMM)
+        cursor.execute('''
+            CREATE TABLE IF NOT EXISTS indicadores (
+                id INTEGER PRIMARY KEY AUTOINCREMENT,
+                mes TEXT,
+                sede TEXT,
+                responsable TEXT,
+                codigo INTEGER,
+                descripcion TEXT,
+                inventario_inicial REAL,
+                total_entregado REAL,
+                total_consumos REAL,
+                total_reintegros REAL,
+                denuncio_fiscalia INTEGER,
+                inventario_final REAL,
+                diferencia REAL,
+                precio_unidad REAL,
+                precio_total REAL,
+                costo_inventario_final REAL,
+                costo_diferencia REAL,
+                objetivo REAL,
+                created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+            )
+        ''')
+        
+        # Índices para indicadores
+        cursor.execute('CREATE INDEX IF NOT EXISTS idx_indicadores_mes ON indicadores(mes)')
+        cursor.execute('CREATE INDEX IF NOT EXISTS idx_indicadores_sede ON indicadores(sede)')
+        cursor.execute('CREATE INDEX IF NOT EXISTS idx_indicadores_responsable ON indicadores(responsable)')
+        
+        # Tabla para Fiscal RU
+        cursor.execute('''
+            CREATE TABLE IF NOT EXISTS fiscal_ru (
+                id INTEGER PRIMARY KEY AUTOINCREMENT,
+                mes TEXT,
+                item TEXT,
+                descripcion TEXT,
+                bodega TEXT,
+                sede TEXT,
+                saldo_final REAL,
+                costo_promedio REAL,
+                costo_total REAL,
+                inf_fisico REAL,
+                diferencia REAL,
+                estado TEXT,
+                costo_diferencia REAL,
+                unidad TEXT,
+                clasificacion TEXT,
+                descripcion3 TEXT,
+                tipo_inventario TEXT,
+                objetivo REAL,
+                created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+            )
+        ''')
+        cursor.execute('CREATE INDEX IF NOT EXISTS idx_fiscal_ru_mes ON fiscal_ru(mes)')
+        cursor.execute('CREATE INDEX IF NOT EXISTS idx_fiscal_ru_estado ON fiscal_ru(estado)')
+        cursor.execute('CREATE INDEX IF NOT EXISTS idx_fiscal_ru_tipo ON fiscal_ru(tipo_inventario)')
+        cursor.execute('CREATE INDEX IF NOT EXISTS idx_fiscal_ru_sede ON fiscal_ru(sede)')
+        
+        # Tabla para Brigadas
+        cursor.execute('''
+            CREATE TABLE IF NOT EXISTS brigadas (
+                id INTEGER PRIMARY KEY AUTOINCREMENT,
+                mes TEXT,
+                sede TEXT,
+                item_codigo INTEGER,
+                descripcion TEXT,
+                tercero_identificacion TEXT,
+                tercero_nombre TEXT,
+                neto REAL,
+                conteo REAL,
+                reconteo REAL,
+                diferencia REAL,
+                estado TEXT,
+                costo_unit REAL,
+                costo_total REAL,
+                costo_diferencia REAL,
+                desviacion REAL,
+                created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+            )
+        ''')
+        cursor.execute('CREATE INDEX IF NOT EXISTS idx_brigadas_mes ON brigadas(mes)')
+        cursor.execute('CREATE INDEX IF NOT EXISTS idx_brigadas_sede ON brigadas(sede)')
+        cursor.execute('CREATE INDEX IF NOT EXISTS idx_brigadas_estado ON brigadas(estado)')
+        
+        # Tabla para Errores Movimientos
+        cursor.execute('''
+            CREATE TABLE IF NOT EXISTS errores (
+                id INTEGER PRIMARY KEY AUTOINCREMENT,
+                mes TEXT,
+                sede TEXT,
+                error TEXT,
+                bodega TEXT,
+                doc TEXT,
+                fecha TEXT,
+                tipo_numero TEXT,
+                codigo INTEGER,
+                descripcion TEXT,
+                tercero INTEGER,
+                nombre TEXT,
+                cantidad INTEGER,
+                costo REAL,
+                total REAL,
+                cuenta_doc TEXT,
+                nombre_cuenta TEXT,
+                observaciones TEXT,
+                created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+            )
+        ''')
+        cursor.execute('CREATE INDEX IF NOT EXISTS idx_errores_mes ON errores(mes)')
+        cursor.execute('CREATE INDEX IF NOT EXISTS idx_errores_sede ON errores(sede)')
+        cursor.execute('CREATE INDEX IF NOT EXISTS idx_errores_error ON errores(error)')
+        
+        # Tabla para Programados vs Ejecutados
+        cursor.execute('''
+            CREATE TABLE IF NOT EXISTS programados_ejecutados (
+                id INTEGER PRIMARY KEY AUTOINCREMENT,
+                mes TEXT,
+                sede TEXT,
+                tipo_inventario TEXT,
+                programados REAL,
+                ejecutados REAL,
+                indicador_programacion REAL,
+                created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+            )
+        ''')
+        cursor.execute('CREATE INDEX IF NOT EXISTS idx_prog_mes ON programados_ejecutados(mes)')
+        cursor.execute('CREATE INDEX IF NOT EXISTS idx_prog_sede ON programados_ejecutados(sede)')
+        cursor.execute('CREATE INDEX IF NOT EXISTS idx_prog_tipo ON programados_ejecutados(tipo_inventario)')
+        
+        # Tabla gestion (GESTION PROCESO)
+        cursor.execute('''
+            CREATE TABLE IF NOT EXISTS gestion (
+                id INTEGER PRIMARY KEY AUTOINCREMENT,
+                mes TEXT,
+                sede TEXT,
+                tipo_inventario TEXT,
+                almacenista TEXT,
+                fecha_ejecucion_inventario DATE,
+                fecha_reporte_operaciones DATE,
+                dias INTEGER,
+                indicador_inventario TEXT,
+                area TEXT,
+                responsable TEXT,
+                fecha_respuesta DATE,
+                dias_respuesta INTEGER,
+                indicador_respuesta TEXT,
+                created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+            )
+        ''')
+        cursor.execute('CREATE INDEX IF NOT EXISTS idx_gestion_mes ON gestion(mes)')
+        cursor.execute('CREATE INDEX IF NOT EXISTS idx_gestion_sede ON gestion(sede)')
+        cursor.execute('CREATE INDEX IF NOT EXISTS idx_gestion_tipo ON gestion(tipo_inventario)')
+        cursor.execute('CREATE INDEX IF NOT EXISTS idx_gestion_responsable ON gestion(responsable)')
+        
         conn.commit()
         print("✅ Base de datos inicializada correctamente")
 

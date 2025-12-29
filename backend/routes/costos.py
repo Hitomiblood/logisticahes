@@ -2,10 +2,71 @@
 Rutas API para Costos Mensuales
 """
 from fastapi import APIRouter, Query
-from typing import Optional
+from typing import Optional, List
+from pydantic import BaseModel
 from ..database import get_db
 
 router = APIRouter(prefix="/api/costos", tags=["Costos Mensuales"])
+
+
+# Modelo para recibir datos del Excel desde el frontend
+class CostoRecord(BaseModel):
+    fecha: Optional[str] = None
+    catalogo: Optional[str] = None
+    neto: Optional[float] = None
+    ciudad: Optional[str] = None
+    proyecto: Optional[str] = None
+    tercero: Optional[str] = None
+    descripcion: Optional[str] = None
+
+
+class ImportRequest(BaseModel):
+    data: List[CostoRecord]
+    replace: bool = True  # Si es True, reemplaza todos los datos; si es False, agrega
+
+
+@router.post("/import")
+async def import_data(request: ImportRequest):
+    """Importar datos del Excel enviados desde el frontend"""
+    try:
+        with get_db() as conn:
+            cursor = conn.cursor()
+            
+            # Si replace=True, limpiar tabla primero
+            if request.replace:
+                cursor.execute("DELETE FROM costos_mensuales")
+            
+            # Insertar nuevos registros
+            inserted = 0
+            for record in request.data:
+                cursor.execute('''
+                    INSERT INTO costos_mensuales 
+                    (fecha, catalogo, neto, ciudad, proyecto, tercero, descripcion)
+                    VALUES (?, ?, ?, ?, ?, ?, ?)
+                ''', (
+                    record.fecha,
+                    record.catalogo,
+                    record.neto,
+                    record.ciudad,
+                    record.proyecto,
+                    record.tercero,
+                    record.descripcion
+                ))
+                inserted += 1
+            
+            conn.commit()
+            
+            return {
+                "success": True,
+                "message": f"Datos importados correctamente",
+                "inserted": inserted
+            }
+    except Exception as e:
+        return {
+            "success": False,
+            "message": f"Error al importar: {str(e)}",
+            "inserted": 0
+        }
 
 
 def build_where_clause(fecha_inicio, fecha_fin, catalogos, ciudades, terceros):
