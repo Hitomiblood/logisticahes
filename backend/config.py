@@ -23,6 +23,17 @@ EXCEL_FILES = {
             "oc_descuentos": "OC DESCUENTOS",
             "base_oc_generadas": "BASE OC GENERADAS"
         }
+    },
+    "indicadores_almacenes": {
+        "path": DATA_DIR / "ALMACENES" / "INDICADORES 2025.xlsx",
+        "sheets": {
+            "oymm": "OYMM",
+            "fiscal_ru": "FISCAL-RU",
+            "brigadas": "BRIGADAS ",
+            "errores": "ERRORES ",
+            "programados": "PRO VS EJECU",
+            "gestion": "GESTION "
+        }
     }
 }
 

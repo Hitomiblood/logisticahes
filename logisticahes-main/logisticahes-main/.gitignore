@@ -1,0 +1,41 @@
+# Archivos a ignorar
+*.log
+.DS_Store
+Thumbs.db
+logisticahesego.com.nginx
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+.Python
+*.egg-info/
+.eggs/
+*.egg
+
+# Virtual environments
+.venv/
+venv/
+ENV/
+
+# IDEs
+.vscode/
+.idea/
+*.swp
+*.swo
+
+# Playwright
+.playwright_session/
+
+# Database (opcional, quitar si se quiere versionar)
+# *.db
+# *.db-journal
+
+# Temporary files
+*.tmp
+*.temp
+~$*
+
+# Build
+dist/
+build/

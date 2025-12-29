@@ -1,0 +1,39 @@
+version: '3.8'
+
+services:
+  # Servicio principal - Nginx con la aplicación web
+  logisticahesego:
+    build: .
+    container_name: logisticahesego
+    restart: unless-stopped
+    ports:
+      - "8085:80"
+    volumes:
+      - sharepoint_data:/usr/share/nginx/html/data:ro
+    networks:
+      - web
+    depends_on:
+      - webhook-server
+
+  # Servidor Webhook - Recibe archivos desde Power Automate
+  webhook-server:
+    build:
+      context: .
+      dockerfile: Dockerfile.webhook
+    container_name: webhook-server
+    restart: unless-stopped
+    ports:
+      - "5000:5000"
+    volumes:
+      - sharepoint_data:/app/data
+    environment:
+      - WEBHOOK_SECRET=${WEBHOOK_SECRET:-hesego_logistica_2024}
+    networks:
+      - web
+
+volumes:
+  sharepoint_data:
+
+networks:
+  web:
+    external: true

@@ -284,19 +284,18 @@ def init_db():
                 id INTEGER PRIMARY KEY AUTOINCREMENT,
                 mes TEXT,
                 sede TEXT,
-                item_codigo INTEGER,
+                item_codigo TEXT,
                 descripcion TEXT,
-                tercero_identificacion TEXT,
+                tercero_id TEXT,
                 tercero_nombre TEXT,
                 neto REAL,
                 conteo REAL,
                 reconteo REAL,
                 diferencia REAL,
                 estado TEXT,
-                costo_unit REAL,
+                costo_unitario REAL,
                 costo_total REAL,
                 costo_diferencia REAL,
-                desviacion REAL,
                 created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
             )
         ''')
@@ -308,35 +307,40 @@ def init_db():
         cursor.execute('''
             CREATE TABLE IF NOT EXISTS errores (
                 id INTEGER PRIMARY KEY AUTOINCREMENT,
-                mes TEXT,
-                sede TEXT,
                 error TEXT,
+                zona TEXT,
                 bodega TEXT,
                 doc TEXT,
                 fecha TEXT,
                 tipo_numero TEXT,
-                codigo INTEGER,
+                tipo_numero2 TEXT,
+                codigo TEXT,
                 descripcion TEXT,
-                tercero INTEGER,
+                bodega2 TEXT,
+                tercero TEXT,
                 nombre TEXT,
-                cantidad INTEGER,
+                nombre2 TEXT,
+                cantidad REAL,
                 costo REAL,
                 total REAL,
-                cuenta_doc TEXT,
-                nombre_cuenta TEXT,
-                observaciones TEXT,
+                cantidad3 REAL,
+                costo4 REAL,
+                total5 REAL,
+                codigo6 TEXT,
+                nombre7 TEXT,
+                observacion TEXT,
                 created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
             )
         ''')
-        cursor.execute('CREATE INDEX IF NOT EXISTS idx_errores_mes ON errores(mes)')
-        cursor.execute('CREATE INDEX IF NOT EXISTS idx_errores_sede ON errores(sede)')
+        cursor.execute('CREATE INDEX IF NOT EXISTS idx_errores_fecha ON errores(fecha)')
+        cursor.execute('CREATE INDEX IF NOT EXISTS idx_errores_zona ON errores(zona)')
         cursor.execute('CREATE INDEX IF NOT EXISTS idx_errores_error ON errores(error)')
         
         # Tabla para Programados vs Ejecutados
         cursor.execute('''
             CREATE TABLE IF NOT EXISTS programados_ejecutados (
                 id INTEGER PRIMARY KEY AUTOINCREMENT,
-                mes TEXT,
+                fecha_propuesta TEXT,
                 sede TEXT,
                 tipo_inventario TEXT,
                 programados REAL,
@@ -345,7 +349,7 @@ def init_db():
                 created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
             )
         ''')
-        cursor.execute('CREATE INDEX IF NOT EXISTS idx_prog_mes ON programados_ejecutados(mes)')
+        cursor.execute('CREATE INDEX IF NOT EXISTS idx_prog_fecha ON programados_ejecutados(fecha_propuesta)')
         cursor.execute('CREATE INDEX IF NOT EXISTS idx_prog_sede ON programados_ejecutados(sede)')
         cursor.execute('CREATE INDEX IF NOT EXISTS idx_prog_tipo ON programados_ejecutados(tipo_inventario)')
         
@@ -357,22 +361,16 @@ def init_db():
                 sede TEXT,
                 tipo_inventario TEXT,
                 almacenista TEXT,
-                fecha_ejecucion_inventario DATE,
-                fecha_reporte_operaciones DATE,
-                dias INTEGER,
-                indicador_inventario TEXT,
-                area TEXT,
-                responsable TEXT,
-                fecha_respuesta DATE,
-                dias_respuesta INTEGER,
-                indicador_respuesta TEXT,
+                fecha_ejecucion TEXT,
+                fecha_reporte TEXT,
+                dias REAL,
+                indicador_inventario REAL,
                 created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
             )
         ''')
         cursor.execute('CREATE INDEX IF NOT EXISTS idx_gestion_mes ON gestion(mes)')
         cursor.execute('CREATE INDEX IF NOT EXISTS idx_gestion_sede ON gestion(sede)')
         cursor.execute('CREATE INDEX IF NOT EXISTS idx_gestion_tipo ON gestion(tipo_inventario)')
-        cursor.execute('CREATE INDEX IF NOT EXISTS idx_gestion_responsable ON gestion(responsable)')
         
         conn.commit()
         print("✅ Base de datos inicializada correctamente")

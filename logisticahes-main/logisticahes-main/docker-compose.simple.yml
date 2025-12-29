@@ -1,0 +1,19 @@
+version: '3.8'
+
+services:
+  # Servicio principal - Nginx con la aplicación web
+  logisticahesego:
+    build: .
+    container_name: logisticahesego
+    restart: unless-stopped
+    ports:
+      - "8085:80"
+    volumes:
+      # Montar carpeta de datos local (sincronizada manualmente)
+      - ./data:/usr/share/nginx/html/data:ro
+    networks:
+      - web
+
+networks:
+  web:
+    external: true

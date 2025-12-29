@@ -180,6 +180,361 @@ def import_operatividad_vehiculos():
         print(f"❌ Error importando Operatividad Vehículos: {e}")
         raise
 
+
+def import_indicadores_almacenes():
+    """Importar datos de Indicadores de Almacenes (6 hojas)"""
+    config = EXCEL_FILES["indicadores_almacenes"]
+    print(f"📂 Leyendo {config['path']}...")
+    
+    total_records = 0
+    
+    try:
+        # ========== OYMM (Indicadores) ==========
+        print("   📋 Hoja: OYMM...")
+        df = pd.read_excel(config["path"], sheet_name=config["sheets"]["oymm"])
+        print(f"      Registros encontrados: {len(df)}")
+        
+        clear_table("indicadores")
+        
+        column_mapping = {
+            "MES": "mes",
+            "SEDE": "sede",
+            "RESPONSABLE": "responsable",
+            "CODIGO": "codigo",
+            "DESCRIPCION": "descripcion",
+            "INVENTARIO INICIAL": "inventario_inicial",
+            "TOTAL ENTREGADO EN EL PERIODO": "total_entregado",
+            "TOTAL CONSUMOS EN EL PERIODO": "total_consumos",
+            "TOTAL REINTEGROS EN EL PERIODO": "total_reintegros",
+            "DENUNCIO FISCALIA POR HURTO EN EL PERIODO": "denuncio_fiscalia",
+            "INVENTARIO FINAL": "inventario_final",
+            "DIFERENCIA": "diferencia",
+            "PRECIO UNIDAD": "precio_unidad",
+            "PRECIO TOTAL": "precio_total",
+            "COSTO FINAL  INVENTARIO ": "costo_inventario_final",
+            "COSTO DIFERENCIA ": "costo_diferencia",
+            "OBJETIVO ": "objetivo"
+        }
+        
+        records = []
+        for _, row in df.iterrows():
+            record = {}
+            for excel_col, db_col in column_mapping.items():
+                value = row.get(excel_col)
+                if pd.isna(value):
+                    value = None
+                elif isinstance(value, str):
+                    value = fix_encoding(value)
+                record[db_col] = value
+            records.append(record)
+        
+        with get_db() as conn:
+            cursor = conn.cursor()
+            batch_size = 1000
+            for i in range(0, len(records), batch_size):
+                batch = records[i:i+batch_size]
+                cursor.executemany('''
+                    INSERT INTO indicadores 
+                    (mes, sede, responsable, codigo, descripcion, inventario_inicial,
+                     total_entregado, total_consumos, total_reintegros, denuncio_fiscalia,
+                     inventario_final, diferencia, precio_unidad, precio_total,
+                     costo_inventario_final, costo_diferencia, objetivo)
+                    VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+                ''', [(r["mes"], r["sede"], r["responsable"], r["codigo"], r["descripcion"],
+                       r["inventario_inicial"], r["total_entregado"], r["total_consumos"],
+                       r["total_reintegros"], r["denuncio_fiscalia"], r["inventario_final"],
+                       r["diferencia"], r["precio_unidad"], r["precio_total"],
+                       r["costo_inventario_final"], r["costo_diferencia"], r["objetivo"]) for r in batch])
+                conn.commit()
+                print(f"      Insertados {min(i+batch_size, len(records))}/{len(records)}...")
+        
+        total_records += len(records)
+        print(f"   ✅ OYMM: {len(records)} registros")
+        
+        # ========== FISCAL-RU ==========
+        print("   📋 Hoja: FISCAL-RU...")
+        df = pd.read_excel(config["path"], sheet_name=config["sheets"]["fiscal_ru"])
+        print(f"      Registros encontrados: {len(df)}")
+        
+        clear_table("fiscal_ru")
+        
+        column_mapping = {
+            "MES ": "mes",
+            "Item": "item",
+            "Descripción": "descripcion",
+            "Bodega": "bodega",
+            "SEDE ": "sede",
+            "Saldo Final": "saldo_final",
+            "Costo Promedio": "costo_promedio",
+            "Costo Total": "costo_total",
+            "Inf. Fisico": "inf_fisico",
+            "Diferencia": "diferencia",
+            "Estado": "estado",
+            "Costo Diferencia": "costo_diferencia",
+            "Unidad": "unidad",
+            "Clasificación": "clasificacion",
+            "Descripción3": "descripcion3",
+            "TIPO INVENTARIO ": "tipo_inventario",
+            "OBJETIVO ": "objetivo"
+        }
+        
+        records = []
+        for _, row in df.iterrows():
+            record = {}
+            for excel_col, db_col in column_mapping.items():
+                value = row.get(excel_col)
+                if pd.isna(value):
+                    value = None
+                elif isinstance(value, str):
+                    value = fix_encoding(value)
+                record[db_col] = value
+            records.append(record)
+        
+        with get_db() as conn:
+            cursor = conn.cursor()
+            batch_size = 1000
+            for i in range(0, len(records), batch_size):
+                batch = records[i:i+batch_size]
+                cursor.executemany('''
+                    INSERT INTO fiscal_ru 
+                    (mes, item, descripcion, bodega, sede, saldo_final, costo_promedio,
+                     costo_total, inf_fisico, diferencia, estado, costo_diferencia,
+                     unidad, clasificacion, descripcion3, tipo_inventario, objetivo)
+                    VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+                ''', [(r["mes"], r["item"], r["descripcion"], r["bodega"], r["sede"],
+                       r["saldo_final"], r["costo_promedio"], r["costo_total"], r["inf_fisico"],
+                       r["diferencia"], r["estado"], r["costo_diferencia"], r["unidad"],
+                       r["clasificacion"], r["descripcion3"], r["tipo_inventario"], r["objetivo"]) for r in batch])
+                conn.commit()
+                print(f"      Insertados {min(i+batch_size, len(records))}/{len(records)}...")
+        
+        total_records += len(records)
+        print(f"   ✅ FISCAL-RU: {len(records)} registros")
+        
+        # ========== BRIGADAS ==========
+        print("   📋 Hoja: BRIGADAS...")
+        df = pd.read_excel(config["path"], sheet_name=config["sheets"]["brigadas"])
+        print(f"      Registros encontrados: {len(df)}")
+        
+        clear_table("brigadas")
+        
+        column_mapping = {
+            "MES ": "mes",
+            "SEDE ": "sede",
+            "ITEM CODIGO": "item_codigo",
+            "DESCRIPCION ": "descripcion",
+            "TERCERO IDENTIFICACION": "tercero_id",
+            "TERCERO NOMBRE": "tercero_nombre",
+            "NETO": "neto",
+            "CONTEO": "conteo",
+            "RECONTEO": "reconteo",
+            "DIFERENCIA": "diferencia",
+            "ESTADO": "estado",
+            "COSTO UNIT": "costo_unitario",
+            "COSTO TOTAL": "costo_total",
+            "COSTO DIFERENCIA ": "costo_diferencia"
+        }
+        
+        records = []
+        for _, row in df.iterrows():
+            record = {}
+            for excel_col, db_col in column_mapping.items():
+                value = row.get(excel_col)
+                if pd.isna(value):
+                    value = None
+                elif isinstance(value, str):
+                    value = fix_encoding(value)
+                record[db_col] = value
+            records.append(record)
+        
+        with get_db() as conn:
+            cursor = conn.cursor()
+            batch_size = 1000
+            for i in range(0, len(records), batch_size):
+                batch = records[i:i+batch_size]
+                cursor.executemany('''
+                    INSERT INTO brigadas 
+                    (mes, sede, item_codigo, descripcion, tercero_id, tercero_nombre,
+                     neto, conteo, reconteo, diferencia, estado, costo_unitario,
+                     costo_total, costo_diferencia)
+                    VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+                ''', [(r["mes"], r["sede"], r["item_codigo"], r["descripcion"], r["tercero_id"],
+                       r["tercero_nombre"], r["neto"], r["conteo"], r["reconteo"], r["diferencia"],
+                       r["estado"], r["costo_unitario"], r["costo_total"], r["costo_diferencia"]) for r in batch])
+                conn.commit()
+                print(f"      Insertados {min(i+batch_size, len(records))}/{len(records)}...")
+        
+        total_records += len(records)
+        print(f"   ✅ BRIGADAS: {len(records)} registros")
+        
+        # ========== ERRORES ==========
+        print("   📋 Hoja: ERRORES...")
+        df = pd.read_excel(config["path"], sheet_name=config["sheets"]["errores"])
+        print(f"      Registros encontrados: {len(df)}")
+        
+        clear_table("errores")
+        
+        column_mapping = {
+            "Error": "error",
+            "Zona": "zona",
+            "Bodega": "bodega",
+            "DOC": "doc",
+            "Fecha": "fecha",
+            "Tipo numero": "tipo_numero",
+            "Tipo numero2": "tipo_numero2",
+            "Codigo": "codigo",
+            "Descripcion": "descripcion",
+            "Bodega2": "bodega2",
+            "Tercero": "tercero",
+            "Nombre": "nombre",
+            "Nombre 2": "nombre2",
+            "Cantidad": "cantidad",
+            "Costo": "costo",
+            "Total": "total",
+            "Cantidad3": "cantidad3",
+            "Costo4": "costo4",
+            "Total5": "total5",
+            "Codigo6": "codigo6",
+            "Nombre7": "nombre7",
+            "OBS": "observacion"
+        }
+        
+        records = []
+        for _, row in df.iterrows():
+            record = {}
+            for excel_col, db_col in column_mapping.items():
+                value = row.get(excel_col)
+                if pd.isna(value):
+                    value = None
+                elif isinstance(value, str):
+                    value = fix_encoding(value)
+                elif db_col == "fecha" and value is not None:
+                    value = str(value)[:10]
+                record[db_col] = value
+            records.append(record)
+        
+        with get_db() as conn:
+            cursor = conn.cursor()
+            batch_size = 1000
+            for i in range(0, len(records), batch_size):
+                batch = records[i:i+batch_size]
+                cursor.executemany('''
+                    INSERT INTO errores 
+                    (error, zona, bodega, doc, fecha, tipo_numero, tipo_numero2, codigo,
+                     descripcion, bodega2, tercero, nombre, nombre2, cantidad, costo,
+                     total, cantidad3, costo4, total5, codigo6, nombre7, observacion)
+                    VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+                ''', [(r["error"], r["zona"], r["bodega"], r["doc"], r["fecha"], r["tipo_numero"],
+                       r["tipo_numero2"], r["codigo"], r["descripcion"], r["bodega2"], r["tercero"],
+                       r["nombre"], r["nombre2"], r["cantidad"], r["costo"], r["total"],
+                       r["cantidad3"], r["costo4"], r["total5"], r["codigo6"], r["nombre7"],
+                       r["observacion"]) for r in batch])
+                conn.commit()
+                print(f"      Insertados {min(i+batch_size, len(records))}/{len(records)}...")
+        
+        total_records += len(records)
+        print(f"   ✅ ERRORES: {len(records)} registros")
+        
+        # ========== PROGRAMADOS vs EJECUTADOS ==========
+        print("   📋 Hoja: PRO VS EJECU...")
+        df = pd.read_excel(config["path"], sheet_name=config["sheets"]["programados"])
+        print(f"      Registros encontrados: {len(df)}")
+        
+        clear_table("programados_ejecutados")
+        
+        column_mapping = {
+            "FECHA PROPUESTA": "fecha_propuesta",
+            "SEDE": "sede",
+            "PROGRAMADOS": "programados",
+            "EJECUTADOS": "ejecutados",
+            "Indicador Programacion": "indicador_programacion",
+            "TIPO INVENTARIO ": "tipo_inventario"
+        }
+        
+        records = []
+        for _, row in df.iterrows():
+            record = {}
+            for excel_col, db_col in column_mapping.items():
+                value = row.get(excel_col)
+                if pd.isna(value):
+                    value = None
+                elif isinstance(value, str):
+                    value = fix_encoding(value)
+                elif db_col == "fecha_propuesta" and value is not None:
+                    value = str(value)[:10]
+                record[db_col] = value
+            records.append(record)
+        
+        with get_db() as conn:
+            cursor = conn.cursor()
+            cursor.executemany('''
+                INSERT INTO programados_ejecutados 
+                (fecha_propuesta, sede, programados, ejecutados, indicador_programacion, tipo_inventario)
+                VALUES (?, ?, ?, ?, ?, ?)
+            ''', [(r["fecha_propuesta"], r["sede"], r["programados"], r["ejecutados"],
+                   r["indicador_programacion"], r["tipo_inventario"]) for r in records])
+            conn.commit()
+        
+        total_records += len(records)
+        print(f"   ✅ PROGRAMADOS: {len(records)} registros")
+        
+        # ========== GESTION ==========
+        print("   📋 Hoja: GESTION...")
+        df = pd.read_excel(config["path"], sheet_name=config["sheets"]["gestion"])
+        print(f"      Registros encontrados: {len(df)}")
+        
+        clear_table("gestion")
+        
+        column_mapping = {
+            "MES": "mes",
+            "SEDE": "sede",
+            "TIPO INVENTARIO": "tipo_inventario",
+            "ALMACENISTA ": "almacenista",
+            "Fecha Ejecución Invetario": "fecha_ejecucion",
+            "Fecha Reporte Operaciones": "fecha_reporte",
+            "DIAS ": "dias",
+            "Indicador Inventario ": "indicador_inventario"
+        }
+        
+        records = []
+        for _, row in df.iterrows():
+            record = {}
+            for excel_col, db_col in column_mapping.items():
+                value = row.get(excel_col)
+                if pd.isna(value):
+                    value = None
+                elif isinstance(value, str):
+                    value = fix_encoding(value)
+                elif "fecha" in db_col and value is not None:
+                    value = str(value)[:10]
+                record[db_col] = value
+            records.append(record)
+        
+        with get_db() as conn:
+            cursor = conn.cursor()
+            cursor.executemany('''
+                INSERT INTO gestion 
+                (mes, sede, tipo_inventario, almacenista, fecha_ejecucion,
+                 fecha_reporte, dias, indicador_inventario)
+                VALUES (?, ?, ?, ?, ?, ?, ?, ?)
+            ''', [(r["mes"], r["sede"], r["tipo_inventario"], r["almacenista"],
+                   r["fecha_ejecucion"], r["fecha_reporte"], r["dias"],
+                   r["indicador_inventario"]) for r in records])
+            conn.commit()
+        
+        total_records += len(records)
+        print(f"   ✅ GESTION: {len(records)} registros")
+        
+        print(f"✅ Indicadores Almacenes Total: {total_records} registros importados")
+        return total_records
+        
+    except Exception as e:
+        print(f"❌ Error importando Indicadores Almacenes: {e}")
+        import traceback
+        traceback.print_exc()
+        raise
+
+
 def main():
     """Función principal de importación"""
     print("=" * 60)
@@ -206,6 +561,11 @@ def main():
         total += import_compras()
     except Exception as e:
         print(f"⚠️ Error en Compras: {e}")
+    
+    try:
+        total += import_indicadores_almacenes()
+    except Exception as e:
+        print(f"⚠️ Error en Indicadores Almacenes: {e}")
     
     print("=" * 60)
     print(f"✅ IMPORTACIÓN COMPLETADA - Total: {total:,} registros")
