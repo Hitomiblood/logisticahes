@@ -10,5 +10,6 @@ from . import brigadas
 from . import errores
 from . import programados
 from . import gestion
+from . import upload
 
-__all__ = ["costos", "operatividad", "compras", "indicadores", "fiscal_ru", "brigadas", "errores", "programados", "gestion"]
+__all__ = ["costos", "operatividad", "compras", "indicadores", "fiscal_ru", "brigadas", "errores", "programados", "gestion", "upload"]

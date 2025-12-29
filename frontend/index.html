@@ -368,6 +368,188 @@
     .card-icon.green {
       background: linear-gradient(135deg, #10b981, #34d399);
     }
+
+    /* Estilos para upload */
+    .upload-card {
+      background: white;
+      border-radius: 16px;
+      padding: 1.5rem;
+      box-shadow: 0 10px 40px rgba(0, 0, 0, 0.2);
+    }
+    
+    .upload-card-header {
+      display: flex;
+      align-items: center;
+      gap: 1rem;
+      margin-bottom: 1rem;
+    }
+    
+    .upload-card-icon {
+      width: 50px;
+      height: 50px;
+      border-radius: 10px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 1.5rem;
+    }
+    
+    .upload-card-title {
+      flex: 1;
+    }
+    
+    .upload-card-title h3 {
+      font-size: 1.1rem;
+      color: #1a1a2e;
+      margin-bottom: 0.25rem;
+    }
+    
+    .upload-card-title .tablero {
+      font-size: 0.85rem;
+      color: #666;
+    }
+    
+    .file-info {
+      background: #f8fafc;
+      border-radius: 8px;
+      padding: 0.75rem 1rem;
+      margin-bottom: 1rem;
+      font-size: 0.85rem;
+    }
+    
+    .file-info .filename {
+      color: #1c4e80;
+      font-weight: 600;
+      word-break: break-all;
+    }
+    
+    .file-info .meta {
+      color: #666;
+      margin-top: 0.25rem;
+    }
+    
+    .file-info .status {
+      display: inline-flex;
+      align-items: center;
+      gap: 0.25rem;
+      padding: 0.2rem 0.5rem;
+      border-radius: 4px;
+      font-size: 0.75rem;
+      margin-top: 0.5rem;
+    }
+    
+    .file-info .status.exists {
+      background: #d1fae5;
+      color: #065f46;
+    }
+    
+    .file-info .status.missing {
+      background: #fee2e2;
+      color: #991b1b;
+    }
+    
+    .upload-zone {
+      border: 2px dashed #cbd5e1;
+      border-radius: 8px;
+      padding: 1.5rem;
+      text-align: center;
+      cursor: pointer;
+      transition: all 0.3s ease;
+      margin-bottom: 1rem;
+    }
+    
+    .upload-zone:hover {
+      border-color: #1c4e80;
+      background: #f1f5f9;
+    }
+    
+    .upload-zone.dragover {
+      border-color: #10b981;
+      background: #ecfdf5;
+    }
+    
+    .upload-zone p {
+      color: #64748b;
+      margin: 0;
+    }
+    
+    .upload-zone input[type="file"] {
+      display: none;
+    }
+    
+    .upload-actions {
+      display: flex;
+      gap: 0.5rem;
+    }
+    
+    .upload-actions button {
+      flex: 1;
+      padding: 0.6rem 1rem;
+      border: none;
+      border-radius: 6px;
+      font-size: 0.85rem;
+      font-weight: 600;
+      cursor: pointer;
+      transition: all 0.3s ease;
+    }
+    
+    .btn-upload {
+      background: linear-gradient(135deg, #1c4e80, #2d6da8);
+      color: white;
+    }
+    
+    .btn-upload:hover {
+      background: linear-gradient(135deg, #15406a, #246090);
+    }
+    
+    .btn-reimport {
+      background: #f1f5f9;
+      color: #475569;
+    }
+    
+    .btn-reimport:hover {
+      background: #e2e8f0;
+    }
+    
+    .btn-upload:disabled, .btn-reimport:disabled {
+      opacity: 0.6;
+      cursor: not-allowed;
+    }
+    
+    .records-info {
+      font-size: 0.8rem;
+      color: #666;
+      margin-top: 0.5rem;
+    }
+    
+    .records-info span {
+      background: #e0f2fe;
+      padding: 0.15rem 0.4rem;
+      border-radius: 4px;
+      margin-right: 0.25rem;
+      color: #0369a1;
+    }
+
+    .toast {
+      position: fixed;
+      bottom: 2rem;
+      right: 2rem;
+      padding: 1rem 1.5rem;
+      border-radius: 8px;
+      color: white;
+      font-weight: 500;
+      z-index: 9999;
+      animation: slideIn 0.3s ease;
+    }
+    
+    .toast.success { background: #10b981; }
+    .toast.error { background: #ef4444; }
+    .toast.info { background: #3b82f6; }
+    
+    @keyframes slideIn {
+      from { transform: translateX(100%); opacity: 0; }
+      to { transform: translateX(0); opacity: 1; }
+    }
     
     .footer {
       margin-top: 3rem;
@@ -418,6 +600,12 @@
         <a href="#" data-section="transporte">
           <span class="menu-icon">🚚</span>
           <span>TRANSPORTE</span>
+        </a>
+      </li>
+      <li>
+        <a href="#" data-section="cargar">
+          <span class="menu-icon">📤</span>
+          <span>CARGAR ARCHIVOS</span>
         </a>
       </li>
     </ul>
@@ -549,12 +737,37 @@
       </div>
     </div>
 
+    <!-- Sección CARGAR ARCHIVOS -->
+    <div class="section" id="section-cargar">
+      <h3 class="section-title">📤 CARGAR ARCHIVOS</h3>
+      <p style="color: rgba(255,255,255,0.8); margin-bottom: 2rem;">
+        Sube los archivos Excel para actualizar los datos de cada tablero. El archivo se reemplazará y los datos se reimportarán automáticamente.
+      </p>
+      
+      <div id="files-container" class="cards-container" style="grid-template-columns: repeat(2, 1fr);">
+        <!-- Los archivos se cargarán dinámicamente -->
+        <div style="color: rgba(255,255,255,0.6); padding: 2rem; text-align: center;">
+          Cargando archivos...
+        </div>
+      </div>
+      
+      <div style="margin-top: 2rem; text-align: center;">
+        <button onclick="reimportAll()" class="btn btn-primary" style="padding: 1rem 2rem;">
+          <span>🔄</span> Reimportar Todos los Datos
+        </button>
+      </div>
+    </div>
+
     <div class="footer">
       <p>© 2025 HESEGO Ingeniería S.A.S. - Todos los derechos reservados</p>
     </div>
   </div>
 
   <script>
+    const API_BASE = window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1' 
+      ? 'http://localhost:8000' 
+      : `http://${window.location.hostname}:8000`;
+
     // Navegación del sidebar
     document.querySelectorAll('.sidebar-menu a').forEach(link => {
       link.addEventListener('click', function(e) {
@@ -570,8 +783,277 @@
         // Mostrar la sección correspondiente
         const sectionId = 'section-' + this.dataset.section;
         document.getElementById(sectionId).classList.add('active');
+        
+        // Si es la sección de cargar, refrescar la lista de archivos
+        if (this.dataset.section === 'cargar') {
+          loadFiles();
+        }
       });
     });
+
+    // Función para mostrar toast
+    function showToast(message, type = 'info') {
+      const toast = document.createElement('div');
+      toast.className = `toast ${type}`;
+      toast.textContent = message;
+      document.body.appendChild(toast);
+      setTimeout(() => toast.remove(), 4000);
+    }
+
+    // Función para formatear tamaño de archivo
+    function formatSize(bytes) {
+      if (bytes === 0) return '0 B';
+      const k = 1024;
+      const sizes = ['B', 'KB', 'MB', 'GB'];
+      const i = Math.floor(Math.log(bytes) / Math.log(k));
+      return parseFloat((bytes / Math.pow(k, i)).toFixed(2)) + ' ' + sizes[i];
+    }
+
+    // Función para formatear fecha
+    function formatDate(isoString) {
+      if (!isoString) return 'N/A';
+      const date = new Date(isoString);
+      return date.toLocaleDateString('es-CO', { 
+        day: '2-digit', month: 'short', year: 'numeric', 
+        hour: '2-digit', minute: '2-digit' 
+      });
+    }
+
+    // Iconos por tipo de archivo
+    const fileIcons = {
+      costos_mensuales: { icon: '💰', color: '#f59e42' },
+      operatividad_vehiculos: { icon: '🚗', color: '#0d9488' },
+      compras: { icon: '🛒', color: '#7c3aed' },
+      indicadores_almacenes: { icon: '📦', color: '#10b981' }
+    };
+
+    // Cargar lista de archivos
+    async function loadFiles() {
+      const container = document.getElementById('files-container');
+      try {
+        const response = await fetch(`${API_BASE}/api/upload/files`);
+        const data = await response.json();
+        
+        if (data.files && data.files.length > 0) {
+          container.innerHTML = data.files.map(file => createFileCard(file)).join('');
+          // Agregar event listeners después de renderizar
+          setupUploadZones();
+        } else {
+          container.innerHTML = '<p style="color: rgba(255,255,255,0.6);">No hay archivos configurados.</p>';
+        }
+      } catch (error) {
+        container.innerHTML = `<p style="color: #ef4444;">Error al cargar archivos: ${error.message}</p>`;
+      }
+    }
+
+    // Crear tarjeta de archivo
+    function createFileCard(file) {
+      const iconInfo = fileIcons[file.id] || { icon: '📄', color: '#64748b' };
+      
+      return `
+        <div class="upload-card" data-file-id="${file.id}">
+          <div class="upload-card-header">
+            <div class="upload-card-icon" style="background: linear-gradient(135deg, ${iconInfo.color}, ${iconInfo.color}dd); color: white;">
+              ${iconInfo.icon}
+            </div>
+            <div class="upload-card-title">
+              <h3>${file.tablero}</h3>
+              <div class="tablero">Tablero: ${file.tablero}</div>
+            </div>
+          </div>
+          
+          <div class="file-info">
+            <div class="filename">📁 ${file.name}</div>
+            <div class="meta">Ruta: data/${file.path}</div>
+            ${file.exists ? `
+              <div class="meta">Tamaño: ${formatSize(file.size)} | Modificado: ${formatDate(file.modified)}</div>
+              <div class="status exists">✓ Archivo disponible</div>
+            ` : `
+              <div class="status missing">✗ Archivo no encontrado</div>
+            `}
+          </div>
+          
+          <div class="upload-zone" data-file-id="${file.id}">
+            <p>📤 Arrastra un archivo aquí o <strong>haz clic para seleccionar</strong></p>
+            <input type="file" accept=".xlsx,.xls" data-file-id="${file.id}" />
+          </div>
+          
+          <div class="upload-actions">
+            <button class="btn-upload" onclick="triggerUpload('${file.id}')" ${!file.exists ? 'style="flex:2;"' : ''}>
+              📤 Subir Archivo
+            </button>
+            ${file.exists ? `
+              <button class="btn-reimport" onclick="reimportFile('${file.id}')">
+                🔄 Reimportar
+              </button>
+            ` : ''}
+          </div>
+          
+          <div class="records-info" id="records-${file.id}"></div>
+        </div>
+      `;
+    }
+
+    // Configurar zonas de upload con drag & drop
+    function setupUploadZones() {
+      document.querySelectorAll('.upload-zone').forEach(zone => {
+        const fileId = zone.dataset.fileId;
+        const input = zone.querySelector('input[type="file"]');
+        
+        zone.addEventListener('click', () => input.click());
+        
+        zone.addEventListener('dragover', (e) => {
+          e.preventDefault();
+          zone.classList.add('dragover');
+        });
+        
+        zone.addEventListener('dragleave', () => {
+          zone.classList.remove('dragover');
+        });
+        
+        zone.addEventListener('drop', (e) => {
+          e.preventDefault();
+          zone.classList.remove('dragover');
+          const files = e.dataTransfer.files;
+          if (files.length > 0) {
+            uploadFile(fileId, files[0]);
+          }
+        });
+        
+        input.addEventListener('change', (e) => {
+          if (e.target.files.length > 0) {
+            uploadFile(fileId, e.target.files[0]);
+          }
+        });
+      });
+      
+      // Cargar conteo de registros para cada archivo
+      document.querySelectorAll('.upload-card').forEach(card => {
+        loadRecordsCount(card.dataset.fileId);
+      });
+    }
+
+    // Cargar conteo de registros
+    async function loadRecordsCount(fileId) {
+      try {
+        const response = await fetch(`${API_BASE}/api/upload/files/${fileId}`);
+        const data = await response.json();
+        
+        const recordsDiv = document.getElementById(`records-${fileId}`);
+        if (data.records && Object.keys(data.records).length > 0) {
+          const total = Object.values(data.records).reduce((a, b) => a + b, 0);
+          const details = Object.entries(data.records)
+            .map(([table, count]) => `<span>${table}: ${count.toLocaleString()}</span>`)
+            .join(' ');
+          recordsDiv.innerHTML = `📊 Registros en BD: ${total.toLocaleString()} ${details}`;
+        }
+      } catch (error) {
+        console.error('Error loading records:', error);
+      }
+    }
+
+    // Disparar selección de archivo
+    function triggerUpload(fileId) {
+      const input = document.querySelector(`.upload-zone[data-file-id="${fileId}"] input`);
+      if (input) input.click();
+    }
+
+    // Subir archivo
+    async function uploadFile(fileId, file) {
+      const card = document.querySelector(`.upload-card[data-file-id="${fileId}"]`);
+      const uploadBtn = card.querySelector('.btn-upload');
+      
+      uploadBtn.disabled = true;
+      uploadBtn.textContent = '⏳ Subiendo...';
+      
+      try {
+        const formData = new FormData();
+        formData.append('file', file);
+        
+        const response = await fetch(`${API_BASE}/api/upload/files/${fileId}`, {
+          method: 'POST',
+          body: formData
+        });
+        
+        const result = await response.json();
+        
+        if (response.ok && result.success) {
+          showToast(`✓ ${result.message}`, 'success');
+          if (result.import_status === 'success') {
+            showToast(`✓ ${result.import_message}`, 'success');
+          } else if (result.import_status === 'error') {
+            showToast(`⚠ ${result.import_message}`, 'error');
+          }
+          loadFiles(); // Recargar lista
+        } else {
+          showToast(`Error: ${result.detail || 'Error al subir'}`, 'error');
+        }
+      } catch (error) {
+        showToast(`Error: ${error.message}`, 'error');
+      } finally {
+        uploadBtn.disabled = false;
+        uploadBtn.textContent = '📤 Subir Archivo';
+      }
+    }
+
+    // Reimportar datos de un archivo
+    async function reimportFile(fileId) {
+      const card = document.querySelector(`.upload-card[data-file-id="${fileId}"]`);
+      const reimportBtn = card.querySelector('.btn-reimport');
+      
+      reimportBtn.disabled = true;
+      reimportBtn.textContent = '⏳ Importando...';
+      
+      try {
+        const response = await fetch(`${API_BASE}/api/upload/reimport/${fileId}`, {
+          method: 'POST'
+        });
+        
+        const result = await response.json();
+        
+        if (response.ok && result.success) {
+          showToast(`✓ ${result.message}`, 'success');
+          loadRecordsCount(fileId);
+        } else {
+          showToast(`Error: ${result.detail || 'Error al reimportar'}`, 'error');
+        }
+      } catch (error) {
+        showToast(`Error: ${error.message}`, 'error');
+      } finally {
+        reimportBtn.disabled = false;
+        reimportBtn.textContent = '🔄 Reimportar';
+      }
+    }
+
+    // Reimportar todos los datos
+    async function reimportAll() {
+      if (!confirm('¿Reimportar datos de TODOS los archivos? Esto puede tomar varios minutos.')) {
+        return;
+      }
+      
+      showToast('⏳ Reimportando todos los datos...', 'info');
+      
+      try {
+        const response = await fetch(`${API_BASE}/api/upload/reimport-all`, {
+          method: 'POST'
+        });
+        
+        const result = await response.json();
+        
+        if (response.ok) {
+          const successful = Object.values(result.results).filter(r => r.status === 'success').length;
+          const failed = Object.values(result.results).filter(r => r.status === 'error').length;
+          
+          showToast(`✓ Reimportación completa: ${successful} exitosos, ${failed} errores`, 
+            failed > 0 ? 'error' : 'success');
+          loadFiles();
+        } else {
+          showToast('Error al reimportar', 'error');
+        }
+      } catch (error) {
+        showToast(`Error: ${error.message}`, 'error');
+      }
+    }
   </script>
 </body>
 </html>
