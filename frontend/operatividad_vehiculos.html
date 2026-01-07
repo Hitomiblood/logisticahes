@@ -1235,9 +1235,16 @@
         renderYearGrid(prefix);
       });
       
-      // Establecer valores iniciales
-      setDatePickerValue('start', minDate);
-      setDatePickerValue('end', maxDate);
+      // Establecer valores iniciales: 3 meses atrás hasta hoy
+      const today = new Date();
+      const threeMonthsAgo = new Date();
+      threeMonthsAgo.setMonth(threeMonthsAgo.getMonth() - 3);
+      
+      // Asegurar que 3 meses atrás no sea menor que el mínimo de datos
+      const startDate = threeMonthsAgo < minDate ? minDate : threeMonthsAgo;
+      
+      setDatePickerValue('start', startDate);
+      setDatePickerValue('end', today);
     }
     
     function renderYearGrid(prefix) {

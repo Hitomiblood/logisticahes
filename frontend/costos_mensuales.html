@@ -1011,7 +1011,35 @@
     // Inicializar date picker al cargar
     document.addEventListener('DOMContentLoaded', function() {
       initDatePickerYears();
+      // Establecer fechas por defecto: 3 meses atrás hasta hoy
+      setDefaultDateRange();
     });
+    
+    // Función para establecer rango de fechas por defecto (3 meses atrás)
+    function setDefaultDateRange() {
+      const today = new Date();
+      const threeMonthsAgo = new Date();
+      threeMonthsAgo.setMonth(threeMonthsAgo.getMonth() - 3);
+      
+      // Establecer fecha inicio (3 meses atrás)
+      datePickerState.start = {
+        year: threeMonthsAgo.getFullYear(),
+        month: threeMonthsAgo.getMonth(),
+        day: threeMonthsAgo.getDate()
+      };
+      updateDateDisplay('start');
+      
+      // Establecer fecha fin (hoy)
+      datePickerState.end = {
+        year: today.getFullYear(),
+        month: today.getMonth(),
+        day: today.getDate()
+      };
+      updateDateDisplay('end');
+      
+      // Sincronizar con campos ocultos
+      syncHiddenDates();
+    }
 
     // =====================================================
     // Variables y configuración principal
