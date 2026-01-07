@@ -1030,68 +1030,323 @@
     document.getElementById("applyFiltersBtn").addEventListener("click", applyFilters);
     document.getElementById("resetFiltersBtn").addEventListener("click", resetFilters);
 
-    // Función para cargar datos desde la API (Base de Datos)
+    // URL base de la API
+    const API_BASE = (window.location.hostname === "localhost" && window.location.port !== "8000") 
+      ? "http://localhost:8000" 
+      : "";
+
+    // Variables para paginación de tabla
+    let currentPage = 1;
+    const pageSize = 100;
+    let totalRecords = 0;
+    let tableData = []; // Datos de la tabla actual (paginados)
+
+    // Función para construir query params de filtros actuales
+    function buildFilterParams() {
+      const params = new URLSearchParams();
+      
+      // Fechas
+      if (startDateEl.value) params.append('fecha_inicio', startDateEl.value);
+      if (endDateEl.value) params.append('fecha_fin', endDateEl.value);
+      
+      // Sedes
+      const selectedSedes = getSelectedOptions(sedeFilterEl);
+      if (selectedSedes.length > 0) params.append('sedes', selectedSedes.join(','));
+      
+      // Estados
+      const selectedEstados = getSelectedOptions(estadoFilterEl);
+      if (selectedEstados.length > 0) params.append('estados', selectedEstados.join(','));
+      
+      // Placas
+      const selectedPlacas = getSelectedOptions(placaFilterEl);
+      if (selectedPlacas.length > 0) params.append('placas', selectedPlacas.join(','));
+      
+      return params.toString();
+    }
+
+    // Función para cargar datos desde la API (Base de Datos) - OPTIMIZADA
     async function loadFromAPI() {
       console.log("🔄 Iniciando carga desde API...");
       setStatus("🔄 Conectando con la base de datos...");
       
-      // En producción usar rutas relativas, en desarrollo local usar localhost:8000
-      const API_BASE = (window.location.hostname === "localhost" && window.location.port !== "8000") 
-        ? "http://localhost:8000" 
-        : "";
-      
       try {
-        // Cargar todos los datos
-        const response = await fetch(`${API_BASE}/api/operatividad/datos?limit=100000`);
-        if (!response.ok) {
-          throw new Error(`Error ${response.status}: ${response.statusText}`);
+        // 1. Cargar solo filtros disponibles (no los datos)
+        const filtersResponse = await fetch(`${API_BASE}/api/operatividad/filters`);
+        if (!filtersResponse.ok) {
+          throw new Error(`Error ${filtersResponse.status}: ${filtersResponse.statusText}`);
         }
         
-        const result = await response.json();
-        console.log("📊 Registros recibidos:", result.total);
+        const filters = await filtersResponse.json();
+        console.log("📊 Filtros cargados:", filters);
         
-        if (!result.data || result.data.length === 0) {
-          setStatus("⚠️ La base de datos está vacía. Use 'Cargar Excel' primero.");
-          return;
-        }
+        // Inicializar selectores de filtros
+        initFiltersFromAPI(filters);
         
-        // Convertir datos de la API al formato esperado por el frontend
-        rawData = result.data.map(row => ({
-          [DATE_COL]: row.fecha_ejecucion,
-          [SEDE_COL]: row.sede,
-          [ESTADO_COL]: row.estado_vehiculo,
-          [PLACA_COL]: row.placa,
-          [PROGRAMADOS_COL]: row.vehiculos_programados,
-          [OPERATIVOS_COL]: row.vehiculos_operativos,
-          [DIAS_TALLER_COL]: row.dias_en_taller,
-          "Tipo vehiculo": row.tipo_vehiculo,
-          "Brigada": row.brigada,
-          "Conductor": row.conductor,
-          "Contrato": row.contrato,
-          "GPS": row.gps,
-          "justificacion no salida": row.justificacion_no_salida,
-          "Tipo de Daño": row.tipo_dano,
-          "Daño inoperatividad": row.dano_inoperatividad,
-          "Motivo de inoperatividad": row.motivo_inoperatividad,
-          "Observacion inoperatividad": row.observacion_inoperatividad,
-          "Tipo Mantenimiento": row.tipo_mantenimiento,
-          "Km mantenimiento": row.km_mantenimiento,
-          "Propietario": row.propietario,
-          "Indicador": row.indicador,
-          __date: row.fecha_ejecucion ? new Date(row.fecha_ejecucion) : null,
-          __dateStr: row.fecha_ejecucion
-        }));
+        // 2. Configurar fechas por defecto (últimos 3 meses)
+        setDefaultDateRange(filters.fecha_min, filters.fecha_max);
         
-        setStatus(`✅ Datos cargados desde BD. Registros: ${rawData.length}`);
+        // 3. Cargar gráficos y KPIs usando endpoints de agregación
+        await loadAggregatedData();
         
-        initFilters();
-        applyFilters();
+        setStatus("✅ Dashboard cargado correctamente");
         
       } catch (error) {
         console.error("❌ Error cargando desde API:", error);
         setStatus(`❌ Error conectando con BD: ${error.message}. ¿Está corriendo el servidor?`);
       }
     }
+
+    // Inicializar filtros desde la respuesta de la API
+    function initFiltersFromAPI(filters) {
+      // Sedes
+      sedeFilterEl.innerHTML = '';
+      (filters.sedes || []).forEach(s => {
+        const opt = document.createElement('option');
+        opt.value = s;
+        opt.textContent = s;
+        sedeFilterEl.appendChild(opt);
+      });
+      
+      // Estados
+      estadoFilterEl.innerHTML = '';
+      (filters.estados || []).forEach(e => {
+        const opt = document.createElement('option');
+        opt.value = e;
+        opt.textContent = e;
+        estadoFilterEl.appendChild(opt);
+      });
+      
+      // Placas
+      placaFilterEl.innerHTML = '';
+      (filters.placas || []).forEach(p => {
+        const opt = document.createElement('option');
+        opt.value = p;
+        opt.textContent = p;
+        placaFilterEl.appendChild(opt);
+      });
+      
+      // Guardar fecha min/max para referencia
+      window.dataFechaMin = filters.fecha_min;
+      window.dataFechaMax = filters.fecha_max;
+    }
+
+    // Configurar rango de fechas por defecto (últimos 3 meses)
+    function setDefaultDateRange(fechaMin, fechaMax) {
+      const today = new Date();
+      const threeMonthsAgo = new Date();
+      threeMonthsAgo.setMonth(threeMonthsAgo.getMonth() - 3);
+      
+      // Usar fecha máxima de los datos como fin, o hoy si no hay datos
+      const endDate = fechaMax ? new Date(fechaMax) : today;
+      // Usar 3 meses antes del fin como inicio
+      const startDate = threeMonthsAgo;
+      
+      startDateEl.value = startDate.toISOString().split('T')[0];
+      endDateEl.value = endDate.toISOString().split('T')[0];
+      
+      startDateDisplayEl.textContent = startDate.toLocaleDateString();
+      endDateDisplayEl.textContent = endDate.toLocaleDateString();
+    }
+
+    // Cargar datos agregados (KPIs y gráficos) desde el backend
+    async function loadAggregatedData() {
+      const filterParams = buildFilterParams();
+      console.log("📊 Cargando datos agregados con filtros:", filterParams);
+      
+      try {
+        // Cargar KPIs, gráficos y primeros registros de tabla en paralelo
+        const [kpisRes, diarioRes, sedeRes, estadoRes, tallerRes, datosRes] = await Promise.all([
+          fetch(`${API_BASE}/api/operatividad/kpis?${filterParams}`),
+          fetch(`${API_BASE}/api/operatividad/grafico/diario?${filterParams}`),
+          fetch(`${API_BASE}/api/operatividad/grafico/sede?${filterParams}`),
+          fetch(`${API_BASE}/api/operatividad/grafico/estado?${filterParams}`),
+          fetch(`${API_BASE}/api/operatividad/grafico/taller?${filterParams}&limit=10`),
+          fetch(`${API_BASE}/api/operatividad/datos?${filterParams}&limit=${pageSize}&offset=0`)
+        ]);
+        
+        const [kpis, diario, sede, estado, taller, datos] = await Promise.all([
+          kpisRes.json(), diarioRes.json(), sedeRes.json(), estadoRes.json(), tallerRes.json(), datosRes.json()
+        ]);
+        
+        console.log("📈 KPIs:", kpis);
+        console.log("📊 Diario:", diario.length, "puntos");
+        console.log("📊 Sede:", sede.length, "sedes");
+        console.log("📊 Estado:", estado.length, "estados");
+        console.log("📊 Taller:", taller.length, "placas");
+        console.log("📋 Tabla:", datos.total, "registros totales");
+        
+        // Actualizar KPIs
+        updateKPIsFromAPI(kpis);
+        
+        // Dibujar gráficos
+        drawChartsFromAPI(diario, sede, estado, taller);
+        
+        // Cargar tabla con paginación
+        totalRecords = datos.total || 0;
+        tableData = datos.data || [];
+        currentPage = 1;
+        renderTableFromAPI();
+        
+        setStatus(`✅ Dashboard actualizado. ${totalRecords} registros totales.`);
+        
+      } catch (error) {
+        console.error("❌ Error cargando datos agregados:", error);
+        setStatus(`❌ Error: ${error.message}`);
+      }
+    }
+
+    // Actualizar KPIs desde respuesta de API
+    function updateKPIsFromAPI(kpis) {
+      kpiOperacionEl.textContent = kpis.pct_operacion + " %";
+      kpiOperacionSubEl.textContent = `Operativos: ${kpis.vehiculos_operativos} / Programados: ${kpis.vehiculos_programados}`;
+      kpiProgOperEl.textContent = `${kpis.vehiculos_operativos} / ${kpis.vehiculos_programados}`;
+      kpiPlacasEl.textContent = kpis.placas_unicas || "-";
+      kpiPlacasSubEl.textContent = `${kpis.estados || 0} estados diferentes`;
+      kpiRangoFechasEl.textContent = kpis.fecha_min && kpis.fecha_max ? `${kpis.fecha_min} - ${kpis.fecha_max}` : "-";
+      kpiDiasEstadoEl.textContent = `${kpis.dias_taller || 0} días`;
+      kpiDiasEstadoSubEl.textContent = "Total días en taller";
+    }
+
+    // Dibujar gráficos desde datos de API
+    function drawChartsFromAPI(diario, sede, estado, taller) {
+      // Gráfico de operación diaria
+      if (diario.length > 0) {
+        const tracePct = {
+          x: diario.map(d => d.fecha),
+          y: diario.map(d => d.pct_operacion),
+          mode: "lines+markers",
+          name: "% operación",
+          hovertemplate: "%{x}<br>% operación: %{y:.1f}%<extra></extra>"
+        };
+        const layoutDiario = {
+          margin: { t: 20, r: 10, b: 40, l: 45 },
+          yaxis: { title: "% operación", rangemode: "tozero" },
+          xaxis: { type: "category", tickangle: -45 }
+        };
+        Plotly.newPlot("chart_operacion_diaria", [tracePct], layoutDiario, { responsive: true });
+      } else {
+        Plotly.purge("chart_operacion_diaria");
+      }
+      
+      // Gráfico por sede
+      if (sede.length > 0) {
+        const traceSede = {
+          x: sede.map(s => s.sede),
+          y: sede.map(s => s.pct_operacion),
+          type: "bar",
+          hovertemplate: "%{x}<br>% operación: %{y:.1f}%<extra></extra>"
+        };
+        const layoutSede = {
+          margin: { t: 20, r: 10, b: 80, l: 45 },
+          yaxis: { title: "% operación", rangemode: "tozero" },
+          xaxis: { tickangle: -40 }
+        };
+        Plotly.newPlot("chart_operacion_sede", [traceSede], layoutSede, { responsive: true });
+      } else {
+        Plotly.purge("chart_operacion_sede");
+      }
+      
+      // Gráfico de estado (pie)
+      if (estado.length > 0) {
+        const traceEstado = {
+          labels: estado.map(e => e.estado),
+          values: estado.map(e => e.cantidad),
+          type: "pie",
+          textinfo: "label+percent",
+          hovertemplate: "%{label}<br>%{value} registros<extra></extra>"
+        };
+        const layoutEstado = { margin: { t: 10, r: 10, b: 10, l: 10 } };
+        Plotly.newPlot("chart_estado", [traceEstado], layoutEstado, { responsive: true });
+      } else {
+        Plotly.purge("chart_estado");
+      }
+      
+      // Gráfico de taller (barras horizontales)
+      if (taller.length > 0) {
+        const traceTaller = {
+          y: taller.map(t => t.placa),
+          x: taller.map(t => t.dias),
+          type: "bar",
+          orientation: "h",
+          hovertemplate: "%{y}<br>%{x} días<extra></extra>"
+        };
+        const layoutTaller = {
+          margin: { t: 10, r: 10, b: 40, l: 80 },
+          xaxis: { title: "Días en taller" },
+          yaxis: { autorange: "reversed" }
+        };
+        Plotly.newPlot("chart_taller", [traceTaller], layoutTaller, { responsive: true });
+      } else {
+        Plotly.purge("chart_taller");
+      }
+    }
+
+    // Renderizar tabla con datos de API y paginación
+    function renderTableFromAPI() {
+      const tableHead = detailTableHead;
+      const tableBody = detailTableBody;
+      
+      // Cabeceras
+      tableHead.innerHTML = '<tr>' + detailColumns.map(col => 
+        `<th onclick="sortTable('${col}')">${col}</th>`
+      ).join('') + '</tr>';
+      
+      // Datos
+      tableBody.innerHTML = tableData.map(row => {
+        return '<tr>' + detailColumns.map(col => {
+          // Mapear columnas del frontend a campos de API
+          const apiField = {
+            [DATE_COL]: 'fecha_ejecucion',
+            [SEDE_COL]: 'sede',
+            [ESTADO_COL]: 'estado_vehiculo',
+            [PLACA_COL]: 'placa',
+            [PROGRAMADOS_COL]: 'vehiculos_programados',
+            [OPERATIVOS_COL]: 'vehiculos_operativos',
+            [DIAS_TALLER_COL]: 'dias_en_taller',
+            "Tipo vehiculo": 'tipo_vehiculo',
+            "Brigada": 'brigada',
+            "Conductor": 'conductor',
+            "Contrato": 'contrato',
+            "Motivo de inoperatividad": 'motivo_inoperatividad'
+          }[col];
+          return `<td>${row[apiField] ?? ''}</td>`;
+        }).join('') + '</tr>';
+      }).join('');
+      
+      // Info de paginación
+      const startRecord = (currentPage - 1) * pageSize + 1;
+      const endRecord = Math.min(currentPage * pageSize, totalRecords);
+      tableInfoEl.innerHTML = `
+        Mostrando ${startRecord}-${endRecord} de ${totalRecords} registros
+        ${currentPage > 1 ? `<button onclick="loadTablePage(${currentPage - 1})">← Anterior</button>` : ''}
+        ${endRecord < totalRecords ? `<button onclick="loadTablePage(${currentPage + 1})">Siguiente →</button>` : ''}
+      `;
+    }
+
+    // Cargar una página específica de la tabla
+    async function loadTablePage(page) {
+      currentPage = page;
+      const filterParams = buildFilterParams();
+      const offset = (page - 1) * pageSize;
+      
+      setStatus(`🔄 Cargando página ${page}...`);
+      
+      try {
+        const response = await fetch(`${API_BASE}/api/operatividad/datos?${filterParams}&limit=${pageSize}&offset=${offset}`);
+        const datos = await response.json();
+        
+        tableData = datos.data || [];
+        renderTableFromAPI();
+        
+        setStatus(`✅ Página ${page} cargada.`);
+      } catch (error) {
+        console.error("Error cargando página:", error);
+        setStatus(`❌ Error: ${error.message}`);
+      }
+    }
+    
+    // Exponer función globalmente para onclick
+    window.loadTablePage = loadTablePage;
 
     // Función para cargar archivo desde ruta fija
     async function loadFromPath() {
@@ -2271,54 +2526,12 @@
     }
 
     function applyFilters() {
-      if (!rawData.length) return;
-
-      const selectedSedes = getSelectedOptions(sedeFilterEl);
-      const selectedEstados = getSelectedOptions(estadoFilterEl);
-      const selectedPlacas = getSelectedOptions(placaFilterEl);
-      const startFilter = startDateEl.value ? new Date(startDateEl.value) : null;
-      const endFilter = endDateEl.value ? new Date(endDateEl.value) : null;
-
-      console.log('Aplicando filtros:', {
-        sedes: selectedSedes.length,
-        estados: selectedEstados.length,
-        placas: selectedPlacas.length,
-        rawDataLength: rawData.length
-      });
-
-      filteredData = rawData.filter(row => {
-        // fecha
-        if (startFilter || endFilter) {
-          const d = row.__date;
-          if (!(d instanceof Date) || isNaN(d)) {
-            return false;
-          }
-          if (startFilter && d < startFilter) return false;
-          if (endFilter && d > endFilter) return false;
-        }
-        // sede
-        if (selectedSedes.length > 0) {
-          const sede = row[SEDE_COL];
-          if (!selectedSedes.includes(String(sede))) return false;
-        }
-        // estado
-        if (selectedEstados.length > 0) {
-          const est = row[ESTADO_COL];
-          if (!selectedEstados.includes(String(est))) return false;
-        }
-        // placa
-        if (selectedPlacas.length > 0) {
-          const placa = row[PLACA_COL];
-          if (!selectedPlacas.includes(String(placa))) return false;
-        }
-        return true;
-      });
-
-      console.log('Registros filtrados:', filteredData.length);
-      setStatus(`Registros filtrados: ${filteredData.length}`);
-      updateKPIs();
-      drawCharts();
-      renderTable();
+      // NUEVA IMPLEMENTACIÓN: Usar endpoints de agregación del backend
+      console.log('Aplicando filtros via API...');
+      setStatus('🔄 Actualizando dashboard...');
+      
+      // Recargar datos agregados con los nuevos filtros
+      loadAggregatedData();
       
       // Guardar filtros (solo si no estamos en proceso de carga)
       if (!isLoadingFilters) {
@@ -2327,22 +2540,18 @@
     }
 
     function resetFilters() {
-      if (!rawData.length) return;
       // borrar selección múltiple
       Array.from(sedeFilterEl.options).forEach(o => (o.selected = false));
       Array.from(estadoFilterEl.options).forEach(o => (o.selected = false));
       Array.from(placaFilterEl.options).forEach(o => (o.selected = false));
 
-      const validDates = rawData
-        .map(r => r.__date)
-        .filter(d => d instanceof Date && !isNaN(d));
-      if (validDates.length) {
-        const minD = new Date(Math.min.apply(null, validDates));
-        const maxD = new Date(Math.max.apply(null, validDates));
-        initDateSelectors(minD, maxD);
-      }
+      // Restaurar fechas por defecto (últimos 3 meses)
+      setDefaultDateRange(window.dataFechaMin, window.dataFechaMax);
+      
       applyFilters();
       
+      // Limpiar filtros guardados
+      clearSavedFilters();
       // Limpiar filtros guardados
       clearSavedFilters();
     }

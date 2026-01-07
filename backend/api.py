@@ -8,6 +8,7 @@ from fastapi.responses import FileResponse
 
 from .database import get_db, init_db
 from .config import BASE_DIR
+from .cache import get_cache_stats, invalidate_all_cache
 
 # Importar routers
 from .routes import costos, operatividad, compras, indicadores, fiscal_ru, brigadas, errores, programados, gestion, upload
@@ -55,6 +56,21 @@ app.include_router(upload.router)
 async def startup():
     """Inicializar BD al arrancar"""
     init_db()
+
+
+# ============== ENDPOINTS DE ADMINISTRACIÓN ==============
+
+@app.get("/api/admin/cache/stats")
+async def cache_stats():
+    """Obtener estadísticas del caché Redis"""
+    return get_cache_stats()
+
+
+@app.post("/api/admin/cache/clear")
+async def cache_clear():
+    """Limpiar todo el caché"""
+    deleted = invalidate_all_cache()
+    return {"message": "Caché limpiado", "keys_deleted": deleted}
 
 
 # ============== ENDPOINTS PARA ARCHIVOS HTML ==============

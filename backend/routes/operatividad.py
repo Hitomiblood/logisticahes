@@ -4,8 +4,12 @@ Rutas API para Operatividad de Vehículos
 from fastapi import APIRouter, Query
 from typing import Optional
 from ..database import get_db
+from ..cache import cache_get, cache_set, generate_cache_key, invalidate_operatividad_cache
 
 router = APIRouter(prefix="/api/operatividad", tags=["Operatividad Vehículos"])
+
+# TTL de caché en segundos (5 minutos)
+CACHE_TTL = 300
 
 
 def build_where_clause(fecha_inicio, fecha_fin, sedes, estados, placas):
@@ -45,16 +49,30 @@ async def get_datos(
     sedes: Optional[str] = None,
     estados: Optional[str] = None,
     placas: Optional[str] = None,
-    limit: int = Query(default=100000, le=150000)
+    limit: int = Query(default=100, le=150000),
+    offset: int = Query(default=0, ge=0)
 ):
-    """Obtener datos de operatividad con filtros"""
+    """Obtener datos de operatividad con filtros y paginación"""
     with get_db() as conn:
         cursor = conn.cursor()
         where_clause, params = build_where_clause(fecha_inicio, fecha_fin, sedes, estados, placas)
-        query = f"SELECT * FROM operatividad_vehiculos {where_clause} ORDER BY fecha_ejecucion DESC LIMIT {limit}"
+        
+        # Contar total de registros
+        count_query = f"SELECT COUNT(*) FROM operatividad_vehiculos {where_clause}"
+        cursor.execute(count_query, params)
+        total = cursor.fetchone()[0]
+        
+        # Obtener registros paginados
+        query = f"SELECT * FROM operatividad_vehiculos {where_clause} ORDER BY fecha_ejecucion DESC LIMIT {limit} OFFSET {offset}"
         cursor.execute(query, params)
         rows = cursor.fetchall()
-        return {"data": [dict(row) for row in rows], "total": len(rows)}
+        return {"data": [dict(row) for row in rows], "total": total}
+
+
+@router.get("/filters")
+async def get_filters():
+    """Obtener opciones disponibles para filtros (alias de /filtros)"""
+    return await get_filtros()
 
 
 @router.get("/filtros")
@@ -78,7 +96,15 @@ async def get_kpis(
     fecha_inicio: Optional[str] = None, fecha_fin: Optional[str] = None,
     sedes: Optional[str] = None, estados: Optional[str] = None, placas: Optional[str] = None
 ):
-    """Obtener KPIs de operatividad"""
+    """Obtener KPIs de operatividad (con caché)"""
+    # Verificar caché
+    cache_key = generate_cache_key("operatividad:kpis", 
+        fecha_inicio=fecha_inicio, fecha_fin=fecha_fin, 
+        sedes=sedes, estados=estados, placas=placas)
+    cached = cache_get(cache_key)
+    if cached:
+        return cached
+    
     with get_db() as conn:
         cursor = conn.cursor()
         where_clause, params = build_where_clause(fecha_inicio, fecha_fin, sedes, estados, placas)
@@ -94,7 +120,7 @@ async def get_kpis(
         operativos = row[1] or 0
         pct_operacion = (operativos / programados * 100) if programados > 0 else 0
         
-        return {
+        result = {
             "pct_operacion": round(pct_operacion, 1),
             "vehiculos_programados": programados,
             "vehiculos_operativos": operativos,
@@ -104,6 +130,9 @@ async def get_kpis(
             "fecha_min": row[5],
             "fecha_max": row[6]
         }
+        
+        cache_set(cache_key, result, CACHE_TTL)
+        return result
 
 
 @router.get("/grafico/diario")
@@ -111,7 +140,14 @@ async def get_diaria(
     fecha_inicio: Optional[str] = None, fecha_fin: Optional[str] = None,
     sedes: Optional[str] = None, estados: Optional[str] = None, placas: Optional[str] = None
 ):
-    """Datos para gráfico de operación diaria"""
+    """Datos para gráfico de operación diaria (con caché)"""
+    cache_key = generate_cache_key("operatividad:diario", 
+        fecha_inicio=fecha_inicio, fecha_fin=fecha_fin, 
+        sedes=sedes, estados=estados, placas=placas)
+    cached = cache_get(cache_key)
+    if cached:
+        return cached
+    
     with get_db() as conn:
         cursor = conn.cursor()
         where_clause, params = build_where_clause(fecha_inicio, fecha_fin, sedes, estados, placas)
@@ -125,6 +161,8 @@ async def get_diaria(
             programados, operativos = row[1] or 0, row[2] or 0
             pct = (operativos / programados * 100) if programados > 0 else 0
             results.append({"fecha": row[0], "programados": programados, "operativos": operativos, "pct_operacion": round(pct, 1)})
+        
+        cache_set(cache_key, results, CACHE_TTL)
         return results
 
 
@@ -133,7 +171,14 @@ async def get_por_sede(
     fecha_inicio: Optional[str] = None, fecha_fin: Optional[str] = None,
     sedes: Optional[str] = None, estados: Optional[str] = None, placas: Optional[str] = None
 ):
-    """Datos para gráfico por sede"""
+    """Datos para gráfico por sede (con caché)"""
+    cache_key = generate_cache_key("operatividad:sede", 
+        fecha_inicio=fecha_inicio, fecha_fin=fecha_fin, 
+        sedes=sedes, estados=estados, placas=placas)
+    cached = cache_get(cache_key)
+    if cached:
+        return cached
+    
     with get_db() as conn:
         cursor = conn.cursor()
         where_clause, params = build_where_clause(fecha_inicio, fecha_fin, sedes, estados, placas)
@@ -147,6 +192,8 @@ async def get_por_sede(
             programados, operativos = row[1] or 0, row[2] or 0
             pct = (operativos / programados * 100) if programados > 0 else 0
             results.append({"sede": row[0], "programados": programados, "operativos": operativos, "pct_operacion": round(pct, 1)})
+        
+        cache_set(cache_key, results, CACHE_TTL)
         return results
 
 
@@ -155,12 +202,22 @@ async def get_por_estado(
     fecha_inicio: Optional[str] = None, fecha_fin: Optional[str] = None,
     sedes: Optional[str] = None, estados: Optional[str] = None, placas: Optional[str] = None
 ):
-    """Datos para gráfico por estado"""
+    """Datos para gráfico por estado (con caché)"""
+    cache_key = generate_cache_key("operatividad:estado", 
+        fecha_inicio=fecha_inicio, fecha_fin=fecha_fin, 
+        sedes=sedes, estados=estados, placas=placas)
+    cached = cache_get(cache_key)
+    if cached:
+        return cached
+    
     with get_db() as conn:
         cursor = conn.cursor()
         where_clause, params = build_where_clause(fecha_inicio, fecha_fin, sedes, estados, placas)
         cursor.execute(f"SELECT estado_vehiculo, COUNT(*) FROM operatividad_vehiculos {where_clause} GROUP BY estado_vehiculo ORDER BY COUNT(*) DESC", params)
-        return [{"estado": row[0], "cantidad": row[1]} for row in cursor.fetchall()]
+        results = [{"estado": row[0], "cantidad": row[1]} for row in cursor.fetchall()]
+        
+        cache_set(cache_key, results, CACHE_TTL)
+        return results
 
 
 @router.get("/grafico/taller")
@@ -169,7 +226,14 @@ async def get_top_dias_taller(
     sedes: Optional[str] = None, estados: Optional[str] = None, placas: Optional[str] = None,
     limit: int = 10
 ):
-    """Top placas por días en taller"""
+    """Top placas por días en taller (con caché)"""
+    cache_key = generate_cache_key("operatividad:taller", 
+        fecha_inicio=fecha_inicio, fecha_fin=fecha_fin, 
+        sedes=sedes, estados=estados, placas=placas, limit=limit)
+    cached = cache_get(cache_key)
+    if cached:
+        return cached
+    
     with get_db() as conn:
         cursor = conn.cursor()
         where_clause, params = build_where_clause(fecha_inicio, fecha_fin, sedes, estados, placas)
@@ -179,4 +243,7 @@ async def get_top_dias_taller(
             GROUP BY placa HAVING total_dias > 0
             ORDER BY total_dias DESC LIMIT {limit}
         ''', params)
-        return [{"placa": row[0], "dias": row[1]} for row in cursor.fetchall()]
+        results = [{"placa": row[0], "dias": row[1]} for row in cursor.fetchall()]
+        
+        cache_set(cache_key, results, CACHE_TTL)
+        return results
