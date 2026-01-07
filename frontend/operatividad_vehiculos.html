@@ -4,8 +4,6 @@
   <meta charset="UTF-8" />
   <title>Dashboard Operatividad Vehículos</title>
 
-  <!-- Librería para leer Excel en el navegador -->
-  <script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
   <!-- Plotly para gráficas interactivas -->
   <script src="https://cdn.plot.ly/plotly-2.35.2.min.js"></script>
 
@@ -733,7 +731,7 @@
     <div class="sidebar-header">
       <img src="img/logo.png" alt="HESEGO Logo" />
       <h2>Operatividad Vehículos</h2>
-      <a href="index.html" class="btn-back">← Regresar</a>
+      <a href="index.html?section=transporte" class="btn-back">← Regresar</a>
     </div>
     
     <div class="sidebar-filters">
@@ -741,9 +739,6 @@
       <div class="filter-group">
         <button type="button" id="loadFromAPIBtn" class="btn-sharepoint" style="background: #3b82f6; margin-bottom: 0.3rem;">
           🗄️ Cargar desde BD
-        </button>
-        <button type="button" id="loadDataBtn" class="btn-sharepoint" style="margin-bottom: 0.5rem;">
-          📂 Cargar Excel
         </button>
         <div id="status"></div>
       </div>
