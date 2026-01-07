@@ -45,7 +45,14 @@ async def get_filters():
         cursor = conn.cursor()
         filters = {}
         
-        # Filtros de TRAZA REQ OC
+        # Filtros principales para el frontend (procesos y proveedores)
+        cursor.execute("SELECT DISTINCT proceso FROM oc_descuentos WHERE proceso IS NOT NULL ORDER BY proceso")
+        filters["procesos"] = [row[0] for row in cursor.fetchall()]
+        
+        cursor.execute("SELECT DISTINCT tercero_nombre FROM oc_descuentos WHERE tercero_nombre IS NOT NULL ORDER BY tercero_nombre LIMIT 500")
+        filters["proveedores"] = [row[0] for row in cursor.fetchall()]
+        
+        # Filtros adicionales de TRAZA REQ OC
         cursor.execute("SELECT DISTINCT req_estado FROM traza_req_oc WHERE req_estado IS NOT NULL ORDER BY req_estado")
         filters["estados_req"] = [row[0] for row in cursor.fetchall()]
         cursor.execute("SELECT DISTINCT oc_estado FROM traza_req_oc WHERE oc_estado IS NOT NULL ORDER BY oc_estado")
