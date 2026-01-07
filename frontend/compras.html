@@ -7,8 +7,6 @@
   <meta http-equiv="Expires" content="0" />
   <title>Dashboard Compras - Informe Base</title>
 
-  <!-- Librería para leer Excel en el navegador -->
-  <script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
   <!-- Plotly para gráficas interactivas -->
   <script src="https://cdn.plot.ly/plotly-2.35.2.min.js"></script>
 
@@ -130,17 +128,6 @@
       font-size: 0.75rem;
       font-weight: 500;
       margin-bottom: 0.3rem;
-    }
-    
-    .filter-group input[type="file"] {
-      width: 100%;
-      padding: 0.3rem;
-      border-radius: 4px;
-      border: 1px solid rgba(255, 255, 255, 0.2);
-      font-size: 0.75rem;
-      background: rgba(255, 255, 255, 0.1);
-      color: white;
-      box-sizing: border-box;
     }
     
     .filter-group .filter-search {
@@ -586,7 +573,7 @@
     <div class="sidebar-header">
       <img src="img/logo.png" alt="Logo HESEGO" />
       <h2>Dashboard Compras</h2>
-      <a href="index.html" class="btn-back">← Regresar al Inicio</a>
+      <a href="index.html?section=compras" class="btn-back">← Regresar</a>
     </div>
 
     <div class="sidebar-filters">
@@ -597,11 +584,6 @@
         <button class="btn-filter" id="btnReloadData">🔄 Recargar Datos</button>
       </div>
       
-      <div class="filter-group" style="margin-top: 0.5rem; border-top: 1px solid rgba(255, 255, 255, 0.1); padding-top: 0.5rem;">
-        <label>Cargar Excel Manual (Opcional)</label>
-        <input type="file" id="excelFile" accept=".xlsx,.xls" style="font-size: 0.65rem;" />
-      </div>
-
       <h3 style="margin-top: 1rem;">🔍 Filtros Aplicables</h3>
 
       <!-- Rango de Fechas -->
@@ -1044,34 +1026,7 @@
       fillSelect('supplierFilter', filters.proveedores || []);
     }
 
-    // Cargar archivo Excel (mantener por compatibilidad)
-    document.getElementById('excelFile').addEventListener('change', async (e) => {
-      const file = e.target.files[0];
-      if (!file) return;
 
-      try {
-        document.getElementById('status').textContent = 'Leyendo archivo...';
-        const arrayBuffer = await file.arrayBuffer();
-        const workbook = XLSX.read(arrayBuffer, { type: 'array' });
-        
-        // Leer hojas principales
-        rawData = {};
-        const sheetsToLoad = ['TRAZA REQ OC', 'OC DESCUENTOS', 'BASE OC GENERADAS', 'OC pendiente entrada almacen'];
-        
-        for (const sheetName of sheetsToLoad) {
-          if (workbook.SheetNames.includes(sheetName)) {
-            rawData[sheetName] = XLSX.utils.sheet_to_json(workbook.Sheets[sheetName]);
-          }
-        }
-
-        document.getElementById('status').textContent = '✓ Archivo cargado';
-        initializeFilters();
-        applyFilters();
-      } catch (error) {
-        document.getElementById('status').textContent = '✗ Error al cargar';
-        console.error(error);
-      }
-    });
 
     function initializeFilters() {
       const allStates = new Set();
