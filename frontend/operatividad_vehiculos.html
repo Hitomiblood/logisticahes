@@ -1141,11 +1141,15 @@
       // Usar 3 meses antes del fin como inicio
       const startDate = threeMonthsAgo;
       
+      // Establecer valores en inputs hidden
       startDateEl.value = startDate.toISOString().split('T')[0];
       endDateEl.value = endDate.toISOString().split('T')[0];
       
-      startDateDisplayEl.textContent = startDate.toLocaleDateString();
-      endDateDisplayEl.textContent = endDate.toLocaleDateString();
+      // Establecer valores en inputs visibles (usar .value porque son inputs)
+      startDateDisplayEl.value = startDate.toLocaleDateString();
+      endDateDisplayEl.value = endDate.toLocaleDateString();
+      
+      console.log("📅 Fechas configuradas:", startDateEl.value, "a", endDateEl.value);
     }
 
     // Cargar datos agregados (KPIs y gráficos) desde el backend
