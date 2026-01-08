@@ -362,6 +362,57 @@ async def get_compras_por_estado(
         return [{"estado": row[0], "cantidad": row[1]} for row in cursor.fetchall()]
 
 
+# ==================== HELPER PARA FILTROS DEL DASHBOARD ====================
+def build_filters_where(filters: FilterRequest, table: str):
+    """
+    Construye cláusula WHERE y parámetros basado en FilterRequest.
+    table: 'descuentos', 'traza' o 'base' para usar las columnas correctas
+    """
+    where_clause = "WHERE 1=1"
+    params = []
+    
+    if table == 'descuentos':
+        # Para tabla oc_descuentos
+        if filters.dateStart:
+            where_clause += " AND fecha >= ?"
+            params.append(filters.dateStart)
+        if filters.dateEnd:
+            where_clause += " AND fecha <= ?"
+            params.append(filters.dateEnd)
+        if filters.processes and len(filters.processes) > 0:
+            where_clause += f" AND proceso IN ({','.join(['?' for _ in filters.processes])})"
+            params.extend(filters.processes)
+        if filters.suppliers and len(filters.suppliers) > 0:
+            where_clause += f" AND tercero_nombre IN ({','.join(['?' for _ in filters.suppliers])})"
+            params.extend(filters.suppliers)
+            
+    elif table == 'traza':
+        # Para tabla traza_req_oc
+        if filters.dateStart:
+            where_clause += " AND oc_fecha >= ?"
+            params.append(filters.dateStart)
+        if filters.dateEnd:
+            where_clause += " AND oc_fecha <= ?"
+            params.append(filters.dateEnd)
+        if filters.suppliers and len(filters.suppliers) > 0:
+            where_clause += f" AND oc_tercero_nombre IN ({','.join(['?' for _ in filters.suppliers])})"
+            params.extend(filters.suppliers)
+            
+    elif table == 'base':
+        # Para tabla base_oc_generadas
+        if filters.dateStart:
+            where_clause += " AND fecha >= ?"
+            params.append(filters.dateStart)
+        if filters.dateEnd:
+            where_clause += " AND fecha <= ?"
+            params.append(filters.dateEnd)
+        if filters.suppliers and len(filters.suppliers) > 0:
+            where_clause += f" AND tercero_nombre IN ({','.join(['?' for _ in filters.suppliers])})"
+            params.extend(filters.suppliers)
+    
+    return where_clause, params
+
+
 @router.get("/grafico/descuentos-por-tercero")
 async def get_descuentos_por_tercero(
     fecha_inicio: Optional[str] = None, fecha_fin: Optional[str] = None,
@@ -387,26 +438,30 @@ async def get_kpis_post(filters: FilterRequest):
     with get_db() as conn:
         cursor = conn.cursor()
         
-        # KPIs de traza_req_oc
-        cursor.execute('''SELECT COUNT(*), COUNT(DISTINCT req_numero), COUNT(DISTINCT oc_numero),
+        # Construir filtros para cada tabla
+        where_traza, params_traza = build_filters_where(filters, 'traza')
+        where_desc, params_desc = build_filters_where(filters, 'descuentos')
+        
+        # KPIs de traza_req_oc con filtros
+        cursor.execute(f'''SELECT COUNT(*), COUNT(DISTINCT req_numero), COUNT(DISTINCT oc_numero),
             AVG(COALESCE(dias_aprobar_rq, 0)), AVG(COALESCE(dias_generar_oc, 0)),
             AVG(COALESCE(dias_aprobacion_oc, 0)), AVG(COALESCE(dias_recepcion_servicio, 0)),
             AVG(COALESCE(dias_entrada_almacen, 0))
-            FROM traza_req_oc''')
+            FROM traza_req_oc {where_traza}''', params_traza)
         traza = cursor.fetchone()
         
-        # KPIs de oc_descuentos
-        cursor.execute('''SELECT COUNT(*), SUM(COALESCE(total_dcto, 0)), SUM(COALESCE(total, 0)),
+        # KPIs de oc_descuentos con filtros
+        cursor.execute(f'''SELECT COUNT(*), SUM(COALESCE(total_dcto, 0)), SUM(COALESCE(total, 0)),
             COUNT(DISTINCT documento_num), AVG(COALESCE(porcentaje_descuento, 0))
-            FROM oc_descuentos''')
+            FROM oc_descuentos {where_desc}''', params_desc)
         desc = cursor.fetchone()
         
-        # Pendientes por aprobar RQ
-        cursor.execute("SELECT COUNT(*) FROM traza_req_oc WHERE req_estado = 'PENDIENTE' OR req_estado LIKE '%PEND%'")
+        # Pendientes por aprobar RQ con filtros
+        cursor.execute(f"SELECT COUNT(*) FROM traza_req_oc {where_traza} AND (req_estado = 'PENDIENTE' OR req_estado LIKE '%PEND%')", params_traza)
         pendientes_rq = cursor.fetchone()[0]
         
-        # Pendientes por aprobar OC
-        cursor.execute("SELECT COUNT(*) FROM traza_req_oc WHERE oc_estado = 'PENDIENTE' OR oc_estado LIKE '%PEND%'")
+        # Pendientes por aprobar OC con filtros
+        cursor.execute(f"SELECT COUNT(*) FROM traza_req_oc {where_traza} AND (oc_estado = 'PENDIENTE' OR oc_estado LIKE '%PEND%')", params_traza)
         pendientes_oc = cursor.fetchone()[0]
         
         return {
@@ -434,12 +489,12 @@ async def chart_oc_vs_items(filters: FilterRequest):
     """Gráfico OC vs Items por proceso"""
     with get_db() as conn:
         cursor = conn.cursor()
-        cursor.execute('''
+        where_clause, params = build_filters_where(filters, 'descuentos')
+        cursor.execute(f'''
             SELECT proceso, COUNT(DISTINCT documento_num) as total_oc, COUNT(*) as total_items
-            FROM oc_descuentos
-            WHERE proceso IS NOT NULL
+            FROM oc_descuentos {where_clause} AND proceso IS NOT NULL
             GROUP BY proceso ORDER BY total_items DESC LIMIT 10
-        ''')
+        ''', params)
         rows = cursor.fetchall()
         procesos = [r[0] or 'Sin Proceso' for r in rows]
         total_oc = [r[1] for r in rows]
@@ -461,16 +516,16 @@ async def chart_percent_discounts(filters: FilterRequest):
     """Gráfico porcentaje descuentos por proceso"""
     with get_db() as conn:
         cursor = conn.cursor()
-        cursor.execute('''
+        where_clause, params = build_filters_where(filters, 'descuentos')
+        cursor.execute(f'''
             SELECT proceso, AVG(COALESCE(porcentaje_descuento, 0)) as avg_pct
-            FROM oc_descuentos
-            WHERE proceso IS NOT NULL
+            FROM oc_descuentos {where_clause} AND proceso IS NOT NULL
             GROUP BY proceso ORDER BY avg_pct DESC LIMIT 10
-        ''')
+        ''', params)
         rows = cursor.fetchall()
         
-        # Calcular promedio general
-        cursor.execute('SELECT AVG(COALESCE(porcentaje_descuento, 0)) FROM oc_descuentos')
+        # Calcular promedio general con filtros
+        cursor.execute(f'SELECT AVG(COALESCE(porcentaje_descuento, 0)) FROM oc_descuentos {where_clause}', params)
         avg_general = cursor.fetchone()[0] or 0
         
         return {
@@ -488,16 +543,16 @@ async def chart_top_suppliers_discounts(filters: FilterRequest):
     """Top proveedores por descuentos"""
     with get_db() as conn:
         cursor = conn.cursor()
-        # Obtener total de descuentos para calcular porcentaje
-        cursor.execute('SELECT SUM(COALESCE(total_dcto, 0)) FROM oc_descuentos')
+        where_clause, params = build_filters_where(filters, 'descuentos')
+        # Obtener total de descuentos para calcular porcentaje con filtros
+        cursor.execute(f'SELECT SUM(COALESCE(total_dcto, 0)) FROM oc_descuentos {where_clause}', params)
         total_general = cursor.fetchone()[0] or 1
         
-        cursor.execute('''
+        cursor.execute(f'''
             SELECT tercero_nombre, SUM(COALESCE(total_dcto, 0)) as total_desc
-            FROM oc_descuentos
-            WHERE tercero_nombre IS NOT NULL
+            FROM oc_descuentos {where_clause} AND tercero_nombre IS NOT NULL
             GROUP BY tercero_nombre ORDER BY total_desc DESC LIMIT 10
-        ''')
+        ''', params)
         rows = cursor.fetchall()
         
         proveedores = [r[0] for r in rows]
@@ -519,12 +574,12 @@ async def chart_avg_approval_days(filters: FilterRequest):
     """Días promedio aprobación RQ por aprobador"""
     with get_db() as conn:
         cursor = conn.cursor()
-        cursor.execute('''
+        where_clause, params = build_filters_where(filters, 'traza')
+        cursor.execute(f'''
             SELECT req_usuario_autorizador, AVG(COALESCE(dias_aprobar_rq, 0)) as promedio
-            FROM traza_req_oc
-            WHERE req_usuario_autorizador IS NOT NULL AND dias_aprobar_rq IS NOT NULL
+            FROM traza_req_oc {where_clause} AND req_usuario_autorizador IS NOT NULL AND dias_aprobar_rq IS NOT NULL
             GROUP BY req_usuario_autorizador ORDER BY promedio DESC LIMIT 10
-        ''')
+        ''', params)
         rows = cursor.fetchall()
         
         return {
@@ -541,12 +596,12 @@ async def chart_avg_generation_days(filters: FilterRequest):
     """Días promedio generación OC por comprador"""
     with get_db() as conn:
         cursor = conn.cursor()
-        cursor.execute('''
+        where_clause, params = build_filters_where(filters, 'traza')
+        cursor.execute(f'''
             SELECT oc_usuario, AVG(COALESCE(dias_generar_oc, 0)) as promedio
-            FROM traza_req_oc
-            WHERE oc_usuario IS NOT NULL AND dias_generar_oc IS NOT NULL
+            FROM traza_req_oc {where_clause} AND oc_usuario IS NOT NULL AND dias_generar_oc IS NOT NULL
             GROUP BY oc_usuario ORDER BY promedio DESC LIMIT 10
-        ''')
+        ''', params)
         rows = cursor.fetchall()
         
         return {
@@ -563,12 +618,12 @@ async def chart_avg_approval_management(filters: FilterRequest):
     """Días promedio aprobación gerencial OC por aprobador"""
     with get_db() as conn:
         cursor = conn.cursor()
-        cursor.execute('''
+        where_clause, params = build_filters_where(filters, 'traza')
+        cursor.execute(f'''
             SELECT oc_usuario_autorizacion, AVG(COALESCE(dias_aprobacion_oc, 0)) as promedio
-            FROM traza_req_oc
-            WHERE oc_usuario_autorizacion IS NOT NULL AND dias_aprobacion_oc IS NOT NULL
+            FROM traza_req_oc {where_clause} AND oc_usuario_autorizacion IS NOT NULL AND dias_aprobacion_oc IS NOT NULL
             GROUP BY oc_usuario_autorizacion ORDER BY promedio DESC LIMIT 10
-        ''')
+        ''', params)
         rows = cursor.fetchall()
         
         return {
@@ -585,12 +640,12 @@ async def chart_avg_reception_service(filters: FilterRequest):
     """Días promedio recepción servicio por usuario"""
     with get_db() as conn:
         cursor = conn.cursor()
-        cursor.execute('''
+        where_clause, params = build_filters_where(filters, 'traza')
+        cursor.execute(f'''
             SELECT entrega_servicio_usuario, AVG(COALESCE(dias_recepcion_servicio, 0)) as promedio
-            FROM traza_req_oc
-            WHERE entrega_servicio_usuario IS NOT NULL AND dias_recepcion_servicio IS NOT NULL
+            FROM traza_req_oc {where_clause} AND entrega_servicio_usuario IS NOT NULL AND dias_recepcion_servicio IS NOT NULL
             GROUP BY entrega_servicio_usuario ORDER BY promedio DESC LIMIT 10
-        ''')
+        ''', params)
         rows = cursor.fetchall()
         
         return {
@@ -607,12 +662,12 @@ async def chart_avg_warehouse_entry(filters: FilterRequest):
     """Días promedio entrada almacén por usuario"""
     with get_db() as conn:
         cursor = conn.cursor()
-        cursor.execute('''
+        where_clause, params = build_filters_where(filters, 'traza')
+        cursor.execute(f'''
             SELECT entrega_almacen_usuario, AVG(COALESCE(dias_entrada_almacen, 0)) as promedio
-            FROM traza_req_oc
-            WHERE entrega_almacen_usuario IS NOT NULL AND dias_entrada_almacen IS NOT NULL
+            FROM traza_req_oc {where_clause} AND entrega_almacen_usuario IS NOT NULL AND dias_entrada_almacen IS NOT NULL
             GROUP BY entrega_almacen_usuario ORDER BY promedio DESC LIMIT 10
-        ''')
+        ''', params)
         rows = cursor.fetchall()
         
         return {
@@ -629,13 +684,13 @@ async def chart_pending_rq(filters: FilterRequest):
     """Pendientes por aprobar RQ por aprobador"""
     with get_db() as conn:
         cursor = conn.cursor()
-        cursor.execute('''
+        where_clause, params = build_filters_where(filters, 'traza')
+        cursor.execute(f'''
             SELECT req_usuario_autorizador, COUNT(*) as cantidad
-            FROM traza_req_oc
-            WHERE (req_estado = 'PENDIENTE' OR req_estado LIKE '%PEND%') 
+            FROM traza_req_oc {where_clause} AND (req_estado = 'PENDIENTE' OR req_estado LIKE '%PEND%') 
             AND req_usuario_autorizador IS NOT NULL
             GROUP BY req_usuario_autorizador ORDER BY cantidad DESC LIMIT 10
-        ''')
+        ''', params)
         rows = cursor.fetchall()
         
         return {
@@ -652,13 +707,13 @@ async def chart_pending_oc(filters: FilterRequest):
     """Pendientes por aprobar OC por aprobador"""
     with get_db() as conn:
         cursor = conn.cursor()
-        cursor.execute('''
+        where_clause, params = build_filters_where(filters, 'traza')
+        cursor.execute(f'''
             SELECT oc_usuario_autorizacion, COUNT(*) as cantidad
-            FROM traza_req_oc
-            WHERE (oc_estado = 'PENDIENTE' OR oc_estado LIKE '%PEND%') 
+            FROM traza_req_oc {where_clause} AND (oc_estado = 'PENDIENTE' OR oc_estado LIKE '%PEND%') 
             AND oc_usuario_autorizacion IS NOT NULL
             GROUP BY oc_usuario_autorizacion ORDER BY cantidad DESC LIMIT 10
-        ''')
+        ''', params)
         rows = cursor.fetchall()
         
         return {
@@ -675,11 +730,11 @@ async def chart_oc_by_state(filters: FilterRequest):
     """OC por estado"""
     with get_db() as conn:
         cursor = conn.cursor()
-        cursor.execute('''
-            SELECT oc_estado, COUNT(*) FROM traza_req_oc
-            WHERE oc_estado IS NOT NULL
+        where_clause, params = build_filters_where(filters, 'traza')
+        cursor.execute(f'''
+            SELECT oc_estado, COUNT(*) FROM traza_req_oc {where_clause} AND oc_estado IS NOT NULL
             GROUP BY oc_estado ORDER BY COUNT(*) DESC
-        ''')
+        ''', params)
         rows = cursor.fetchall()
         
         return {
@@ -696,12 +751,12 @@ async def chart_trend_oc(filters: FilterRequest):
     """Tendencia OC por mes"""
     with get_db() as conn:
         cursor = conn.cursor()
-        cursor.execute('''
+        where_clause, params = build_filters_where(filters, 'traza')
+        cursor.execute(f'''
             SELECT strftime('%Y-%m', oc_fecha) as mes, COUNT(DISTINCT oc_numero)
-            FROM traza_req_oc
-            WHERE oc_fecha IS NOT NULL
+            FROM traza_req_oc {where_clause} AND oc_fecha IS NOT NULL
             GROUP BY mes ORDER BY mes DESC LIMIT 12
-        ''')
+        ''', params)
         rows = cursor.fetchall()
         
         return {
@@ -718,12 +773,12 @@ async def chart_discounts_by_process(filters: FilterRequest):
     """Descuentos por proceso"""
     with get_db() as conn:
         cursor = conn.cursor()
-        cursor.execute('''
+        where_clause, params = build_filters_where(filters, 'descuentos')
+        cursor.execute(f'''
             SELECT proceso, SUM(COALESCE(total_dcto, 0))
-            FROM oc_descuentos
-            WHERE proceso IS NOT NULL
+            FROM oc_descuentos {where_clause} AND proceso IS NOT NULL
             GROUP BY proceso ORDER BY SUM(total_dcto) DESC LIMIT 10
-        ''')
+        ''', params)
         rows = cursor.fetchall()
         
         return {
@@ -740,12 +795,12 @@ async def chart_top_suppliers(filters: FilterRequest):
     """Top proveedores por monto"""
     with get_db() as conn:
         cursor = conn.cursor()
-        cursor.execute('''
+        where_clause, params = build_filters_where(filters, 'descuentos')
+        cursor.execute(f'''
             SELECT tercero_nombre, SUM(COALESCE(total, 0))
-            FROM oc_descuentos
-            WHERE tercero_nombre IS NOT NULL
+            FROM oc_descuentos {where_clause} AND tercero_nombre IS NOT NULL
             GROUP BY tercero_nombre ORDER BY SUM(total) DESC LIMIT 10
-        ''')
+        ''', params)
         rows = cursor.fetchall()
         
         return {
@@ -762,15 +817,16 @@ async def chart_days_by_stage(filters: FilterRequest):
     """Días promedio por etapa"""
     with get_db() as conn:
         cursor = conn.cursor()
-        cursor.execute('''
+        where_clause, params = build_filters_where(filters, 'traza')
+        cursor.execute(f'''
             SELECT 
                 AVG(COALESCE(dias_aprobar_rq, 0)),
                 AVG(COALESCE(dias_generar_oc, 0)),
                 AVG(COALESCE(dias_aprobacion_oc, 0)),
                 AVG(COALESCE(dias_recepcion_servicio, 0)),
                 AVG(COALESCE(dias_entrada_almacen, 0))
-            FROM traza_req_oc
-        ''')
+            FROM traza_req_oc {where_clause}
+        ''', params)
         row = cursor.fetchone()
         
         return {
@@ -787,12 +843,12 @@ async def chart_spend_by_process(filters: FilterRequest):
     """Gasto por proceso"""
     with get_db() as conn:
         cursor = conn.cursor()
-        cursor.execute('''
+        where_clause, params = build_filters_where(filters, 'descuentos')
+        cursor.execute(f'''
             SELECT proceso, SUM(COALESCE(total, 0))
-            FROM oc_descuentos
-            WHERE proceso IS NOT NULL
+            FROM oc_descuentos {where_clause} AND proceso IS NOT NULL
             GROUP BY proceso ORDER BY SUM(total) DESC LIMIT 10
-        ''')
+        ''', params)
         rows = cursor.fetchall()
         
         return {
