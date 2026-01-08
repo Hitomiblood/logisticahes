@@ -1100,19 +1100,41 @@
 
     // Función para habilitar selección múltiple con clic simple (sin Ctrl)
     function enableClickToggleSelection(selectEl) {
+      // Prevenir comportamiento por defecto de mousedown
       selectEl.addEventListener('mousedown', function(e) {
+        e.preventDefault();
+        
         if (e.target.tagName === 'OPTION') {
-          e.preventDefault();
           const option = e.target;
-          option.selected = !option.selected;
-          selectEl.dispatchEvent(new Event('change'));
-          selectEl.focus();
+          const wasSelected = option.selected;
+          
+          // Toggle la selección
+          option.selected = !wasSelected;
+          
+          // Disparar evento change para que se actualicen los filtros
+          const changeEvent = new Event('change', { bubbles: true });
+          selectEl.dispatchEvent(changeEvent);
         }
+        
+        // Mantener el foco en el select
+        return false;
       });
       
+      // Prevenir el comportamiento por defecto del click también
       selectEl.addEventListener('click', function(e) {
-        if (e.target.tagName === 'OPTION') {
+        e.preventDefault();
+      });
+      
+      // Prevenir que el teclado cambie la selección por defecto
+      selectEl.addEventListener('keydown', function(e) {
+        if (e.key === ' ' || e.key === 'Enter') {
           e.preventDefault();
+          const focusedOption = this.options[this.selectedIndex];
+          if (focusedOption) {
+            focusedOption.selected = !focusedOption.selected;
+            const changeEvent = new Event('change', { bubbles: true });
+            this.dispatchEvent(changeEvent);
+          }
         }
       });
     }
