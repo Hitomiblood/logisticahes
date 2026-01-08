@@ -1120,19 +1120,21 @@
     // Configurar búsqueda en filtros
     function setupFilterSearch() {
       // Los eventos oninput ya están definidos en el HTML
-      // Solo necesitamos configurar eventos change en los selects para actualizar botones
+      // Configurar eventos change en los selects para actualizar botones y aplicar filtros automáticamente
       const processFilter = document.getElementById('processFilter');
       const supplierFilter = document.getElementById('supplierFilter');
       
       if (processFilter) {
         processFilter.addEventListener('change', () => {
           updateToggleButton('processFilter', 'processFilterBtn');
+          applyFilters(); // Aplicar filtros automáticamente
         });
       }
       
       if (supplierFilter) {
         supplierFilter.addEventListener('change', () => {
           updateToggleButton('supplierFilter', 'supplierFilterBtn');
+          applyFilters(); // Aplicar filtros automáticamente
         });
       }
     }
