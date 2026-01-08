@@ -367,6 +367,8 @@ def build_filters_where(filters: FilterRequest, table: str):
     """
     Construye cláusula WHERE y parámetros basado en FilterRequest.
     table: 'descuentos', 'traza' o 'base' para usar las columnas correctas
+    
+    Para 'traza': si hay filtro de proceso, usa EXISTS con subquery a oc_descuentos
     """
     where_clause = "WHERE 1=1"
     params = []
@@ -397,6 +399,16 @@ def build_filters_where(filters: FilterRequest, table: str):
         if filters.suppliers and len(filters.suppliers) > 0:
             where_clause += f" AND oc_tercero_nombre IN ({','.join(['?' for _ in filters.suppliers])})"
             params.extend(filters.suppliers)
+        # IMPORTANTE: traza_req_oc no tiene columna proceso directamente
+        # Usar EXISTS con JOIN a oc_descuentos para filtrar por proceso
+        if filters.processes and len(filters.processes) > 0:
+            where_clause += f""" AND EXISTS (
+                SELECT 1 FROM oc_descuentos d 
+                WHERE d.documento_tipo = traza_req_oc.oc_tipo 
+                AND d.documento_num = traza_req_oc.oc_numero 
+                AND d.proceso IN ({','.join(['?' for _ in filters.processes])})
+            )"""
+            params.extend(filters.processes)
             
     elif table == 'base':
         # Para tabla base_oc_generadas
