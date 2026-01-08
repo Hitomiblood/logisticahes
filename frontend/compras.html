@@ -622,9 +622,9 @@
       <!-- Proceso -->
       <div class="filter-group">
         <label>💼 Proceso</label>
-        <input type="text" class="filter-search" id="processSearch" placeholder="Buscar proceso..." />
+        <input type="text" class="filter-search" id="processSearch" placeholder="Buscar proceso..." oninput="filterSelect('processFilter', this.value)" />
         <select id="processFilter" multiple></select>
-        <button class="btn-filter" onclick="toggleAllOptions('processFilter')">Seleccionar Todo</button>
+        <button class="btn-filter" id="processFilterBtn" onclick="toggleAllOptions('processFilter', 'processFilterBtn')">Seleccionar Todo</button>
         <small style="color: rgba(255,255,255,0.6); font-size: 0.65rem; display: block; margin-top: 0.2rem;">
           Aplica a gráficos de descuentos
         </small>
@@ -633,9 +633,9 @@
       <!-- Proveedor -->
       <div class="filter-group">
         <label>🏢 Proveedor</label>
-        <input type="text" class="filter-search" id="supplierSearch" placeholder="Buscar proveedor..." />
+        <input type="text" class="filter-search" id="supplierSearch" placeholder="Buscar proveedor..." oninput="filterSelect('supplierFilter', this.value)" />
         <select id="supplierFilter" multiple></select>
-        <button class="btn-filter" onclick="toggleAllOptions('supplierFilter')">Seleccionar Todo</button>
+        <button class="btn-filter" id="supplierFilterBtn" onclick="toggleAllOptions('supplierFilter', 'supplierFilterBtn')">Seleccionar Todo</button>
         <small style="color: rgba(255,255,255,0.6); font-size: 0.65rem; display: block; margin-top: 0.2rem;">
           Aplica a gráficos de descuentos y proveedores
         </small>
@@ -1089,48 +1089,80 @@
       
       // Guardar items originales para búsqueda
       select.dataset.allItems = JSON.stringify(items);
+      
+      // Habilitar selección con click simple (sin necesidad de Ctrl)
+      enableClickToggleSelection(select);
+      
+      // Actualizar estado del botón toggle
+      const btnId = selectId + 'Btn';
+      updateToggleButton(selectId, btnId);
     }
 
-    // Configurar búsqueda en filtros
-    function setupFilterSearch() {
-      const searchInputs = [
-        { searchId: 'stateSearch', selectId: 'stateFilter' },
-        { searchId: 'processSearch', selectId: 'processFilter' },
-        { searchId: 'supplierSearch', selectId: 'supplierFilter' }
-      ];
-
-      searchInputs.forEach(({ searchId, selectId }) => {
-        const searchInput = document.getElementById(searchId);
-        if (searchInput) {
-          searchInput.addEventListener('input', (e) => {
-            filterSelectOptions(selectId, e.target.value);
-          });
+    // Función para habilitar selección múltiple con clic simple (sin Ctrl)
+    function enableClickToggleSelection(selectEl) {
+      selectEl.addEventListener('mousedown', function(e) {
+        if (e.target.tagName === 'OPTION') {
+          e.preventDefault();
+          const option = e.target;
+          option.selected = !option.selected;
+          selectEl.dispatchEvent(new Event('change'));
+          selectEl.focus();
+        }
+      });
+      
+      selectEl.addEventListener('click', function(e) {
+        if (e.target.tagName === 'OPTION') {
+          e.preventDefault();
         }
       });
     }
 
-    function filterSelectOptions(selectId, searchTerm) {
-      const select = document.getElementById(selectId);
-      const allItems = JSON.parse(select.dataset.allItems || '[]');
+    // Configurar búsqueda en filtros
+    function setupFilterSearch() {
+      // Los eventos oninput ya están definidos en el HTML
+      // Solo necesitamos configurar eventos change en los selects para actualizar botones
+      const processFilter = document.getElementById('processFilter');
+      const supplierFilter = document.getElementById('supplierFilter');
       
-      const filtered = allItems.filter(item => 
-        item.toLowerCase().includes(searchTerm.toLowerCase())
-      );
+      if (processFilter) {
+        processFilter.addEventListener('change', () => {
+          updateToggleButton('processFilter', 'processFilterBtn');
+        });
+      }
       
-      // Guardar selección actual
-      const currentSelection = Array.from(select.selectedOptions).map(o => o.value);
-      
-      // Actualizar opciones
-      select.innerHTML = filtered.map(item => {
-        const selected = currentSelection.includes(item) ? 'selected' : '';
-        return `<option value="${item}" ${selected}>${item}</option>`;
-      }).join('');
+      if (supplierFilter) {
+        supplierFilter.addEventListener('change', () => {
+          updateToggleButton('supplierFilter', 'supplierFilterBtn');
+        });
+      }
     }
 
-    function toggleAllOptions(selectId) {
-      const select = document.getElementById(selectId);
-      const allSelected = Array.from(select.options).every(opt => opt.selected);
-      Array.from(select.options).forEach(opt => opt.selected = !allSelected);
+    function filterSelect(selectId, searchText) {
+      const selectEl = document.getElementById(selectId);
+      const options = Array.from(selectEl.options);
+      const lowerSearch = searchText.toLowerCase();
+      options.forEach(opt => {
+        const match = opt.textContent.toLowerCase().includes(lowerSearch);
+        opt.style.display = match ? "" : "none";
+      });
+    }
+
+    function toggleAllOptions(selectId, btnId) {
+      const selectEl = document.getElementById(selectId);
+      const btn = document.getElementById(btnId);
+      const visibleOptions = Array.from(selectEl.options).filter(o => o.style.display !== "none");
+      const allSelected = visibleOptions.every(o => o.selected);
+      visibleOptions.forEach(o => o.selected = !allSelected);
+      btn.textContent = allSelected ? "Seleccionar Todo" : "Deseleccionar Todo";
+    }
+
+    function updateToggleButton(selectId, btnId) {
+      const selectEl = document.getElementById(selectId);
+      const buttonEl = document.getElementById(btnId);
+      if (!buttonEl) return;
+      const visibleOptions = Array.from(selectEl.options).filter(o => o.style.display !== "none");
+      const allSelected = visibleOptions.length > 0 && visibleOptions.every(o => o.selected);
+      buttonEl.textContent = allSelected ? 'Deseleccionar Todo' : 'Seleccionar Todo';
     }
 
     // Inicializar búsqueda al cargar
