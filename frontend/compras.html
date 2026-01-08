@@ -824,10 +824,18 @@
         
         if (filtersResult.success) {
           initializeFiltersFromAPI(filtersResult.filters);
+          
+          // Esperar a que el DOM se actualice con los nuevos filtros
+          await new Promise(resolve => setTimeout(resolve, 100));
         }
         
         const counts = loadResult.counts;
         document.getElementById('status').textContent = `✓ BD: ${counts.traza_req_oc.toLocaleString()} traza + ${counts.oc_descuentos.toLocaleString()} OC`;
+        
+        // Verificar que las fechas estén establecidas antes de aplicar filtros
+        const dateStart = document.getElementById('dateStart').value;
+        const dateEnd = document.getElementById('dateEnd').value;
+        console.log('Fechas antes de applyFilters:', { dateStart, dateEnd });
         
         // Cargar dashboard inicial
         await applyFilters();
@@ -984,13 +992,19 @@
       const start = datePickerState.start;
       const end = datePickerState.end;
       
+      console.log('syncHiddenDates llamado con:', { start, end });
+      
       if (start.year && start.month !== null && start.day) {
         const d = new Date(start.year, start.month, start.day);
-        document.getElementById('dateStart').value = d.toISOString().split('T')[0];
+        const dateString = d.toISOString().split('T')[0];
+        document.getElementById('dateStart').value = dateString;
+        console.log('dateStart establecido a:', dateString);
       }
       if (end.year && end.month !== null && end.day) {
         const d = new Date(end.year, end.month, end.day);
-        document.getElementById('dateEnd').value = d.toISOString().split('T')[0];
+        const dateString = d.toISOString().split('T')[0];
+        document.getElementById('dateEnd').value = dateString;
+        console.log('dateEnd establecido a:', dateString);
       }
     }
     
@@ -1088,8 +1102,13 @@
         console.warn(`Elemento ${selectId} no encontrado, omitiendo`);
         return;
       }
+      
+      console.log(`fillSelect: ${selectId} con ${items.length} items`);
+      
       // Crear opciones con todas seleccionadas por defecto
       select.innerHTML = items.map(item => `<option value="${item}" selected>${item}</option>`).join('');
+      
+      console.log(`${selectId} - Opciones creadas: ${select.options.length}, Seleccionadas: ${select.selectedOptions.length}`);
       
       // Guardar items originales para búsqueda
       select.dataset.allItems = JSON.stringify(items);
@@ -1226,11 +1245,31 @@
     }
     
     function getFilters() {
+      const dateStart = document.getElementById('dateStart').value;
+      const dateEnd = document.getElementById('dateEnd').value;
+      
+      const processFilter = document.getElementById('processFilter');
+      const supplierFilter = document.getElementById('supplierFilter');
+      
+      const processes = Array.from(processFilter.selectedOptions).map(o => o.value);
+      const suppliers = Array.from(supplierFilter.selectedOptions).map(o => o.value);
+      
+      console.log('getFilters - Valores del DOM:', {
+        dateStartValue: dateStart,
+        dateEndValue: dateEnd,
+        processesLength: processes.length,
+        suppliersLength: suppliers.length,
+        processFilterOptions: processFilter.options.length,
+        supplierFilterOptions: supplierFilter.options.length,
+        processFilterSelectedOptions: processFilter.selectedOptions.length,
+        supplierFilterSelectedOptions: supplierFilter.selectedOptions.length
+      });
+      
       return {
-        dateStart: document.getElementById('dateStart').value,
-        dateEnd: document.getElementById('dateEnd').value,
-        processes: Array.from(document.getElementById('processFilter').selectedOptions).map(o => o.value),
-        suppliers: Array.from(document.getElementById('supplierFilter').selectedOptions).map(o => o.value)
+        dateStart,
+        dateEnd,
+        processes,
+        suppliers
       };
     }
 
