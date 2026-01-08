@@ -1040,23 +1040,24 @@
     
     // Función para establecer rango de fechas por defecto (3 meses atrás)
     function setDefaultDateRange() {
-      const today = new Date();
-      const threeMonthsAgo = new Date();
-      threeMonthsAgo.setMonth(threeMonthsAgo.getMonth() - 3);
+      // Usar fechas que coincidan con los datos disponibles
+      // Los datos van hasta septiembre 2025, así que usamos ese rango
+      const endDate = new Date(2025, 8, 13); // 13 de septiembre de 2025
+      const startDate = new Date(2025, 5, 13); // 13 de junio de 2025 (3 meses atrás)
       
-      // Establecer fecha inicio (3 meses atrás)
+      // Establecer fecha inicio
       datePickerState.start = {
-        year: threeMonthsAgo.getFullYear(),
-        month: threeMonthsAgo.getMonth(),
-        day: threeMonthsAgo.getDate()
+        year: startDate.getFullYear(),
+        month: startDate.getMonth(),
+        day: startDate.getDate()
       };
       updateDateDisplay('start');
       
-      // Establecer fecha fin (hoy)
+      // Establecer fecha fin
       datePickerState.end = {
-        year: today.getFullYear(),
-        month: today.getMonth(),
-        day: today.getDate()
+        year: endDate.getFullYear(),
+        month: endDate.getMonth(),
+        day: endDate.getDate()
       };
       updateDateDisplay('end');
       
