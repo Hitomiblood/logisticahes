@@ -1009,6 +1009,9 @@
       // Establecer fechas por defecto: 3 meses atrás hasta hoy
       setDefaultDateRange();
       
+      // Esperar un momento para que las fechas se establezcan
+      await new Promise(resolve => setTimeout(resolve, 100));
+      
       // Configurar botón de recarga
       const btnReload = document.getElementById('btnReloadData');
       if (btnReload) {
@@ -1085,7 +1088,8 @@
         console.warn(`Elemento ${selectId} no encontrado, omitiendo`);
         return;
       }
-      select.innerHTML = items.map(item => `<option value="${item}">${item}</option>`).join('');
+      // Crear opciones con todas seleccionadas por defecto
+      select.innerHTML = items.map(item => `<option value="${item}" selected>${item}</option>`).join('');
       
       // Guardar items originales para búsqueda
       select.dataset.allItems = JSON.stringify(items);
