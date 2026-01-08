@@ -1323,11 +1323,20 @@
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify(filters)
         });
+        
+        console.log('📊 KPIs response status:', kpisResponse.status);
         const kpisResult = await kpisResponse.json();
+        console.log('📊 KPIs result:', kpisResult);
         
         if (kpisResult.success) {
           console.log('✅ KPIs obtenidos:', kpisResult.kpis);
-          updateKPIsFromAPI(kpisResult.kpis);
+          try {
+            updateKPIsFromAPI(kpisResult.kpis);
+          } catch (kpiError) {
+            console.error('⚠️ Error en updateKPIsFromAPI (continuando con gráficos):', kpiError);
+          }
+        } else {
+          console.warn('⚠️ KPIs no exitosos:', kpisResult);
         }
 
         // Obtener datos de gráficos
@@ -1337,17 +1346,26 @@
 
       } catch (error) {
         console.error('❌ Error actualizando dashboard:', error);
+        console.error('❌ Stack:', error.stack);
       }
     }
 
     function updateKPIsFromAPI(kpis) {
+      console.log('📊 updateKPIsFromAPI - KPIs recibidos:', kpis);
+      
+      // Validar que kpis existe
+      if (!kpis) {
+        console.warn('⚠️ KPIs es null o undefined');
+        return;
+      }
+      
       // Actualizar KPIs solo si los elementos existen
       const kpiElements = [
-        { id: 'kpiTotalOC', value: kpis.totalOC.toLocaleString() },
-        { id: 'kpiTotalRQ', value: kpis.totalRQ.toLocaleString() },
-        { id: 'kpiTotalItems', value: kpis.totalItems.toLocaleString() },
-        { id: 'kpiTotalSpend', value: '₡' + kpis.totalSpend.toLocaleString('es-CR', {maximumFractionDigits: 0}) },
-        { id: 'kpiDispatched', value: kpis.percentDispatched.toFixed(1) + '%' }
+        { id: 'kpiTotalOC', value: (kpis.totalOC || 0).toLocaleString() },
+        { id: 'kpiTotalRQ', value: (kpis.totalRQ || 0).toLocaleString() },
+        { id: 'kpiTotalItems', value: (kpis.totalItems || 0).toLocaleString() },
+        { id: 'kpiTotalSpend', value: '₡' + (kpis.totalSpend || 0).toLocaleString('es-CR', {maximumFractionDigits: 0}) },
+        { id: 'kpiDispatched', value: (kpis.percentDispatched || 0).toFixed(1) + '%' }
       ];
       
       kpiElements.forEach(({ id, value }) => {
