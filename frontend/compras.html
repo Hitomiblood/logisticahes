@@ -1097,6 +1097,12 @@
       // Habilitar selección con click simple (sin necesidad de Ctrl)
       enableClickToggleSelection(select);
       
+      // Agregar event listener para aplicar filtros automáticamente
+      select.addEventListener('change', () => {
+        updateToggleButton(selectId, selectId + 'Btn');
+        applyFilters();
+      });
+      
       // Actualizar estado del botón toggle
       const btnId = selectId + 'Btn';
       updateToggleButton(selectId, btnId);
@@ -1104,8 +1110,13 @@
 
     // Función para habilitar selección múltiple con clic simple (sin Ctrl)
     function enableClickToggleSelection(selectEl) {
+      // Remover listeners previos si existen para evitar duplicados
+      selectEl.removeEventListener('mousedown', selectEl._mousedownHandler);
+      selectEl.removeEventListener('click', selectEl._clickHandler);
+      selectEl.removeEventListener('keydown', selectEl._keydownHandler);
+      
       // Prevenir comportamiento por defecto de mousedown
-      selectEl.addEventListener('mousedown', function(e) {
+      selectEl._mousedownHandler = function(e) {
         e.preventDefault();
         
         if (e.target.tagName === 'OPTION') {
@@ -1122,15 +1133,15 @@
         
         // Mantener el foco en el select
         return false;
-      });
+      };
       
       // Prevenir el comportamiento por defecto del click también
-      selectEl.addEventListener('click', function(e) {
+      selectEl._clickHandler = function(e) {
         e.preventDefault();
-      });
+      };
       
       // Prevenir que el teclado cambie la selección por defecto
-      selectEl.addEventListener('keydown', function(e) {
+      selectEl._keydownHandler = function(e) {
         if (e.key === ' ' || e.key === 'Enter') {
           e.preventDefault();
           const focusedOption = this.options[this.selectedIndex];
@@ -1140,28 +1151,28 @@
             this.dispatchEvent(changeEvent);
           }
         }
-      });
+      };
+      
+      selectEl.addEventListener('mousedown', selectEl._mousedownHandler);
+      selectEl.addEventListener('click', selectEl._clickHandler);
+      selectEl.addEventListener('keydown', selectEl._keydownHandler);
     }
 
     // Configurar búsqueda en filtros
     function setupFilterSearch() {
       // Los eventos oninput ya están definidos en el HTML
-      // Configurar eventos change en los selects para actualizar botones y aplicar filtros automáticamente
+      // Los eventos change ya están configurados en enableClickToggleSelection
+      // Solo necesitamos agregar lógica adicional si es necesario
       const processFilter = document.getElementById('processFilter');
       const supplierFilter = document.getElementById('supplierFilter');
       
+      // Asegurar que los botones estén sincronizados
       if (processFilter) {
-        processFilter.addEventListener('change', () => {
-          updateToggleButton('processFilter', 'processFilterBtn');
-          applyFilters(); // Aplicar filtros automáticamente
-        });
+        updateToggleButton('processFilter', 'processFilterBtn');
       }
       
       if (supplierFilter) {
-        supplierFilter.addEventListener('change', () => {
-          updateToggleButton('supplierFilter', 'supplierFilterBtn');
-          applyFilters(); // Aplicar filtros automáticamente
-        });
+        updateToggleButton('supplierFilter', 'supplierFilterBtn');
       }
     }
 
