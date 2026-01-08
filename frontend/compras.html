@@ -1315,39 +1315,46 @@
       console.log('🚀 === updateDashboardFromAPI INICIADO ===');
       console.log('🚀 Filters:', filters);
       
-      try {
-        // Obtener KPIs
-        console.log('📊 Obteniendo KPIs...');
-        const kpisResponse = await fetch(`${API_BASE}/kpis`, {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify(filters)
-        });
-        
-        console.log('📊 KPIs response status:', kpisResponse.status);
-        const kpisResult = await kpisResponse.json();
-        console.log('📊 KPIs result:', kpisResult);
-        
-        if (kpisResult.success) {
-          console.log('✅ KPIs obtenidos:', kpisResult.kpis);
-          try {
+      // Cargar KPIs y gráficos en PARALELO para no bloquearse
+      const kpisPromise = (async () => {
+        try {
+          console.log('📊 Obteniendo KPIs...');
+          const controller = new AbortController();
+          const timeoutId = setTimeout(() => controller.abort(), 30000); // 30s timeout
+          
+          const kpisResponse = await fetch(`${API_BASE}/kpis`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(filters),
+            signal: controller.signal
+          });
+          clearTimeout(timeoutId);
+          
+          console.log('📊 KPIs response status:', kpisResponse.status);
+          const kpisResult = await kpisResponse.json();
+          
+          if (kpisResult.success) {
+            console.log('✅ KPIs obtenidos:', kpisResult.kpis);
             updateKPIsFromAPI(kpisResult.kpis);
-          } catch (kpiError) {
-            console.error('⚠️ Error en updateKPIsFromAPI (continuando con gráficos):', kpiError);
           }
-        } else {
-          console.warn('⚠️ KPIs no exitosos:', kpisResult);
+        } catch (error) {
+          console.error('⚠️ Error en KPIs (continuando con gráficos):', error.message);
         }
-
-        // Obtener datos de gráficos
-        console.log('📈 Iniciando carga de gráficos...');
-        await updateChartsFromAPI(filters);
-        console.log('✅ Gráficos completados');
-
-      } catch (error) {
-        console.error('❌ Error actualizando dashboard:', error);
-        console.error('❌ Stack:', error.stack);
-      }
+      })();
+      
+      const chartsPromise = (async () => {
+        try {
+          console.log('📈 Iniciando carga de gráficos...');
+          await updateChartsFromAPI(filters);
+          console.log('✅ Gráficos completados');
+        } catch (error) {
+          console.error('❌ Error en gráficos:', error);
+        }
+      })();
+      
+      // Esperar ambos en paralelo
+      await Promise.allSettled([kpisPromise, chartsPromise]);
+      console.log('🏁 Dashboard actualizado');
     }
 
     function updateKPIsFromAPI(kpis) {
