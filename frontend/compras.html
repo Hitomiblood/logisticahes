@@ -1020,11 +1020,8 @@
       // Inicializar date pickers
       initDatePickerYears();
       
-      // Establecer fechas por defecto: 3 meses atrás hasta hoy
-      setDefaultDateRange();
-      
-      // Esperar un momento para que las fechas se establezcan
-      await new Promise(resolve => setTimeout(resolve, 100));
+      // Las fechas por defecto se establecerán dinámicamente
+      // después de obtener los filtros de la API (en initializeFiltersFromAPI)
       
       // Configurar botón de recarga
       const btnReload = document.getElementById('btnReloadData');
@@ -1037,15 +1034,35 @@
       // Cargar datos inicial
       await window.loadDataFromBackend();
     });
-    
-    // Función para establecer rango de fechas por defecto (3 meses atrás)
-    function setDefaultDateRange() {
-      // Usar fechas que coincidan con los datos disponibles
-      // Los datos van hasta septiembre 2025, así que usamos ese rango
-      const endDate = new Date(2025, 8, 13); // 13 de septiembre de 2025
-      const startDate = new Date(2025, 5, 13); // 13 de junio de 2025 (3 meses atrás)
+
+    // Inicializar filtros desde la API
+    function initializeFiltersFromAPI(filters) {
+      // Solo llenar filtros que existen en el HTML
+      fillSelect('processFilter', filters.procesos || []);
+      fillSelect('supplierFilter', filters.proveedores || []);
       
-      // Establecer fecha inicio
+      // Establecer fechas dinámicamente basándose en los datos de la BD
+      if (filters.fechaMaxima) {
+        setDefaultDateRangeFromAPI(filters.fechaMaxima);
+      }
+    }
+    
+    // Establecer rango de fechas basándose en la fecha máxima de la BD
+    function setDefaultDateRangeFromAPI(fechaMaxima) {
+      // Parsear la fecha máxima (formato: YYYY-MM-DD)
+      const endDate = new Date(fechaMaxima);
+      
+      // Calcular 3 meses atrás
+      const startDate = new Date(endDate);
+      startDate.setMonth(startDate.getMonth() - 3);
+      
+      console.log('Fechas calculadas desde BD:', {
+        fechaMaxima: fechaMaxima,
+        startDate: startDate.toISOString().split('T')[0],
+        endDate: endDate.toISOString().split('T')[0]
+      });
+      
+      // Establecer fecha inicio (3 meses antes de la última fecha)
       datePickerState.start = {
         year: startDate.getFullYear(),
         month: startDate.getMonth(),
@@ -1053,7 +1070,7 @@
       };
       updateDateDisplay('start');
       
-      // Establecer fecha fin
+      // Establecer fecha fin (última fecha disponible)
       datePickerState.end = {
         year: endDate.getFullYear(),
         month: endDate.getMonth(),
@@ -1063,13 +1080,6 @@
       
       // Sincronizar con campos ocultos
       syncHiddenDates();
-    }
-
-    // Inicializar filtros desde la API
-    function initializeFiltersFromAPI(filters) {
-      // Solo llenar filtros que existen en el HTML
-      fillSelect('processFilter', filters.procesos || []);
-      fillSelect('supplierFilter', filters.proveedores || []);
     }
 
 

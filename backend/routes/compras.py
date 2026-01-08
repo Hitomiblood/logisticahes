@@ -52,6 +52,14 @@ async def get_filters():
         cursor.execute("SELECT DISTINCT tercero_nombre FROM oc_descuentos WHERE tercero_nombre IS NOT NULL ORDER BY tercero_nombre LIMIT 500")
         filters["proveedores"] = [row[0] for row in cursor.fetchall()]
         
+        # Rango de fechas disponibles (para establecer fechas por defecto en el frontend)
+        cursor.execute("SELECT MAX(fecha) FROM oc_descuentos WHERE fecha IS NOT NULL")
+        max_fecha = cursor.fetchone()[0]
+        cursor.execute("SELECT MIN(fecha) FROM oc_descuentos WHERE fecha IS NOT NULL")
+        min_fecha = cursor.fetchone()[0]
+        filters["fechaMaxima"] = max_fecha
+        filters["fechaMinima"] = min_fecha
+        
         # Filtros adicionales de TRAZA REQ OC
         cursor.execute("SELECT DISTINCT req_estado FROM traza_req_oc WHERE req_estado IS NOT NULL ORDER BY req_estado")
         filters["estados_req"] = [row[0] for row in cursor.fetchall()]

@@ -1,29 +1,31 @@
-import sqlite3
-conn = sqlite3.connect("/app/backend/logistica.db")
-cur = conn.cursor()
+import urllib.request
+import json
 
-# Ver rango de fechas en traza_req_oc
-print("=== TRAZA_REQ_OC ===")
-cur.execute("SELECT MIN(oc_fecha), MAX(oc_fecha), COUNT(*) FROM traza_req_oc WHERE oc_fecha IS NOT NULL")
-row = cur.fetchone()
-print(f"Rango fechas OC: {row[0]} a {row[1]}")
-print(f"Total registros con oc_fecha: {row[2]}")
+# Probar endpoint de KPIs
+url = "http://localhost:8000/api/compras/kpis"
+data = {
+    "dateStart": "2025-06-13",
+    "dateEnd": "2025-09-13",
+    "processes": ["Comercial", "Gerencia de Proyectos"],
+    "suppliers": []
+}
 
-# Ver rango de fechas en oc_descuentos  
-print("\n=== OC_DESCUENTOS ===")
-cur.execute("SELECT MIN(fecha), MAX(fecha), COUNT(*) FROM oc_descuentos WHERE fecha IS NOT NULL")
-row = cur.fetchone()
-print(f"Rango fechas: {row[0]} a {row[1]}")
-print(f"Total registros con fecha: {row[2]}")
+print("Probando endpoint:", url)
+print("Data:", data)
 
-# Ver distribución por proceso
-print("\n=== DISTRIBUCIÓN POR PROCESO ===")
-cur.execute("SELECT proceso, COUNT(*) FROM oc_descuentos GROUP BY proceso ORDER BY COUNT(*) DESC")
-for row in cur.fetchall():
-    print(f"  {row[0]}: {row[1]:,} registros")
-
-# Ver algunos registros recientes
-print("\n=== ÚLTIMOS 5 REGISTROS EN TRAZA ===")
-cur.execute("SELECT oc_fecha, oc_tipo, oc_numero FROM traza_req_oc WHERE oc_fecha IS NOT NULL ORDER BY oc_fecha DESC LIMIT 5")
-for row in cur.fetchall():
-    print(f"  {row[0]}: {row[1]}-{row[2]}")
+try:
+    req = urllib.request.Request(
+        url,
+        data=json.dumps(data).encode('utf-8'),
+        headers={'Content-Type': 'application/json'},
+        method='POST'
+    )
+    with urllib.request.urlopen(req, timeout=60) as response:
+        result = json.loads(response.read().decode())
+        print("Status: 200")
+        print("Response:", json.dumps(result, indent=2)[:800])
+except urllib.error.HTTPError as e:
+    print("HTTP Error:", e.code, e.reason)
+    print("Body:", e.read().decode()[:500])
+except Exception as e:
+    print("Error:", e)
