@@ -382,10 +382,14 @@ def build_filters_where(filters: FilterRequest, table: str):
             where_clause += " AND fecha <= ?"
             params.append(filters.dateEnd)
         if filters.processes and len(filters.processes) > 0:
-            where_clause += f" AND proceso IN ({','.join(['?' for _ in filters.processes])})"
+            placeholders = ','.join(['?' for _ in filters.processes])
+            where_clause += f" AND proceso IN ({placeholders})"
             params.extend(filters.processes)
-        if filters.suppliers and len(filters.suppliers) > 0:
-            where_clause += f" AND tercero_nombre IN ({','.join(['?' for _ in filters.suppliers])})"
+        # OPTIMIZACIÓN: Solo aplicar filtro de proveedores si son menos de 100
+        # Si son todos (500), no filtrar para mejorar performance
+        if filters.suppliers and len(filters.suppliers) > 0 and len(filters.suppliers) < 100:
+            placeholders = ','.join(['?' for _ in filters.suppliers])
+            where_clause += f" AND tercero_nombre IN ({placeholders})"
             params.extend(filters.suppliers)
             
     elif table == 'traza':
@@ -396,17 +400,20 @@ def build_filters_where(filters: FilterRequest, table: str):
         if filters.dateEnd:
             where_clause += " AND oc_fecha <= ?"
             params.append(filters.dateEnd)
-        if filters.suppliers and len(filters.suppliers) > 0:
-            where_clause += f" AND oc_tercero_nombre IN ({','.join(['?' for _ in filters.suppliers])})"
+        # OPTIMIZACIÓN: Solo aplicar filtro de proveedores si son menos de 100
+        if filters.suppliers and len(filters.suppliers) > 0 and len(filters.suppliers) < 100:
+            placeholders = ','.join(['?' for _ in filters.suppliers])
+            where_clause += f" AND oc_tercero_nombre IN ({placeholders})"
             params.extend(filters.suppliers)
         # IMPORTANTE: traza_req_oc no tiene columna proceso directamente
         # Usar EXISTS con JOIN a oc_descuentos para filtrar por proceso
         if filters.processes and len(filters.processes) > 0:
+            placeholders = ','.join(['?' for _ in filters.processes])
             where_clause += f""" AND EXISTS (
                 SELECT 1 FROM oc_descuentos d 
                 WHERE d.documento_tipo = traza_req_oc.oc_tipo 
                 AND d.documento_num = traza_req_oc.oc_numero 
-                AND d.proceso IN ({','.join(['?' for _ in filters.processes])})
+                AND d.proceso IN ({placeholders})
             )"""
             params.extend(filters.processes)
             
@@ -418,8 +425,10 @@ def build_filters_where(filters: FilterRequest, table: str):
         if filters.dateEnd:
             where_clause += " AND fecha <= ?"
             params.append(filters.dateEnd)
-        if filters.suppliers and len(filters.suppliers) > 0:
-            where_clause += f" AND tercero_nombre IN ({','.join(['?' for _ in filters.suppliers])})"
+        # OPTIMIZACIÓN: Solo aplicar filtro de proveedores si son menos de 100
+        if filters.suppliers and len(filters.suppliers) > 0 and len(filters.suppliers) < 100:
+            placeholders = ','.join(['?' for _ in filters.suppliers])
+            where_clause += f" AND tercero_nombre IN ({placeholders})"
             params.extend(filters.suppliers)
     
     return where_clause, params
