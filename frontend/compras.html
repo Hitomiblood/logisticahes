@@ -1203,13 +1203,19 @@
         if (result.success && result.proveedores) {
           console.log('✅ Proveedores actualizados:', result.proveedores.length);
           
+          // Verificar si todos los proveedores estaban seleccionados antes
+          const totalOptions = supplierFilter.options.length;
+          const selectedOptions = supplierFilter.selectedOptions.length;
+          const allWereSelected = totalOptions === 0 || totalOptions === selectedOptions;
+          
           // Guardar los proveedores seleccionados actualmente
           const previouslySelected = new Set(Array.from(supplierFilter.selectedOptions).map(o => o.value));
           
           // Limpiar y rellenar el select de proveedores
           supplierFilter.innerHTML = result.proveedores.map(item => {
-            // Mantener la selección si el proveedor estaba previamente seleccionado
-            const isSelected = previouslySelected.has(item) ? 'selected' : '';
+            // Si todos estaban seleccionados antes, seleccionar todos los nuevos
+            // Si no, mantener la selección solo para los que existían antes
+            const isSelected = allWereSelected || previouslySelected.has(item) ? 'selected' : '';
             return `<option value="${item}" ${isSelected}>${item}</option>`;
           }).join('');
           
