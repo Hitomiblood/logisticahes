@@ -211,11 +211,16 @@ def init_db():
         cursor.execute('CREATE INDEX IF NOT EXISTS idx_traza_oc_fecha ON traza_req_oc(oc_fecha)')
         cursor.execute('CREATE INDEX IF NOT EXISTS idx_traza_req_estado ON traza_req_oc(req_estado)')
         cursor.execute('CREATE INDEX IF NOT EXISTS idx_traza_oc_estado ON traza_req_oc(oc_estado)')
+        cursor.execute('CREATE INDEX IF NOT EXISTS idx_traza_oc_tercero ON traza_req_oc(oc_tercero_nombre)')
+        cursor.execute('CREATE INDEX IF NOT EXISTS idx_traza_oc_tipo_num ON traza_req_oc(oc_tipo, oc_numero)')
         cursor.execute('CREATE INDEX IF NOT EXISTS idx_oc_desc_fecha ON oc_descuentos(fecha)')
         cursor.execute('CREATE INDEX IF NOT EXISTS idx_oc_desc_proceso ON oc_descuentos(proceso)')
         cursor.execute('CREATE INDEX IF NOT EXISTS idx_oc_desc_tercero ON oc_descuentos(tercero_nombre)')
+        cursor.execute('CREATE INDEX IF NOT EXISTS idx_oc_desc_doc ON oc_descuentos(documento_tipo, documento_num)')
+        cursor.execute('CREATE INDEX IF NOT EXISTS idx_oc_desc_estado ON oc_descuentos(estado)')
         cursor.execute('CREATE INDEX IF NOT EXISTS idx_base_oc_fecha ON base_oc_generadas(fecha)')
         cursor.execute('CREATE INDEX IF NOT EXISTS idx_base_oc_estado ON base_oc_generadas(estado)')
+        cursor.execute('CREATE INDEX IF NOT EXISTS idx_base_oc_tercero ON base_oc_generadas(tercero_nombre)')
         
         # ========== TABLAS PARA INDICADORES ALMACENES ==========
         

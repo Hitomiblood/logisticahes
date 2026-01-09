@@ -377,9 +377,17 @@ def build_filters_where(filters: FilterRequest, table: str):
     table: 'descuentos', 'traza' o 'base' para usar las columnas correctas
     
     Para 'traza': si hay filtro de proceso, usa EXISTS con subquery a oc_descuentos
+    
+    IMPORTANTE: Si no hay procesos seleccionados, devuelve condición imposible (1=0)
+    para que no muestre datos hasta que el usuario seleccione algo.
     """
     where_clause = "WHERE 1=1"
     params = []
+    
+    # Si no hay procesos seleccionados, no mostrar datos
+    if not filters.processes or len(filters.processes) == 0:
+        where_clause = "WHERE 1=0"  # Condición imposible = sin resultados
+        return where_clause, params
     
     if table == 'descuentos':
         # Para tabla oc_descuentos
@@ -464,12 +472,19 @@ async def get_descuentos_por_tercero(
 @router.post("/kpis")
 async def get_kpis_post(filters: FilterRequest):
     """KPIs combinados para el dashboard"""
+    # DEBUG: Log de filtros recibidos
+    print(f"🔍 KPIs - Filtros recibidos: dateStart={filters.dateStart}, dateEnd={filters.dateEnd}, processes={len(filters.processes) if filters.processes else 0}, suppliers={len(filters.suppliers) if filters.suppliers else 0}")
+    
     with get_db() as conn:
         cursor = conn.cursor()
         
         # Construir filtros para cada tabla
         where_traza, params_traza = build_filters_where(filters, 'traza')
         where_desc, params_desc = build_filters_where(filters, 'descuentos')
+        
+        # DEBUG: Log de WHERE generado
+        print(f"🔍 KPIs - WHERE traza: {where_traza[:100]}... params: {len(params_traza)}")
+        print(f"🔍 KPIs - WHERE desc: {where_desc[:100]}... params: {len(params_desc)}")
         
         # KPIs de traza_req_oc con filtros
         cursor.execute(f'''SELECT COUNT(*), COUNT(DISTINCT req_numero), COUNT(DISTINCT oc_numero),

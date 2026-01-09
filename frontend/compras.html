@@ -805,39 +805,105 @@
     // API FastAPI en puerto 8000
     const API_BASE = '/api/compras';
 
+    // =====================================================
+    // Función helper para fetch seguro con manejo de errores
+    // =====================================================
+    async function safeFetch(url, options = {}, timeoutMs = 30000) {
+      const controller = new AbortController();
+      const timeoutId = setTimeout(() => controller.abort(), timeoutMs);
+      
+      try {
+        const response = await fetch(url, {
+          ...options,
+          signal: controller.signal
+        });
+        clearTimeout(timeoutId);
+        
+        // Verificar si la respuesta es exitosa (status 200-299)
+        if (!response.ok) {
+          console.error(`HTTP Error: ${response.status} ${response.statusText} for ${url}`);
+          return { 
+            success: false, 
+            error: `Error del servidor: ${response.status}`,
+            status: response.status 
+          };
+        }
+        
+        // Verificar que la respuesta sea JSON
+        const contentType = response.headers.get('content-type');
+        if (!contentType || !contentType.includes('application/json')) {
+          console.error(`Invalid content type: ${contentType} for ${url}`);
+          return { 
+            success: false, 
+            error: 'Respuesta no es JSON válido',
+            status: response.status 
+          };
+        }
+        
+        // Parsear JSON
+        const data = await response.json();
+        return data;
+        
+      } catch (error) {
+        clearTimeout(timeoutId);
+        
+        if (error.name === 'AbortError') {
+          console.error(`Timeout after ${timeoutMs}ms for ${url}`);
+          return { 
+            success: false, 
+            error: 'Tiempo de espera agotado. Intente con menos filtros.',
+            timeout: true 
+          };
+        }
+        
+        console.error(`Fetch error for ${url}:`, error);
+        return { 
+          success: false, 
+          error: error.message || 'Error de conexión' 
+        };
+      }
+    }
+
+    // Función para mostrar mensaje de error en un gráfico
+    function showChartError(chartId, message) {
+      const chartEl = document.getElementById(chartId);
+      if (chartEl) {
+        chartEl.innerHTML = `
+          <div style="display: flex; flex-direction: column; align-items: center; justify-content: center; height: 200px; color: #666;">
+            <span style="font-size: 2rem;">⚠️</span>
+            <p style="margin: 0.5rem 0; font-size: 0.85rem;">${message}</p>
+            <button onclick="applyFilters()" style="margin-top: 0.5rem; padding: 0.3rem 0.8rem; border: 1px solid #ccc; border-radius: 4px; background: #f5f5f5; cursor: pointer; font-size: 0.8rem;">
+              Reintentar
+            </button>
+          </div>
+        `;
+      }
+    }
+
     // Función para cargar datos desde el backend (scope global)
     window.loadDataFromBackend = async function() {
       try {
         document.getElementById('status').textContent = 'Cargando datos...';
         
-        // Verificar datos cargados con timeout
-        const loadResponse = await fetch(`${API_BASE}/load`);
-        
-        // Verificar que la respuesta es JSON válido
-        const contentType = loadResponse.headers.get('content-type');
-        if (!contentType || !contentType.includes('application/json')) {
-          throw new Error(`Servidor respondió con ${loadResponse.status}. Intenta recargar.`);
-        }
-        
-        const loadResult = await loadResponse.json();
+        // Verificar datos cargados usando safeFetch
+        const loadResult = await safeFetch(`${API_BASE}/load`, {}, 15000);
         
         if (!loadResult.success) {
-          throw new Error('Error cargando datos');
+          throw new Error(loadResult.error || 'Error cargando datos del servidor');
         }
         
         // Obtener opciones de filtros
-        const filtersResponse = await fetch(`${API_BASE}/filters`);
-        const filtersResult = await filtersResponse.json();
+        const filtersResult = await safeFetch(`${API_BASE}/filters`, {}, 15000);
         
-        if (filtersResult.success) {
+        if (filtersResult.success && filtersResult.filters) {
           initializeFiltersFromAPI(filtersResult.filters);
           
           // Esperar a que el DOM se actualice con los nuevos filtros
           await new Promise(resolve => setTimeout(resolve, 100));
         }
         
-        const counts = loadResult.counts;
-        document.getElementById('status').textContent = `✓ BD: ${counts.traza_req_oc.toLocaleString()} traza + ${counts.oc_descuentos.toLocaleString()} OC`;
+        const counts = loadResult.counts || {};
+        document.getElementById('status').textContent = `✓ BD: ${(counts.traza_req_oc || 0).toLocaleString()} traza + ${(counts.oc_descuentos || 0).toLocaleString()} OC`;
         
         // Verificar que las fechas estén establecidas antes de aplicar filtros
         const dateStart = document.getElementById('dateStart').value;
@@ -1326,23 +1392,21 @@
       const kpisPromise = (async () => {
         try {
           console.log('📊 Obteniendo KPIs...');
-          const controller = new AbortController();
-          const timeoutId = setTimeout(() => controller.abort(), 30000); // 30s timeout
           
-          const kpisResponse = await fetch(`${API_BASE}/kpis`, {
+          const kpisResult = await safeFetch(`${API_BASE}/kpis`, {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify(filters),
-            signal: controller.signal
-          });
-          clearTimeout(timeoutId);
+            body: JSON.stringify(filters)
+          }, 30000);
           
-          console.log('📊 KPIs response status:', kpisResponse.status);
-          const kpisResult = await kpisResponse.json();
+          console.log('📊 KPIs result:', kpisResult);
           
-          if (kpisResult.success) {
+          if (kpisResult.success && kpisResult.kpis) {
             console.log('✅ KPIs obtenidos:', kpisResult.kpis);
             updateKPIsFromAPI(kpisResult.kpis);
+          } else if (kpisResult.error) {
+            console.warn('⚠️ KPIs error:', kpisResult.error);
+            document.getElementById('status').textContent = `⚠️ KPIs: ${kpisResult.error}`;
           }
         } catch (error) {
           console.error('⚠️ Error en KPIs (continuando con gráficos):', error.message);
@@ -1461,14 +1525,19 @@
       showLoader('loaderOCvsItems');
       console.log('🚀 Actualizando gráfico OC vs Items con filtros:', filters);
       try {
-        const response = await fetch(`${API_BASE}/charts/oc-vs-items-by-process`, {
+        const result = await safeFetch(`${API_BASE}/charts/oc-vs-items-by-process`, {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify(filters)
-        });
-        const result = await response.json();
+        }, 25000);
         
-        if (result.success && result.data) {
+        if (!result.success) {
+          showChartError('chartOCvsItems', result.error || 'Error cargando datos');
+          hideLoader('loaderOCvsItems');
+          return;
+        }
+        
+        if (result.data) {
           const { procesos, totalOC, totalItems, total } = result.data;
           
           // Crear dos trazas para las barras agrupadas
@@ -1545,14 +1614,19 @@
     async function updateChartPercentDiscountsAPI(filters) {
       showLoader('loaderPercentDiscounts');
       try {
-        const response = await fetch(`${API_BASE}/charts/percent-discounts-by-process`, {
+        const result = await safeFetch(`${API_BASE}/charts/percent-discounts-by-process`, {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify(filters)
-        });
-        const result = await response.json();
+        }, 25000);
         
-        if (result.success && result.data) {
+        if (!result.success) {
+          showChartError('chartPercentDiscounts', result.error || 'Error cargando datos');
+          hideLoader('loaderPercentDiscounts');
+          return;
+        }
+        
+        if (result.data) {
           const { procesos, percentages, average } = result.data;
           
           // Crear gráfico de barras verticales
@@ -1610,14 +1684,19 @@
     async function updateChartTopSuppliersDiscountsAPI(filters) {
       showLoader('loaderTopSuppliersDiscounts');
       try {
-        const response = await fetch(`${API_BASE}/charts/top-suppliers-discounts`, {
+        const result = await safeFetch(`${API_BASE}/charts/top-suppliers-discounts`, {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify(filters)
-        });
-        const result = await response.json();
+        }, 25000);
         
-        if (result.success && result.data) {
+        if (!result.success) {
+          showChartError('chartTopSuppliersDiscounts', result.error || 'Error cargando datos');
+          hideLoader('loaderTopSuppliersDiscounts');
+          return;
+        }
+        
+        if (result.data) {
           const { proveedores, montos, percentages } = result.data;
           
           // Formatear montos para display
@@ -1700,17 +1779,21 @@
       showLoader('loaderAvgGenerationDays');
       try {
         console.log('Haciendo fetch a:', `${API_BASE}/charts/avg-generation-days`);
-        const response = await fetch(`${API_BASE}/charts/avg-generation-days`, {
+        const result = await safeFetch(`${API_BASE}/charts/avg-generation-days`, {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify(filters)
-        });
+        }, 25000);
         
-        console.log('Response status:', response.status);
-        const result = await response.json();
         console.log('Result:', result);
         
-        if (result.success && result.data) {
+        if (!result.success) {
+          showChartError('chartAvgGenerationDays', result.error || 'Error cargando datos');
+          hideLoader('loaderAvgGenerationDays');
+          return;
+        }
+        
+        if (result.data) {
           const { aprobadores, promedios } = result.data;
           console.log('Aprobadores:', aprobadores);
           console.log('Promedios:', promedios);
@@ -1773,14 +1856,19 @@
     async function updateChartAvgApprovalManagementAPI(filters) {
       showLoader('loaderAvgApprovalManagement');
       try {
-        const response = await fetch(`${API_BASE}/charts/avg-approval-management-days`, {
+        const result = await safeFetch(`${API_BASE}/charts/avg-approval-management-days`, {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify(filters)
-        });
-        const result = await response.json();
+        }, 25000);
         
-        if (result.success && result.data) {
+        if (!result.success) {
+          showChartError('chartAvgApprovalManagement', result.error || 'Error cargando datos');
+          hideLoader('loaderAvgApprovalManagement');
+          return;
+        }
+        
+        if (result.data) {
           const { aprobadores, promedios } = result.data;
           const trace = {
             x: aprobadores,
@@ -1811,14 +1899,19 @@
     async function updateChartPendingRQAPI(filters) {
       showLoader('loaderPendingRQ');
       try {
-        const response = await fetch(`${API_BASE}/charts/pending-approve-rq`, {
+        const result = await safeFetch(`${API_BASE}/charts/pending-approve-rq`, {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify(filters)
-        });
-        const result = await response.json();
+        }, 25000);
         
-        if (result.success && result.data) {
+        if (!result.success) {
+          showChartError('chartPendingRQ', result.error || 'Error cargando datos');
+          hideLoader('loaderPendingRQ');
+          return;
+        }
+        
+        if (result.data) {
           const { aprobadores, cantidades } = result.data;
           const trace = {
             x: aprobadores,
@@ -1862,14 +1955,19 @@
     async function updateChartAvgReceptionServiceAPI(filters) {
       showLoader('loaderAvgReceptionService');
       try {
-        const response = await fetch(`${API_BASE}/charts/avg-reception-service-days`, {
+        const result = await safeFetch(`${API_BASE}/charts/avg-reception-service-days`, {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify(filters)
-        });
-        const result = await response.json();
+        }, 25000);
         
-        if (result.success && result.data) {
+        if (!result.success) {
+          showChartError('chartAvgReceptionService', result.error || 'Error cargando datos');
+          hideLoader('loaderAvgReceptionService');
+          return;
+        }
+        
+        if (result.data) {
           const { usuarios, promedios } = result.data;
           const trace = {
             x: usuarios,
@@ -1913,14 +2011,19 @@
     async function updateChartPendingOCAPI(filters) {
       showLoader('loaderPendingOC');
       try {
-        const response = await fetch(`${API_BASE}/charts/pending-approve-oc`, {
+        const result = await safeFetch(`${API_BASE}/charts/pending-approve-oc`, {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify(filters)
-        });
-        const result = await response.json();
+        }, 25000);
         
-        if (result.success && result.data) {
+        if (!result.success) {
+          showChartError('chartPendingOC', result.error || 'Error cargando datos');
+          hideLoader('loaderPendingOC');
+          return;
+        }
+        
+        if (result.data) {
           const { aprobadores, cantidades } = result.data;
           const trace = {
             x: ['PTE APROBACIÓN'],
@@ -1953,14 +2056,19 @@
     async function updateChartAvgWarehouseEntryAPI(filters) {
       showLoader('loaderAvgWarehouseEntry');
       try {
-        const response = await fetch(`${API_BASE}/charts/avg-warehouse-entry-days`, {
+        const result = await safeFetch(`${API_BASE}/charts/avg-warehouse-entry-days`, {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify(filters)
-        });
-        const result = await response.json();
+        }, 25000);
         
-        if (result.success && result.data) {
+        if (!result.success) {
+          showChartError('chartAvgWarehouseEntry', result.error || 'Error cargando datos');
+          hideLoader('loaderAvgWarehouseEntry');
+          return;
+        }
+        
+        if (result.data) {
           const { usuarios, promedios } = result.data;
           const trace = {
             x: usuarios,
@@ -2009,17 +2117,21 @@
       showLoader('loaderAvgApprovalDays');
       try {
         console.log('Haciendo fetch a:', `${API_BASE}/charts/avg-approval-days`);
-        const response = await fetch(`${API_BASE}/charts/avg-approval-days`, {
+        const result = await safeFetch(`${API_BASE}/charts/avg-approval-days`, {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify(filters)
-        });
+        }, 25000);
         
-        console.log('Response status:', response.status);
-        const result = await response.json();
         console.log('Result:', result);
         
-        if (result.success && result.data) {
+        if (!result.success) {
+          showChartError('chartAvgApprovalDays', result.error || 'Error cargando datos');
+          hideLoader('loaderAvgApprovalDays');
+          return;
+        }
+        
+        if (result.data) {
           const { aprobadores, promedios } = result.data;
           console.log('Aprobadores:', aprobadores);
           console.log('Promedios:', promedios);
@@ -2081,14 +2193,18 @@
 
     async function updateChartOCByStateAPI(filters) {
       try {
-        const response = await fetch(`${API_BASE}/charts/oc-by-state`, {
+        const result = await safeFetch(`${API_BASE}/charts/oc-by-state`, {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify(filters)
-        });
-        const result = await response.json();
+        }, 25000);
         
-        if (result.success && result.data) {
+        if (!result.success) {
+          showChartError('chartOCByState', result.error || 'Error cargando datos');
+          return;
+        }
+        
+        if (result.data) {
           const trace = {
             x: result.data.values,
             y: result.data.labels,
@@ -2116,14 +2232,18 @@
 
     async function updateChartTrendOCAPI(filters) {
       try {
-        const response = await fetch(`${API_BASE}/charts/trend-oc`, {
+        const result = await safeFetch(`${API_BASE}/charts/trend-oc`, {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify(filters)
-        });
-        const result = await response.json();
+        }, 25000);
         
-        if (result.success && result.data) {
+        if (!result.success) {
+          showChartError('chartTrendOC', result.error || 'Error cargando datos');
+          return;
+        }
+        
+        if (result.data) {
           const trace = {
             x: result.data.labels,
             y: result.data.values,
@@ -2149,14 +2269,18 @@
 
     async function updateChartDiscountsByProcessAPI(filters) {
       try {
-        const response = await fetch(`${API_BASE}/charts/discounts-by-process`, {
+        const result = await safeFetch(`${API_BASE}/charts/discounts-by-process`, {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify(filters)
-        });
-        const result = await response.json();
+        }, 25000);
         
-        if (result.success && result.data) {
+        if (!result.success) {
+          showChartError('chartDiscountsByProcess', result.error || 'Error cargando datos');
+          return;
+        }
+        
+        if (result.data) {
           const trace = {
             labels: result.data.labels,
             values: result.data.values,
@@ -2180,14 +2304,18 @@
 
     async function updateChartTopSuppliersAPI(filters) {
       try {
-        const response = await fetch(`${API_BASE}/charts/top-suppliers`, {
+        const result = await safeFetch(`${API_BASE}/charts/top-suppliers`, {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify(filters)
-        });
-        const result = await response.json();
+        }, 25000);
         
-        if (result.success && result.data) {
+        if (!result.success) {
+          showChartError('chartTopSuppliers', result.error || 'Error cargando datos');
+          return;
+        }
+        
+        if (result.data) {
           const trace = {
             x: result.data.values,
             y: result.data.labels,
@@ -2212,14 +2340,18 @@
 
     async function updateChartDaysByStageAPI(filters) {
       try {
-        const response = await fetch(`${API_BASE}/charts/days-by-stage`, {
+        const result = await safeFetch(`${API_BASE}/charts/days-by-stage`, {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify(filters)
-        });
-        const result = await response.json();
+        }, 25000);
         
-        if (result.success && result.data) {
+        if (!result.success) {
+          showChartError('chartDaysByStage', result.error || 'Error cargando datos');
+          return;
+        }
+        
+        if (result.data) {
           const trace = {
             x: result.data.labels,
             y: result.data.values,
@@ -2243,14 +2375,18 @@
 
     async function updateChartSpendByProcessAPI(filters) {
       try {
-        const response = await fetch(`${API_BASE}/charts/spend-by-process`, {
+        const result = await safeFetch(`${API_BASE}/charts/spend-by-process`, {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify(filters)
-        });
-        const result = await response.json();
+        }, 25000);
         
-        if (result.success && result.data) {
+        if (!result.success) {
+          showChartError('chartSpendByProcess', result.error || 'Error cargando datos');
+          return;
+        }
+        
+        if (result.data) {
           const trace = {
             x: result.data.labels,
             y: result.data.values,
