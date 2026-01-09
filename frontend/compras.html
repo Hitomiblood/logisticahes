@@ -1180,6 +1180,56 @@
       fillSelect('docTypeFilter', Array.from(allDocTypes).sort());
     }
 
+    // Función para actualizar proveedores según los procesos seleccionados
+    async function updateProveedoresByProceso() {
+      const processFilter = document.getElementById('processFilter');
+      const supplierFilter = document.getElementById('supplierFilter');
+      
+      if (!processFilter || !supplierFilter) return;
+      
+      const selectedProcesses = Array.from(processFilter.selectedOptions).map(o => o.value);
+      
+      console.log('🔄 Actualizando proveedores para procesos:', selectedProcesses);
+      
+      try {
+        let url = `${API_BASE}/filters/proveedores-por-proceso`;
+        if (selectedProcesses.length > 0) {
+          url += `?procesos=${encodeURIComponent(selectedProcesses.join(','))}`;
+        }
+        
+        const response = await fetch(url);
+        const result = await response.json();
+        
+        if (result.success && result.proveedores) {
+          console.log('✅ Proveedores actualizados:', result.proveedores.length);
+          
+          // Guardar los proveedores seleccionados actualmente
+          const previouslySelected = new Set(Array.from(supplierFilter.selectedOptions).map(o => o.value));
+          
+          // Limpiar y rellenar el select de proveedores
+          supplierFilter.innerHTML = result.proveedores.map(item => {
+            // Mantener la selección si el proveedor estaba previamente seleccionado
+            const isSelected = previouslySelected.has(item) ? 'selected' : '';
+            return `<option value="${item}" ${isSelected}>${item}</option>`;
+          }).join('');
+          
+          // Guardar items originales para búsqueda
+          supplierFilter.dataset.allItems = JSON.stringify(result.proveedores);
+          
+          // Actualizar estado del botón toggle
+          updateToggleButton('supplierFilter', 'supplierFilterBtn');
+          
+          // Limpiar la búsqueda de proveedores
+          const supplierSearch = document.getElementById('supplierSearch');
+          if (supplierSearch) {
+            supplierSearch.value = '';
+          }
+        }
+      } catch (error) {
+        console.error('❌ Error actualizando proveedores:', error);
+      }
+    }
+
     function fillSelect(selectId, items) {
       const select = document.getElementById(selectId);
       if (!select) {
@@ -1203,6 +1253,12 @@
       // Agregar event listener para aplicar filtros automáticamente
       select.addEventListener('change', () => {
         updateToggleButton(selectId, selectId + 'Btn');
+        
+        // Si es el filtro de proceso, actualizar los proveedores disponibles
+        if (selectId === 'processFilter') {
+          updateProveedoresByProceso();
+        }
+        
         applyFilters();
       });
       

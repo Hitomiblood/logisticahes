@@ -85,6 +85,37 @@ async def get_filters():
         return {"success": True, "filters": filters}
 
 
+@router.get("/filters/proveedores-por-proceso")
+async def get_proveedores_por_proceso(procesos: Optional[str] = None):
+    """Obtener proveedores filtrados por los procesos seleccionados"""
+    with get_db() as conn:
+        cursor = conn.cursor()
+        
+        if procesos:
+            lista_procesos = procesos.split(",")
+            placeholders = ','.join(['?' for _ in lista_procesos])
+            cursor.execute(f"""
+                SELECT DISTINCT tercero_nombre 
+                FROM oc_descuentos 
+                WHERE tercero_nombre IS NOT NULL 
+                  AND proceso IN ({placeholders})
+                ORDER BY tercero_nombre 
+                LIMIT 500
+            """, lista_procesos)
+        else:
+            # Si no hay procesos seleccionados, devolver todos los proveedores
+            cursor.execute("""
+                SELECT DISTINCT tercero_nombre 
+                FROM oc_descuentos 
+                WHERE tercero_nombre IS NOT NULL 
+                ORDER BY tercero_nombre 
+                LIMIT 500
+            """)
+        
+        proveedores = [row[0] for row in cursor.fetchall()]
+        return {"success": True, "proveedores": proveedores}
+
+
 # ==================== TRAZA REQ OC ====================
 def build_traza_where(fecha_inicio, fecha_fin, estados_req, estados_oc, terceros):
     where_clause = "WHERE 1=1"
