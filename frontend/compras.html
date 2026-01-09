@@ -810,8 +810,15 @@
       try {
         document.getElementById('status').textContent = 'Cargando datos...';
         
-        // Verificar datos cargados
+        // Verificar datos cargados con timeout
         const loadResponse = await fetch(`${API_BASE}/load`);
+        
+        // Verificar que la respuesta es JSON válido
+        const contentType = loadResponse.headers.get('content-type');
+        if (!contentType || !contentType.includes('application/json')) {
+          throw new Error(`Servidor respondió con ${loadResponse.status}. Intenta recargar.`);
+        }
+        
         const loadResult = await loadResponse.json();
         
         if (!loadResult.success) {
@@ -842,7 +849,7 @@
         
       } catch (error) {
         document.getElementById('status').textContent = '✗ Error al cargar: ' + error.message;
-        console.error(error);
+        console.error('Error cargando datos:', error);
       }
     };
 
