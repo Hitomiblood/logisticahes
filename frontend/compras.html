@@ -695,9 +695,21 @@
               </div>
             </div>
             
-            <!-- Gráfico 3: Top 10 Proveedores con Descuentos -->
+            <!-- Gráfico 3: Top Proveedores con Descuentos -->
             <div class="chart-card" style="grid-column: span 2;">
-              <h3 class="chart-title">🏆 TOP 10 DCTOS PROVEEDORES</h3>
+              <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 0.5rem;">
+                <h3 class="chart-title" style="margin: 0;">🏆 TOP DCTOS PROVEEDORES</h3>
+                <div style="display: flex; align-items: center; gap: 0.5rem;">
+                  <label style="font-size: 0.8rem; color: #666;">Mostrar:</label>
+                  <select id="topSuppliersCount" onchange="updateChartTopSuppliersDiscountsAPI(getFilters())" style="padding: 0.3rem 0.5rem; border-radius: 4px; border: 1px solid #ccc; font-size: 0.8rem;">
+                    <option value="5">Top 5</option>
+                    <option value="10" selected>Top 10</option>
+                    <option value="15">Top 15</option>
+                    <option value="20">Top 20</option>
+                    <option value="30">Top 30</option>
+                  </select>
+                </div>
+              </div>
               <div id="chartTopSuppliersDiscounts" class="chart" style="height: 400px;">
                 <div class="chart-loader" id="loaderTopSuppliersDiscounts">
                   <div class="spinner"></div>
@@ -1746,10 +1758,16 @@
     async function updateChartTopSuppliersDiscountsAPI(filters) {
       showLoader('loaderTopSuppliersDiscounts');
       try {
+        // Obtener cantidad de proveedores a mostrar del selector
+        const topCount = parseInt(document.getElementById('topSuppliersCount')?.value || '10');
+        
+        // Agregar el límite a los filtros
+        const filtersWithLimit = { ...filters, limit: topCount };
+        
         const result = await safeFetch(`${API_BASE}/charts/top-suppliers-discounts`, {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify(filters)
+          body: JSON.stringify(filtersWithLimit)
         }, 25000);
         
         if (!result.success) {
@@ -1759,70 +1777,69 @@
         }
         
         if (result.data) {
-          const { proveedores, montos, percentages } = result.data;
+          let { proveedores, montos, percentages } = result.data;
+          
+          // Invertir arrays para que el mayor quede arriba en barras horizontales
+          proveedores = [...proveedores].reverse();
+          montos = [...montos].reverse();
+          percentages = [...percentages].reverse();
           
           // Formatear montos para display
           const montosFormateados = montos.map(m => `₡${m.toLocaleString('es-CR', {maximumFractionDigits: 0})}`);
           const pctFormateados = percentages.map(p => `${p.toFixed(2)}%`);
           
-          // Crear gráfico de línea con marcadores
+          // Crear colores degradados
+          const colors = montos.map((_, i) => {
+            const ratio = i / (montos.length - 1 || 1);
+            const r = Math.round(33 + ratio * (20 - 33));
+            const g = Math.round(150 + ratio * (100 - 150));
+            const b = Math.round(243 + ratio * (180 - 243));
+            return `rgb(${r}, ${g}, ${b})`;
+          });
+          
+          // Crear gráfico de barras horizontales
           const trace = {
-            x: proveedores,
-            y: montos,
-            type: 'scatter',
-            mode: 'lines+markers+text',
-            line: {
-              color: '#2196f3',
-              width: 3,
-              shape: 'linear'
-            },
+            y: proveedores,
+            x: montos,
+            type: 'bar',
+            orientation: 'h',
             marker: {
-              color: '#2196f3',
-              size: 10,
-              line: { color: '#1976d2', width: 2 }
+              color: colors,
+              line: { color: '#1976d2', width: 1 }
             },
-            text: montosFormateados,
-            textposition: 'top center',
-            textfont: { size: 9, color: '#000', weight: 'bold' },
-            hovertemplate: '<b>%{x}</b><br>Monto: %{text}<br>Porcentaje: ' + pctFormateados.map((p, i) => p).join('<br>Porcentaje: ') + '<extra></extra>'
+            text: montosFormateados.map((m, i) => `${m} (${pctFormateados[i]})`),
+            textposition: 'outside',
+            textfont: { size: 10, color: '#333' },
+            hovertemplate: '<b>%{y}</b><br>Monto: %{text}<extra></extra>'
           };
           
-          // Crear anotaciones para los porcentajes (segunda fila)
-          const annotations = proveedores.map((prov, i) => ({
-            x: prov,
-            y: montos[i],
-            text: pctFormateados[i],
-            showarrow: false,
-            yshift: -25,
-            font: { size: 9, color: '#000', weight: 'bold' },
-            xanchor: 'center'
-          }));
+          // Calcular altura dinámica basada en cantidad de proveedores
+          const chartHeight = Math.max(400, topCount * 30 + 100);
+          document.getElementById('chartTopSuppliersDiscounts').style.height = chartHeight + 'px';
           
           const layout = {
             title: {
-              text: 'TOP 10 DCTOS PROVEEDORES',
+              text: `TOP ${topCount} DCTOS PROVEEDORES`,
               font: { size: 14, color: '#333', weight: 'bold' },
               x: 0.5,
               xanchor: 'center'
             },
             xaxis: {
-              title: '',
-              tickangle: -45,
-              tickfont: { size: 8 },
-              automargin: true
-            },
-            yaxis: {
-              title: '',
+              title: 'Monto Descuento',
               tickformat: ',.0f',
-              range: [0, Math.max(...montos) * 1.25],
               showgrid: true,
               gridcolor: '#e5e5e5'
             },
-            annotations: annotations,
-            margin: { l: 80, r: 40, t: 80, b: 150 },
-            plot_bgcolor: '#f0f0f0',
+            yaxis: {
+              title: '',
+              tickfont: { size: 9 },
+              automargin: true
+            },
+            margin: { l: 200, r: 120, t: 50, b: 50 },
+            plot_bgcolor: '#fafafa',
             paper_bgcolor: 'white',
-            showlegend: false
+            showlegend: false,
+            bargap: 0.3
           };
           
           Plotly.newPlot('chartTopSuppliersDiscounts', [trace], layout, { responsive: true, displayModeBar: false });

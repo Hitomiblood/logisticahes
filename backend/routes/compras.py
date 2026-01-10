@@ -20,6 +20,7 @@ class FilterRequest(BaseModel):
     processes: Optional[list] = None
     suppliers: Optional[list] = None
     states: Optional[list] = None
+    limit: Optional[int] = 10
 
 
 # ==================== ENDPOINTS PRINCIPALES ====================
@@ -623,10 +624,13 @@ async def chart_top_suppliers_discounts(filters: FilterRequest):
         cursor.execute(f'SELECT SUM(COALESCE(total_dcto, 0)) FROM oc_descuentos {where_clause}', params)
         total_general = cursor.fetchone()[0] or 1
         
+        # Usar limit del filtro o 10 por defecto
+        top_limit = filters.limit if filters.limit and filters.limit > 0 else 10
+        
         cursor.execute(f'''
             SELECT tercero_nombre, SUM(COALESCE(total_dcto, 0)) as total_desc
             FROM oc_descuentos {where_clause} AND tercero_nombre IS NOT NULL
-            GROUP BY tercero_nombre ORDER BY total_desc DESC LIMIT 10
+            GROUP BY tercero_nombre ORDER BY total_desc DESC LIMIT {top_limit}
         ''', params)
         rows = cursor.fetchall()
         
