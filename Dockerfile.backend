@@ -9,6 +9,12 @@ RUN pip install --no-cache-dir -r requirements.txt
 # Copiar código del backend
 COPY backend/ ./backend/
 
+# Copiar frontend
+COPY frontend/ ./frontend/
+
+# Crear directorio img (opcional)
+RUN mkdir -p ./img
+
 # Exponer puerto
 EXPOSE 8000
 

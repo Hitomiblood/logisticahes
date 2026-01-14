@@ -9,6 +9,8 @@ services:
     volumes:
       - ./backend:/app/backend
       - ./data:/app/data
+      - ./frontend:/app/frontend
+      - ./img:/app/img
     networks:
       - web
     expose:
