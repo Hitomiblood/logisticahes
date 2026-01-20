@@ -410,16 +410,10 @@ def build_filters_where(filters: FilterRequest, table: str):
     
     Para 'traza': si hay filtro de proceso, usa EXISTS con subquery a oc_descuentos
     
-    IMPORTANTE: Si no hay procesos seleccionados, devuelve condición imposible (1=0)
-    para que no muestre datos hasta que el usuario seleccione algo.
+    CAMBIO: Si no hay procesos seleccionados, muestra TODOS los datos (no WHERE 1=0)
     """
     where_clause = "WHERE 1=1"
     params = []
-    
-    # Si no hay procesos seleccionados, no mostrar datos
-    if not filters.processes or len(filters.processes) == 0:
-        where_clause = "WHERE 1=0"  # Condición imposible = sin resultados
-        return where_clause, params
     
     if table == 'descuentos':
         # Para tabla oc_descuentos
@@ -429,6 +423,7 @@ def build_filters_where(filters: FilterRequest, table: str):
         if filters.dateEnd:
             where_clause += " AND fecha <= ?"
             params.append(filters.dateEnd)
+        # Filtrar por procesos solo si se especifican (si no, mostrar todos)
         if filters.processes and len(filters.processes) > 0:
             placeholders = ','.join(['?' for _ in filters.processes])
             where_clause += f" AND proceso IN ({placeholders})"
@@ -563,15 +558,23 @@ async def get_kpis_post(filters: FilterRequest):
 @router.post("/charts/oc-vs-items-by-process")
 async def chart_oc_vs_items(filters: FilterRequest):
     """Gráfico OC vs Items por proceso"""
+    print(f"📊 OC vs Items - Filtros recibidos: dateStart={filters.dateStart}, dateEnd={filters.dateEnd}, processes={len(filters.processes) if filters.processes else 0}, suppliers={len(filters.suppliers) if filters.suppliers else 0}")
+    
     with get_db() as conn:
         cursor = conn.cursor()
         where_clause, params = build_filters_where(filters, 'descuentos')
+        
+        print(f"📊 OC vs Items - WHERE: {where_clause[:150]}... params: {len(params)}")
+        
         cursor.execute(f'''
             SELECT proceso, COUNT(DISTINCT documento_num) as total_oc, COUNT(*) as total_items
             FROM oc_descuentos {where_clause} AND proceso IS NOT NULL
             GROUP BY proceso ORDER BY total_items DESC LIMIT 10
         ''', params)
         rows = cursor.fetchall()
+        
+        print(f"📊 OC vs Items - Resultados: {len(rows)} procesos encontrados")
+        
         procesos = [r[0] or 'Sin Proceso' for r in rows]
         total_oc = [r[1] for r in rows]
         total_items = [r[2] for r in rows]
@@ -590,9 +593,14 @@ async def chart_oc_vs_items(filters: FilterRequest):
 @router.post("/charts/percent-discounts-by-process")
 async def chart_percent_discounts(filters: FilterRequest):
     """Gráfico porcentaje descuentos por proceso"""
+    print(f"📊 % Descuentos - Filtros recibidos: dateStart={filters.dateStart}, dateEnd={filters.dateEnd}, processes={len(filters.processes) if filters.processes else 0}, suppliers={len(filters.suppliers) if filters.suppliers else 0}")
+    
     with get_db() as conn:
         cursor = conn.cursor()
         where_clause, params = build_filters_where(filters, 'descuentos')
+        
+        print(f"📊 % Descuentos - WHERE: {where_clause[:150]}... params: {len(params)}")
+        
         cursor.execute(f'''
             SELECT proceso, AVG(COALESCE(porcentaje_descuento, 0)) as avg_pct
             FROM oc_descuentos {where_clause} AND proceso IS NOT NULL
@@ -600,9 +608,13 @@ async def chart_percent_discounts(filters: FilterRequest):
         ''', params)
         rows = cursor.fetchall()
         
+        print(f"📊 % Descuentos - Resultados: {len(rows)} procesos encontrados")
+        
         # Calcular promedio general con filtros
         cursor.execute(f'SELECT AVG(COALESCE(porcentaje_descuento, 0)) FROM oc_descuentos {where_clause}', params)
         avg_general = cursor.fetchone()[0] or 0
+        
+        print(f"📊 % Descuentos - Promedio general: {avg_general:.2f}%")
         
         return {
             "success": True,

@@ -1122,14 +1122,28 @@
 
     // Inicializar filtros desde la API
     function initializeFiltersFromAPI(filters) {
-      // Solo llenar filtros que existen en el HTML
-      fillSelect('processFilter', filters.procesos || []);
-      fillSelect('supplierFilter', filters.proveedores || []);
+      console.log('📋 Inicializando filtros desde API:', filters);
+      
+      // Solo llenar filtros que existen en el HTML y SELECCIONAR TODOS por defecto
+      fillSelect('processFilter', filters.procesos || [], true); // true = seleccionar todos
+      fillSelect('supplierFilter', filters.proveedores || [], true); // true = seleccionar todos
+      
+      // Actualizar botones de toggle después de llenar los selects
+      updateToggleButton('processFilter', 'processFilterBtn');
+      updateToggleButton('supplierFilter', 'supplierFilterBtn');
       
       // Establecer fechas dinámicamente basándose en los datos de la BD
       if (filters.fechaMaxima) {
         setDefaultDateRangeFromAPI(filters.fechaMaxima);
       }
+      
+      console.log('✅ Filtros inicializados:', {
+        procesos: filters.procesos?.length || 0,
+        proveedores: filters.proveedores?.length || 0,
+        fechaMaxima: filters.fechaMaxima,
+        procesosSeleccionados: document.getElementById('processFilter')?.selectedOptions?.length || 0,
+        proveedoresSeleccionados: document.getElementById('supplierFilter')?.selectedOptions?.length || 0
+      });
     }
     
     // Establecer rango de fechas basándose en la fecha máxima de la BD
@@ -1248,17 +1262,18 @@
       }
     }
 
-    function fillSelect(selectId, items) {
+    function fillSelect(selectId, items, selectAll = true) {
       const select = document.getElementById(selectId);
       if (!select) {
         console.warn(`Elemento ${selectId} no encontrado, omitiendo`);
         return;
       }
       
-      console.log(`fillSelect: ${selectId} con ${items.length} items`);
+      console.log(`fillSelect: ${selectId} con ${items.length} items, selectAll=${selectAll}`);
       
-      // Crear opciones con todas seleccionadas por defecto
-      select.innerHTML = items.map(item => `<option value="${item}" selected>${item}</option>`).join('');
+      // Crear opciones - seleccionar todas si selectAll es true
+      const selectedAttr = selectAll ? 'selected' : '';
+      select.innerHTML = items.map(item => `<option value="${item}" ${selectedAttr}>${item}</option>`).join('');
       
       console.log(`${selectId} - Opciones creadas: ${select.options.length}, Seleccionadas: ${select.selectedOptions.length}`);
       
