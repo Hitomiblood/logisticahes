@@ -2032,43 +2032,41 @@
         if (result.data) {
           let { proveedores, montos, percentages } = result.data;
           
-          // Invertir arrays para que el mayor quede arriba en barras horizontales
-          proveedores = [...proveedores].reverse();
-          montos = [...montos].reverse();
-          percentages = [...percentages].reverse();
-          
           // Formatear montos para display
           const montosFormateados = montos.map(m => `$${m.toLocaleString('es-CO', {maximumFractionDigits: 0})}`);
           const pctFormateados = percentages.map(p => `${p.toFixed(2)}%`);
           
-          // Crear colores degradados
-          const colors = montos.map((_, i) => {
-            const ratio = i / (montos.length - 1 || 1);
-            const r = Math.round(33 + ratio * (20 - 33));
-            const g = Math.round(150 + ratio * (100 - 150));
-            const b = Math.round(243 + ratio * (180 - 243));
-            return `rgb(${r}, ${g}, ${b})`;
-          });
-          
-          // Crear gráfico de barras horizontales
+          // Crear gráfico de líneas con marcadores
           const trace = {
-            y: proveedores,
-            x: montos,
-            type: 'bar',
-            orientation: 'h',
-            marker: {
-              color: colors,
-              line: { color: '#1976d2', width: 1 }
+            x: proveedores,
+            y: montos,
+            type: 'scatter',
+            mode: 'lines+markers',
+            line: {
+              color: '#4a90d9',
+              width: 2
             },
-            text: montosFormateados.map((m, i) => `${m} (${pctFormateados[i]})`),
-            textposition: 'outside',
-            textfont: { size: 10, color: '#333' },
-            hovertemplate: '<b>%{y}</b><br>Monto: %{text}<extra></extra>'
+            marker: {
+              color: '#4a90d9',
+              size: 10
+            },
+            text: montosFormateados,
+            hovertemplate: '<b>%{x}</b><br>Monto: %{text}<extra></extra>'
           };
           
-          // Calcular altura dinámica basada en cantidad de proveedores
-          const chartHeight = Math.max(400, topCount * 30 + 100);
-          document.getElementById('chartTopSuppliersDiscounts').style.height = chartHeight + 'px';
+          // Crear anotaciones con montos y porcentajes arriba de cada punto
+          const annotations = proveedores.map((prov, i) => ({
+            x: prov,
+            y: montos[i],
+            text: `${montosFormateados[i]}<br>${pctFormateados[i]}`,
+            showarrow: false,
+            yanchor: 'bottom',
+            yshift: 15,
+            font: { size: 9, color: '#333' }
+          }));
+          
+          // Altura fija para gráfico de líneas
+          document.getElementById('chartTopSuppliersDiscounts').style.height = '400px';
           
           const layout = {
             title: {
@@ -2078,21 +2076,23 @@
               xanchor: 'center'
             },
             xaxis: {
-              title: 'Monto Descuento',
-              tickformat: ',.0f',
-              showgrid: true,
-              gridcolor: '#e5e5e5'
+              title: '',
+              tickangle: -45,
+              tickfont: { size: 8 },
+              automargin: true
             },
             yaxis: {
               title: '',
-              tickfont: { size: 9 },
-              automargin: true
+              tickformat: ',.0f',
+              showgrid: true,
+              gridcolor: '#e5e5e5',
+              range: [0, Math.max(...montos) * 1.3]
             },
-            margin: { l: 200, r: 120, t: 50, b: 50 },
-            plot_bgcolor: '#fafafa',
+            margin: { l: 80, r: 40, t: 80, b: 120 },
+            plot_bgcolor: 'white',
             paper_bgcolor: 'white',
             showlegend: false,
-            bargap: 0.3
+            annotations: annotations
           };
           
           Plotly.newPlot('chartTopSuppliersDiscounts', [trace], layout, { responsive: true, displayModeBar: false });
