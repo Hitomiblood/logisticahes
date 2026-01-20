@@ -601,8 +601,9 @@ async def chart_percent_discounts(filters: FilterRequest):
         
         print(f"📊 % Descuentos - WHERE: {where_clause[:150]}... params: {len(params)}")
         
+        # Promedio de porcentaje de descuento por proceso (multiplicar por 100 para mostrar como %)
         cursor.execute(f'''
-            SELECT proceso, AVG(COALESCE(porcentaje_descuento, 0)) as avg_pct
+            SELECT proceso, AVG(COALESCE(porcentaje_descuento, 0)) * 100 as avg_pct
             FROM oc_descuentos {where_clause} AND proceso IS NOT NULL
             GROUP BY proceso ORDER BY avg_pct DESC LIMIT 10
         ''', params)
@@ -610,8 +611,8 @@ async def chart_percent_discounts(filters: FilterRequest):
         
         print(f"📊 % Descuentos - Resultados: {len(rows)} procesos encontrados")
         
-        # Calcular promedio general con filtros
-        cursor.execute(f'SELECT AVG(COALESCE(porcentaje_descuento, 0)) FROM oc_descuentos {where_clause}', params)
+        # Calcular promedio general con filtros (multiplicar por 100)
+        cursor.execute(f'SELECT AVG(COALESCE(porcentaje_descuento, 0)) * 100 FROM oc_descuentos {where_clause}', params)
         avg_general = cursor.fetchone()[0] or 0
         
         print(f"📊 % Descuentos - Promedio general: {avg_general:.2f}%")
@@ -620,8 +621,8 @@ async def chart_percent_discounts(filters: FilterRequest):
             "success": True,
             "data": {
                 "procesos": [r[0] or 'Sin Proceso' for r in rows],
-                "percentages": [round(r[1] or 0, 2) for r in rows],
-                "average": round(avg_general, 2)
+                "percentages": [round(r[1] or 0, 1) for r in rows],
+                "average": round(avg_general, 1)
             }
         }
 
