@@ -932,16 +932,6 @@
       }).join('');
     }
 
-    // Función para aplicar filtro de personas
-    function applyPersonFilter(chartType) {
-      const select = document.getElementById(`filter${chartType}`);
-      if (!select) return;
-      
-      const selectedPersons = Array.from(select.selectedOptions).map(o => o.value);
-      const data = chartDataCache[chartType];
-      
-      if (!data || !data.aprobadores && !data.usuarios) return;
-      
     // Función para seleccionar todas las personas
     function selectAllPersons(chartType) {
       const select = document.getElementById(`filter${chartType}`);
