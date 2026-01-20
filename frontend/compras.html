@@ -729,7 +729,16 @@
           <div class="charts-grid">
             <!-- Gráfico 1: Promedio Días Aprobación RQ -->
             <div class="chart-card" style="grid-column: span 2;">
-              <h3 class="chart-title">⏱️ PROMEDIO DÍAS APROBACIÓN RQ</h3>
+              <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 0.5rem; flex-wrap: wrap; gap: 0.5rem;">
+                <h3 class="chart-title" style="margin: 0;">⏱️ PROMEDIO DÍAS APROBACIÓN RQ</h3>
+                <div style="display: flex; align-items: center; gap: 0.5rem;">
+                  <label style="font-size: 0.75rem; color: #666;">Filtrar personas:</label>
+                  <select id="filterApprovalDays" multiple style="width: 200px; height: 28px; padding: 0.2rem; border-radius: 4px; border: 1px solid #ccc; font-size: 0.75rem;">
+                  </select>
+                  <button onclick="applyPersonFilter('ApprovalDays')" style="padding: 0.25rem 0.5rem; border-radius: 4px; border: 1px solid #1c4e80; background: #1c4e80; color: white; font-size: 0.7rem; cursor: pointer;">Aplicar</button>
+                  <button onclick="clearPersonFilter('ApprovalDays')" style="padding: 0.25rem 0.5rem; border-radius: 4px; border: 1px solid #ccc; background: #f5f5f5; font-size: 0.7rem; cursor: pointer;">Limpiar</button>
+                </div>
+              </div>
               <div id="chartAvgApprovalDays" class="chart" style="height: 400px;">
                 <div class="chart-loader" id="loaderAvgApprovalDays">
                   <div class="spinner"></div>
@@ -740,7 +749,16 @@
             
             <!-- Gráfico 2: Promedio Días Generación OC -->
             <div class="chart-card" style="grid-column: span 2;">
-              <h3 class="chart-title">🚀 PROMEDIO DÍAS GENERACIÓN OC</h3>
+              <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 0.5rem; flex-wrap: wrap; gap: 0.5rem;">
+                <h3 class="chart-title" style="margin: 0;">🚀 PROMEDIO DÍAS GENERACIÓN OC</h3>
+                <div style="display: flex; align-items: center; gap: 0.5rem;">
+                  <label style="font-size: 0.75rem; color: #666;">Filtrar personas:</label>
+                  <select id="filterGenerationDays" multiple style="width: 200px; height: 28px; padding: 0.2rem; border-radius: 4px; border: 1px solid #ccc; font-size: 0.75rem;">
+                  </select>
+                  <button onclick="applyPersonFilter('GenerationDays')" style="padding: 0.25rem 0.5rem; border-radius: 4px; border: 1px solid #1c4e80; background: #1c4e80; color: white; font-size: 0.7rem; cursor: pointer;">Aplicar</button>
+                  <button onclick="clearPersonFilter('GenerationDays')" style="padding: 0.25rem 0.5rem; border-radius: 4px; border: 1px solid #ccc; background: #f5f5f5; font-size: 0.7rem; cursor: pointer;">Limpiar</button>
+                </div>
+              </div>
               <div id="chartAvgGenerationDays" class="chart" style="height: 400px;">
                 <div class="chart-loader" id="loaderAvgGenerationDays">
                   <div class="spinner"></div>
@@ -751,7 +769,15 @@
             
             <!-- Gráfico 3: Promedio Días Aprobación Gerencia -->
             <div class="chart-card">
-              <h3 class="chart-title">🏢 PROM DÍAS APROBACIÓN GERENCIA</h3>
+              <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 0.5rem; flex-wrap: wrap; gap: 0.3rem;">
+                <h3 class="chart-title" style="margin: 0; font-size: 0.85rem;">🏢 PROM DÍAS APROB. GERENCIA</h3>
+                <div style="display: flex; align-items: center; gap: 0.3rem;">
+                  <select id="filterApprovalManagement" multiple style="width: 120px; height: 24px; padding: 0.1rem; border-radius: 4px; border: 1px solid #ccc; font-size: 0.7rem;">
+                  </select>
+                  <button onclick="applyPersonFilter('ApprovalManagement')" style="padding: 0.2rem 0.4rem; border-radius: 4px; border: 1px solid #1c4e80; background: #1c4e80; color: white; font-size: 0.65rem; cursor: pointer;">✓</button>
+                  <button onclick="clearPersonFilter('ApprovalManagement')" style="padding: 0.2rem 0.4rem; border-radius: 4px; border: 1px solid #ccc; background: #f5f5f5; font-size: 0.65rem; cursor: pointer;">✕</button>
+                </div>
+              </div>
               <div id="chartAvgApprovalManagement" class="chart" style="height: 350px;">
                 <div class="chart-loader" id="loaderAvgApprovalManagement">
                   <div class="spinner"></div>
@@ -762,7 +788,15 @@
             
             <!-- Gráfico 4: Cantidad Pendiente Aprobar RQ -->
             <div class="chart-card">
-              <h3 class="chart-title">📋 CANT. PENDIENTE APROBAR RQ</h3>
+              <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 0.5rem; flex-wrap: wrap; gap: 0.3rem;">
+                <h3 class="chart-title" style="margin: 0; font-size: 0.85rem;">📋 PEND. APROBAR RQ</h3>
+                <div style="display: flex; align-items: center; gap: 0.3rem;">
+                  <select id="filterPendingRQ" multiple style="width: 120px; height: 24px; padding: 0.1rem; border-radius: 4px; border: 1px solid #ccc; font-size: 0.7rem;">
+                  </select>
+                  <button onclick="applyPersonFilter('PendingRQ')" style="padding: 0.2rem 0.4rem; border-radius: 4px; border: 1px solid #1c4e80; background: #1c4e80; color: white; font-size: 0.65rem; cursor: pointer;">✓</button>
+                  <button onclick="clearPersonFilter('PendingRQ')" style="padding: 0.2rem 0.4rem; border-radius: 4px; border: 1px solid #ccc; background: #f5f5f5; font-size: 0.65rem; cursor: pointer;">✕</button>
+                </div>
+              </div>
               <div id="chartPendingRQ" class="chart" style="height: 350px;">
                 <div class="chart-loader" id="loaderPendingRQ">
                   <div class="spinner"></div>
@@ -773,7 +807,15 @@
             
             <!-- Gráfico 5: Promedio Días Recepción Servicio -->
             <div class="chart-card">
-              <h3 class="chart-title">📦 PROMEDIO DÍAS RECEPCIÓN SERVICIO</h3>
+              <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 0.5rem; flex-wrap: wrap; gap: 0.3rem;">
+                <h3 class="chart-title" style="margin: 0; font-size: 0.85rem;">📦 PROM DÍAS RECEP. SERVICIO</h3>
+                <div style="display: flex; align-items: center; gap: 0.3rem;">
+                  <select id="filterReceptionService" multiple style="width: 120px; height: 24px; padding: 0.1rem; border-radius: 4px; border: 1px solid #ccc; font-size: 0.7rem;">
+                  </select>
+                  <button onclick="applyPersonFilter('ReceptionService')" style="padding: 0.2rem 0.4rem; border-radius: 4px; border: 1px solid #1c4e80; background: #1c4e80; color: white; font-size: 0.65rem; cursor: pointer;">✓</button>
+                  <button onclick="clearPersonFilter('ReceptionService')" style="padding: 0.2rem 0.4rem; border-radius: 4px; border: 1px solid #ccc; background: #f5f5f5; font-size: 0.65rem; cursor: pointer;">✕</button>
+                </div>
+              </div>
               <div id="chartAvgReceptionService" class="chart" style="height: 350px;">
                 <div class="chart-loader" id="loaderAvgReceptionService">
                   <div class="spinner"></div>
@@ -784,7 +826,15 @@
             
             <!-- Gráfico 6: Cantidad Pendiente Aprobar OC -->
             <div class="chart-card">
-              <h3 class="chart-title">📄 CANT. PTE APROBAR OC</h3>
+              <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 0.5rem; flex-wrap: wrap; gap: 0.3rem;">
+                <h3 class="chart-title" style="margin: 0; font-size: 0.85rem;">📄 PEND. APROBAR OC</h3>
+                <div style="display: flex; align-items: center; gap: 0.3rem;">
+                  <select id="filterPendingOC" multiple style="width: 120px; height: 24px; padding: 0.1rem; border-radius: 4px; border: 1px solid #ccc; font-size: 0.7rem;">
+                  </select>
+                  <button onclick="applyPersonFilter('PendingOC')" style="padding: 0.2rem 0.4rem; border-radius: 4px; border: 1px solid #1c4e80; background: #1c4e80; color: white; font-size: 0.65rem; cursor: pointer;">✓</button>
+                  <button onclick="clearPersonFilter('PendingOC')" style="padding: 0.2rem 0.4rem; border-radius: 4px; border: 1px solid #ccc; background: #f5f5f5; font-size: 0.65rem; cursor: pointer;">✕</button>
+                </div>
+              </div>
               <div id="chartPendingOC" class="chart" style="height: 350px;">
                 <div class="chart-loader" id="loaderPendingOC">
                   <div class="spinner"></div>
@@ -795,7 +845,16 @@
             
             <!-- Gráfico 7: Promedio Días Entrada Almacén -->
             <div class="chart-card" style="grid-column: span 2;">
-              <h3 class="chart-title">🏭 PROMEDIO DÍAS ENTRADA ALMACÉN</h3>
+              <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 0.5rem; flex-wrap: wrap; gap: 0.5rem;">
+                <h3 class="chart-title" style="margin: 0;">🏭 PROMEDIO DÍAS ENTRADA ALMACÉN</h3>
+                <div style="display: flex; align-items: center; gap: 0.5rem;">
+                  <label style="font-size: 0.75rem; color: #666;">Filtrar personas:</label>
+                  <select id="filterWarehouseEntry" multiple style="width: 200px; height: 28px; padding: 0.2rem; border-radius: 4px; border: 1px solid #ccc; font-size: 0.75rem;">
+                  </select>
+                  <button onclick="applyPersonFilter('WarehouseEntry')" style="padding: 0.25rem 0.5rem; border-radius: 4px; border: 1px solid #1c4e80; background: #1c4e80; color: white; font-size: 0.7rem; cursor: pointer;">Aplicar</button>
+                  <button onclick="clearPersonFilter('WarehouseEntry')" style="padding: 0.25rem 0.5rem; border-radius: 4px; border: 1px solid #ccc; background: #f5f5f5; font-size: 0.7rem; cursor: pointer;">Limpiar</button>
+                </div>
+              </div>
               <div id="chartAvgWarehouseEntry" class="chart" style="height: 350px;">
                 <div class="chart-loader" id="loaderAvgWarehouseEntry">
                   <div class="spinner"></div>
@@ -816,6 +875,142 @@
     
     // API FastAPI en puerto 8000
     const API_BASE = '/api/compras';
+
+    // =====================================================
+    // Almacenar datos completos de cada gráfico para filtrado local
+    // =====================================================
+    const chartDataCache = {
+      ApprovalDays: { aprobadores: [], promedios: [] },
+      GenerationDays: { aprobadores: [], promedios: [] },
+      ApprovalManagement: { aprobadores: [], promedios: [] },
+      PendingRQ: { aprobadores: [], cantidades: [] },
+      ReceptionService: { usuarios: [], promedios: [] },
+      PendingOC: { aprobadores: [], cantidades: [] },
+      WarehouseEntry: { usuarios: [], promedios: [] }
+    };
+
+    // Función para llenar el filtro de personas de un gráfico
+    function populatePersonFilter(chartType, personas) {
+      const select = document.getElementById(`filter${chartType}`);
+      if (!select || !personas || personas.length === 0) return;
+      
+      // Guardar selección actual
+      const currentSelected = new Set(Array.from(select.selectedOptions).map(o => o.value));
+      
+      // Llenar opciones
+      select.innerHTML = personas.map(p => {
+        const isSelected = currentSelected.size === 0 || currentSelected.has(p) ? '' : '';
+        return `<option value="${p}" ${isSelected}>${p}</option>`;
+      }).join('');
+    }
+
+    // Función para aplicar filtro de personas
+    function applyPersonFilter(chartType) {
+      const select = document.getElementById(`filter${chartType}`);
+      if (!select) return;
+      
+      const selectedPersons = Array.from(select.selectedOptions).map(o => o.value);
+      const data = chartDataCache[chartType];
+      
+      if (!data || !data.aprobadores && !data.usuarios) return;
+      
+      // Determinar qué campo usar (aprobadores o usuarios)
+      const personField = data.aprobadores ? 'aprobadores' : 'usuarios';
+      const valueField = data.promedios ? 'promedios' : 'cantidades';
+      
+      // Si no hay selección, mostrar todos
+      if (selectedPersons.length === 0) {
+        renderFilteredChart(chartType, data[personField], data[valueField]);
+        return;
+      }
+      
+      // Filtrar datos
+      const filteredPersons = [];
+      const filteredValues = [];
+      
+      data[personField].forEach((person, idx) => {
+        if (selectedPersons.includes(person)) {
+          filteredPersons.push(person);
+          filteredValues.push(data[valueField][idx]);
+        }
+      });
+      
+      renderFilteredChart(chartType, filteredPersons, filteredValues);
+    }
+
+    // Función para limpiar filtro
+    function clearPersonFilter(chartType) {
+      const select = document.getElementById(`filter${chartType}`);
+      if (select) {
+        Array.from(select.options).forEach(o => o.selected = false);
+      }
+      
+      const data = chartDataCache[chartType];
+      if (!data) return;
+      
+      const personField = data.aprobadores ? 'aprobadores' : 'usuarios';
+      const valueField = data.promedios ? 'promedios' : 'cantidades';
+      
+      renderFilteredChart(chartType, data[personField], data[valueField]);
+    }
+
+    // Función para renderizar gráfico filtrado
+    function renderFilteredChart(chartType, persons, values) {
+      const chartConfigs = {
+        ApprovalDays: { chartId: 'chartAvgApprovalDays', title: 'PROMEDIO DÍAS APROBACIÓN RQ', color: '#0ea5e9', orientation: 'h', xLabel: 'Días Promedio' },
+        GenerationDays: { chartId: 'chartAvgGenerationDays', title: 'PROMEDIO DÍAS GENERACIÓN OC', color: '#14b8a6', orientation: 'h', xLabel: 'Días Promedio' },
+        ApprovalManagement: { chartId: 'chartAvgApprovalManagement', title: 'PROM DÍAS APROB. GERENCIA', color: '#0ea5e9', orientation: 'v', xLabel: '' },
+        PendingRQ: { chartId: 'chartPendingRQ', title: 'PENDIENTE APROBAR RQ', color: '#f59e0b', orientation: 'v', xLabel: '' },
+        ReceptionService: { chartId: 'chartAvgReceptionService', title: 'PROM DÍAS RECEP. SERVICIO', color: '#8b5cf6', orientation: 'v', xLabel: '' },
+        PendingOC: { chartId: 'chartPendingOC', title: 'PENDIENTE APROBAR OC', color: '#ef4444', orientation: 'v', xLabel: '' },
+        WarehouseEntry: { chartId: 'chartAvgWarehouseEntry', title: 'PROMEDIO DÍAS ENTRADA ALMACÉN', color: '#06b6d4', orientation: 'h', xLabel: 'Días Promedio' }
+      };
+      
+      const config = chartConfigs[chartType];
+      if (!config || !persons || persons.length === 0) return;
+      
+      const isValueFloat = chartType.includes('Days') || chartType.includes('Service') || chartType.includes('Entry') || chartType.includes('Management');
+      
+      let trace, layout;
+      
+      if (config.orientation === 'h') {
+        trace = {
+          x: values,
+          y: persons,
+          type: 'bar',
+          orientation: 'h',
+          marker: { color: config.color, line: { width: 1 } },
+          text: values.map(v => isValueFloat ? v.toFixed(1) : v.toString()),
+          textposition: 'outside',
+          textfont: { size: 11, color: '#000', weight: 'bold' }
+        };
+        layout = {
+          title: { text: config.title, font: { size: 14, color: '#333' }, x: 0.5 },
+          xaxis: { title: config.xLabel, showgrid: true, gridcolor: '#e5e5e5' },
+          yaxis: { title: '', tickfont: { size: 9 }, automargin: true },
+          margin: { l: 150, r: 60, t: 60, b: 60 },
+          plot_bgcolor: '#f8f9fa',
+          paper_bgcolor: 'white'
+        };
+      } else {
+        trace = {
+          x: persons,
+          y: values,
+          type: 'bar',
+          marker: { color: config.color },
+          text: values.map(v => isValueFloat ? v.toFixed(1) : v.toString()),
+          textposition: 'outside',
+          textfont: { size: 10, color: '#222' }
+        };
+        layout = {
+          xaxis: { title: '', tickangle: -45, tickfont: { size: 9 } },
+          yaxis: { title: isValueFloat ? 'Días Promedio' : 'Cantidad', range: [0, Math.max(...values) * 1.15] },
+          margin: { l: 50, r: 30, t: 30, b: 100 }
+        };
+      }
+      
+      Plotly.newPlot(config.chartId, [trace], layout, { responsive: true, displayModeBar: false });
+    }
 
     // =====================================================
     // Función helper para fetch seguro con manejo de errores
@@ -1867,19 +2062,13 @@
     }
 
     async function updateChartAvgGenerationDaysAPI(filters) {
-      console.log('=== Iniciando updateChartAvgGenerationDaysAPI ===');
-      console.log('Filters:', filters);
-      
       showLoader('loaderAvgGenerationDays');
       try {
-        console.log('Haciendo fetch a:', `${API_BASE}/charts/avg-generation-days`);
         const result = await safeFetch(`${API_BASE}/charts/avg-generation-days`, {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify(filters)
         }, 25000);
-        
-        console.log('Result:', result);
         
         if (!result.success) {
           showChartError('chartAvgGenerationDays', result.error || 'Error cargando datos');
@@ -1889,8 +2078,12 @@
         
         if (result.data) {
           const { aprobadores, promedios } = result.data;
-          console.log('Aprobadores:', aprobadores);
-          console.log('Promedios:', promedios);
+          
+          // Guardar en cache para filtrado local
+          chartDataCache.GenerationDays = { aprobadores: [...aprobadores], promedios: [...promedios] };
+          
+          // Llenar el filtro de personas
+          populatePersonFilter('GenerationDays', aprobadores);
           
           // Crear gráfico de barras horizontales
           const trace = {
@@ -1932,12 +2125,9 @@
             showlegend: false
           };
           
-          console.log('Creando gráfico con Plotly...');
           await Plotly.newPlot('chartAvgGenerationDays', [trace], layout, { responsive: true, displayModeBar: false });
-          console.log('Gráfico creado exitosamente');
           hideLoader('loaderAvgGenerationDays');
         } else {
-          console.error('Sin datos o error en result:', result);
           hideLoader('loaderAvgGenerationDays');
         }
       } catch (error) {
@@ -1964,6 +2154,11 @@
         
         if (result.data) {
           const { aprobadores, promedios } = result.data;
+          
+          // Guardar en cache para filtrado local
+          chartDataCache.ApprovalManagement = { aprobadores: [...aprobadores], promedios: [...promedios] };
+          populatePersonFilter('ApprovalManagement', aprobadores);
+          
           const trace = {
             x: aprobadores,
             y: promedios,
@@ -1973,12 +2168,12 @@
             textposition: 'outside'
           };
           const layout = {
-            xaxis: { title: '', tickangle: -45 },
+            xaxis: { title: '', tickangle: -45, tickfont: { size: 9 } },
             yaxis: { 
               title: 'Días Promedio',
               range: [0, Math.max(...promedios) * 1.15]
             },
-            margin: { l: 50, r: 30, t: 50, b: 100 },
+            margin: { l: 50, r: 30, t: 30, b: 100 },
             showlegend: false
           };
           await Plotly.newPlot('chartAvgApprovalManagement', [trace], layout, { responsive: true, displayModeBar: false });
@@ -2007,6 +2202,11 @@
         
         if (result.data) {
           const { aprobadores, cantidades } = result.data;
+          
+          // Guardar en cache para filtrado local
+          chartDataCache.PendingRQ = { aprobadores: [...aprobadores], cantidades: [...cantidades] };
+          populatePersonFilter('PendingRQ', aprobadores);
+          
           const trace = {
             x: aprobadores,
             y: cantidades,
@@ -2016,23 +2216,24 @@
               line: { color: '#d97706', width: 1 }
             },
             text: cantidades.map(v => v.toLocaleString()),
-            textposition: 'none',  // No mostrar dentro de la barra
+            textposition: 'outside',
             textfont: { size: 10, weight: 'bold' },
             hovertemplate: '<b>%{x}</b><br>Pendientes: %{y:,}<extra></extra>'
           };
           const layout = {
             xaxis: { 
-              title: 'Aprobador',
+              title: '',
               tickangle: -45,
               tickfont: { size: 9 },
               automargin: true
             },
             yaxis: { 
-              title: 'Cantidad Pendiente',
+              title: 'Cantidad',
               tickformat: ',',
-              gridcolor: '#e5e7eb'
+              gridcolor: '#e5e7eb',
+              range: [0, Math.max(...cantidades) * 1.15]
             },
-            margin: { l: 60, r: 30, t: 40, b: 100 },
+            margin: { l: 60, r: 30, t: 30, b: 100 },
             plot_bgcolor: '#fffbeb',
             paper_bgcolor: 'white',
             showlegend: false
@@ -2063,22 +2264,27 @@
         
         if (result.data) {
           const { usuarios, promedios } = result.data;
+          
+          // Guardar en cache para filtrado local
+          chartDataCache.ReceptionService = { usuarios: [...usuarios], promedios: [...promedios] };
+          populatePersonFilter('ReceptionService', usuarios);
+          
           const trace = {
             x: usuarios,
             y: promedios,
             type: 'bar',
             marker: { 
-              color: '#06b6d4',
-              line: { color: '#0891b2', width: 1 }
+              color: '#8b5cf6',
+              line: { color: '#7c3aed', width: 1 }
             },
-            text: promedios.map(p => p.toFixed(1) + 'd'),
+            text: promedios.map(p => p.toFixed(1)),
             textposition: 'outside',
             textfont: { size: 10, weight: 'bold' },
             hovertemplate: '<b>%{x}</b><br>Promedio: %{y:.1f} días<extra></extra>'
           };
           const layout = {
             xaxis: { 
-              title: 'Usuario',
+              title: '',
               tickangle: -45,
               tickfont: { size: 9 },
               automargin: true
@@ -2088,8 +2294,8 @@
               gridcolor: '#e5e7eb',
               range: [0, Math.max(...promedios) * 1.15]
             },
-            margin: { l: 60, r: 30, t: 60, b: 100 },
-            plot_bgcolor: '#ecfeff',
+            margin: { l: 60, r: 30, t: 30, b: 100 },
+            plot_bgcolor: '#f5f3ff',
             paper_bgcolor: 'white',
             showlegend: false
           };
@@ -2119,23 +2325,27 @@
         
         if (result.data) {
           const { aprobadores, cantidades } = result.data;
+          
+          // Guardar en cache para filtrado local
+          chartDataCache.PendingOC = { aprobadores: [...aprobadores], cantidades: [...cantidades] };
+          populatePersonFilter('PendingOC', aprobadores);
+          
           const trace = {
-            x: ['PTE APROBACIÓN'],
-            y: [cantidades.reduce((a, b) => a + b, 0)],
+            x: aprobadores,
+            y: cantidades,
             type: 'bar',
-            marker: { color: '#0ea5e9' },
-            text: [cantidades.reduce((a, b) => a + b, 0)],
+            marker: { color: '#ef4444' },
+            text: cantidades.map(c => c.toString()),
             textposition: 'outside',
-            textfont: { size: 24, weight: 'bold' }
+            textfont: { size: 10, weight: 'bold' }
           };
           const layout = {
-            xaxis: { title: '' },
+            xaxis: { title: '', tickangle: -45, tickfont: { size: 9 } },
             yaxis: { 
               title: 'Cantidad', 
-              showticklabels: false,
-              range: [0, cantidades.reduce((a, b) => a + b, 0) * 1.15]
+              range: [0, Math.max(...cantidades) * 1.15]
             },
-            margin: { l: 50, r: 30, t: 80, b: 60 },
+            margin: { l: 50, r: 30, t: 30, b: 100 },
             showlegend: false
           };
           await Plotly.newPlot('chartPendingOC', [trace], layout, { responsive: true, displayModeBar: false });
@@ -2164,6 +2374,11 @@
         
         if (result.data) {
           const { usuarios, promedios } = result.data;
+          
+          // Guardar en cache para filtrado local
+          chartDataCache.WarehouseEntry = { usuarios: [...usuarios], promedios: [...promedios] };
+          populatePersonFilter('WarehouseEntry', usuarios);
+          
           const trace = {
             x: usuarios,
             y: promedios,
@@ -2172,14 +2387,14 @@
               color: '#10b981',
               line: { color: '#059669', width: 1 }
             },
-            text: promedios.map(p => p.toFixed(1) + 'd'),
+            text: promedios.map(p => p.toFixed(1)),
             textposition: 'outside',
             textfont: { size: 10, weight: 'bold' },
             hovertemplate: '<b>%{x}</b><br>Promedio: %{y:.1f} días<extra></extra>'
           };
           const layout = {
             xaxis: { 
-              title: 'Usuario',
+              title: '',
               tickangle: -45,
               tickfont: { size: 9 },
               automargin: true
@@ -2189,7 +2404,7 @@
               gridcolor: '#e5e7eb',
               range: [0, Math.max(...promedios) * 1.15]
             },
-            margin: { l: 60, r: 30, t: 60, b: 100 },
+            margin: { l: 60, r: 30, t: 30, b: 100 },
             plot_bgcolor: '#f0fdf4',
             paper_bgcolor: 'white',
             showlegend: false
@@ -2205,19 +2420,14 @@
 
     async function updateChartAvgApprovalDaysAPI(filters) {
       console.log('=== Iniciando updateChartAvgApprovalDaysAPI ===');
-      console.log('Filters:', filters);
-      console.log('API_BASE:', API_BASE);
       
       showLoader('loaderAvgApprovalDays');
       try {
-        console.log('Haciendo fetch a:', `${API_BASE}/charts/avg-approval-days`);
         const result = await safeFetch(`${API_BASE}/charts/avg-approval-days`, {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify(filters)
         }, 25000);
-        
-        console.log('Result:', result);
         
         if (!result.success) {
           showChartError('chartAvgApprovalDays', result.error || 'Error cargando datos');
@@ -2227,8 +2437,12 @@
         
         if (result.data) {
           const { aprobadores, promedios } = result.data;
-          console.log('Aprobadores:', aprobadores);
-          console.log('Promedios:', promedios);
+          
+          // Guardar en cache para filtrado local
+          chartDataCache.ApprovalDays = { aprobadores: [...aprobadores], promedios: [...promedios] };
+          
+          // Llenar el filtro de personas
+          populatePersonFilter('ApprovalDays', aprobadores);
           
           // Crear gráfico de barras horizontales
           const trace = {
@@ -2270,17 +2484,13 @@
             showlegend: false
           };
           
-          console.log('Creando gráfico con Plotly...');
           await Plotly.newPlot('chartAvgApprovalDays', [trace], layout, { responsive: true, displayModeBar: false });
-          console.log('Gráfico creado exitosamente');
           hideLoader('loaderAvgApprovalDays');
         } else {
-          console.error('Sin datos o error en result:', result);
           hideLoader('loaderAvgApprovalDays');
         }
       } catch (error) {
         console.error('Error en gráfico Promedio Días Aprobación:', error);
-        console.error('Error stack:', error.stack);
         hideLoader('loaderAvgApprovalDays');
       }
     }
