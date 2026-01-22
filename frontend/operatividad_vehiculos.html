@@ -1049,6 +1049,167 @@
       maxYear: new Date().getFullYear() + 1
     };
 
+    // =====================================================
+    // Funciones del Date Picker
+    // =====================================================
+    function initDatePickerYears() {
+      ['start', 'end'].forEach(prefix => {
+        const yearGrid = document.getElementById(prefix + 'YearGrid');
+        if (!yearGrid) return;
+        yearGrid.innerHTML = '';
+        
+        for (let y = datePickerState.minYear; y <= datePickerState.maxYear; y++) {
+          const btn = document.createElement('div');
+          btn.className = 'year-btn';
+          btn.textContent = y;
+          btn.dataset.year = y;
+          if (datePickerState[prefix].year === y) {
+            btn.classList.add('selected');
+          }
+          btn.onclick = () => selectYear(prefix, y);
+          yearGrid.appendChild(btn);
+        }
+      });
+    }
+
+    function selectYear(prefix, year) {
+      datePickerState[prefix].year = year;
+      
+      const yearGrid = document.getElementById(prefix + 'YearGrid');
+      yearGrid.querySelectorAll('.year-btn').forEach(btn => {
+        btn.classList.toggle('selected', parseInt(btn.dataset.year) === year);
+      });
+      
+      showMonths(prefix);
+    }
+
+    function openDatePicker(prefix) {
+      const otherPrefix = prefix === 'start' ? 'end' : 'start';
+      document.getElementById(otherPrefix + 'DatePopup').classList.remove('active');
+      
+      const popup = document.getElementById(prefix + 'DatePopup');
+      popup.classList.add('active');
+      
+      if (!datePickerState[prefix].year) {
+        datePickerState[prefix].year = datePickerState.minYear || new Date().getFullYear();
+      }
+      
+      const yearGrid = document.getElementById(prefix + 'YearGrid');
+      if (yearGrid) {
+        yearGrid.querySelectorAll('.year-btn').forEach(btn => {
+          btn.classList.toggle('selected', parseInt(btn.dataset.year) === datePickerState[prefix].year);
+        });
+      }
+      
+      showMonths(prefix);
+    }
+
+    function closeDatePicker(prefix) {
+      document.getElementById(prefix + 'DatePopup').classList.remove('active');
+    }
+
+    function showMonths(prefix) {
+      const monthGrid = document.getElementById(prefix + 'MonthGrid');
+      const dayGrid = document.getElementById(prefix + 'DayGrid');
+      
+      let year = datePickerState[prefix].year;
+      if (!year) {
+        year = datePickerState.minYear || new Date().getFullYear();
+        datePickerState[prefix].year = year;
+      }
+      
+      monthGrid.innerHTML = '';
+      dayGrid.innerHTML = '';
+      
+      monthNames.forEach((name, idx) => {
+        const btn = document.createElement('div');
+        btn.className = 'month-btn';
+        if (datePickerState[prefix].month === idx) {
+          btn.classList.add('selected');
+        }
+        btn.textContent = name;
+        btn.onclick = () => selectMonth(prefix, idx);
+        monthGrid.appendChild(btn);
+      });
+      
+      if (datePickerState[prefix].month !== null) {
+        showDays(prefix);
+      }
+    }
+
+    function selectMonth(prefix, month) {
+      datePickerState[prefix].month = month;
+      showDays(prefix);
+    }
+
+    function showDays(prefix) {
+      const monthGrid = document.getElementById(prefix + 'MonthGrid');
+      const dayGrid = document.getElementById(prefix + 'DayGrid');
+      const year = datePickerState[prefix].year;
+      const month = datePickerState[prefix].month;
+      
+      monthGrid.querySelectorAll('.month-btn').forEach((btn, idx) => {
+        btn.classList.toggle('selected', idx === month);
+      });
+      
+      const daysInMonth = new Date(year, month + 1, 0).getDate();
+      
+      dayGrid.innerHTML = '';
+      for (let d = 1; d <= daysInMonth; d++) {
+        const btn = document.createElement('div');
+        btn.className = 'day-btn';
+        if (datePickerState[prefix].day === d) {
+          btn.classList.add('selected');
+        }
+        btn.textContent = d;
+        btn.onclick = () => selectDay(prefix, d);
+        dayGrid.appendChild(btn);
+      }
+    }
+
+    function selectDay(prefix, day) {
+      datePickerState[prefix].day = day;
+      updateDateDisplay(prefix);
+      closeDatePicker(prefix);
+      syncHiddenDates();
+      applyFilters(); // Aplicar filtros automáticamente
+    }
+
+    function updateDateDisplay(prefix) {
+      const state = datePickerState[prefix];
+      const displayEl = document.getElementById(prefix + 'DateDisplay');
+      if (state.year && state.month !== null && state.day) {
+        displayEl.value = `${state.day} ${monthNames[state.month]} ${state.year}`;
+      }
+    }
+
+    function syncHiddenDates() {
+      const start = datePickerState.start;
+      const end = datePickerState.end;
+      
+      if (start.year && start.month !== null && start.day) {
+        const d = new Date(start.year, start.month, start.day);
+        startDateEl.value = d.toISOString().split('T')[0];
+      }
+      if (end.year && end.month !== null && end.day) {
+        const d = new Date(end.year, end.month, end.day);
+        endDateEl.value = d.toISOString().split('T')[0];
+      }
+    }
+
+    // Cerrar popups al hacer clic fuera
+    document.addEventListener('click', function(e) {
+      if (!e.target.closest('.date-picker-container')) {
+        closeDatePicker('start');
+        closeDatePicker('end');
+      }
+    });
+
+    // Inicializar date picker al cargar la página
+    document.addEventListener('DOMContentLoaded', function() {
+      initDatePickerYears();
+    });
+
     // Variables para paginación de tabla
     let currentPage = 1;
     const pageSize = 100;
@@ -1501,66 +1662,6 @@
       applyFilters();
     });
     
-    function initDateSelectors(minDate, maxDate) {
-      datePickerState.minYear = minDate.getFullYear();
-      datePickerState.maxYear = maxDate.getFullYear();
-      
-      // Inicializar cuadrículas de años
-      ['start', 'end'].forEach(prefix => {
-        renderYearGrid(prefix);
-      });
-      
-      // Establecer valores iniciales: 1 de enero de 2025 hasta hoy
-      const today = new Date();
-      const startOf2025 = new Date(2025, 0, 1); // 1 de enero de 2025
-      
-      // Asegurar que la fecha de inicio no sea menor que el mínimo de datos
-      const startDate = startOf2025 < minDate ? minDate : startOf2025;
-      
-      setDatePickerValue('start', startDate);
-      setDatePickerValue('end', today);
-    }
-    
-    function renderYearGrid(prefix) {
-      const yearGrid = document.getElementById(prefix + 'YearGrid');
-      console.log("🎯 renderYearGrid called for:", prefix);
-      console.log("🎯 yearGrid element:", yearGrid);
-      console.log("🎯 minYear:", datePickerState.minYear, "maxYear:", datePickerState.maxYear);
-      
-      if (!yearGrid) {
-        console.error("❌ yearGrid element not found for prefix:", prefix);
-        return;
-      }
-      
-      yearGrid.innerHTML = '';
-      
-      for (let y = datePickerState.minYear; y <= datePickerState.maxYear; y++) {
-        const btn = document.createElement('div');
-        btn.className = 'year-btn';
-        btn.textContent = y;
-        btn.dataset.year = y;
-        if (datePickerState[prefix].year === y) {
-          btn.classList.add('selected');
-        }
-        btn.onclick = () => selectYear(prefix, y);
-        yearGrid.appendChild(btn);
-      }
-      console.log("✅ yearGrid populated with", yearGrid.children.length, "years");
-    }
-    
-    function selectYear(prefix, year) {
-      datePickerState[prefix].year = year;
-      
-      // Actualizar selección visual
-      const yearGrid = document.getElementById(prefix + 'YearGrid');
-      yearGrid.querySelectorAll('.year-btn').forEach(btn => {
-        btn.classList.toggle('selected', parseInt(btn.dataset.year) === year);
-      });
-      
-      // Mostrar meses
-      showMonths(prefix);
-    }
-    
     function setDatePickerValue(prefix, date) {
       datePickerState[prefix] = {
         year: date.getFullYear(),
@@ -1568,141 +1669,19 @@
         day: date.getDate()
       };
       
-      // Renderizar cuadrícula de años si no existe
-      renderYearGrid(prefix);
-      
-      // Mostrar meses y días
+      initDatePickerYears();
       showMonths(prefix);
-      
-      // Actualizar display visual
       updateDateDisplay(prefix);
       syncHiddenDates();
     }
     
-    function openDatePicker(prefix) {
-      // Cerrar el otro popup si está abierto
-      const otherPrefix = prefix === 'start' ? 'end' : 'start';
-      document.getElementById(otherPrefix + 'DatePopup').classList.remove('active');
+    function setDefaultDateRange() {
+      const today = new Date();
+      const startOf2025 = new Date(2025, 0, 1);
       
-      const popup = document.getElementById(prefix + 'DatePopup');
-      popup.classList.add('active');
-      
-      // Asegurar que el año esté seleccionado
-      if (!datePickerState[prefix].year) {
-        datePickerState[prefix].year = datePickerState.minYear || new Date().getFullYear();
-      }
-      
-      // Actualizar selección visual en cuadrícula de años
-      const yearGrid = document.getElementById(prefix + 'YearGrid');
-      if (yearGrid) {
-        yearGrid.querySelectorAll('.year-btn').forEach(btn => {
-          btn.classList.toggle('selected', parseInt(btn.dataset.year) === datePickerState[prefix].year);
-        });
-      }
-      
-      showMonths(prefix);
+      setDatePickerValue('start', startOf2025);
+      setDatePickerValue('end', today);
     }
-    
-    function closeDatePicker(prefix) {
-      document.getElementById(prefix + 'DatePopup').classList.remove('active');
-    }
-    
-    function showMonths(prefix) {
-      const monthGrid = document.getElementById(prefix + 'MonthGrid');
-      const dayGrid = document.getElementById(prefix + 'DayGrid');
-      
-      let year = datePickerState[prefix].year;
-      if (!year) {
-        year = datePickerState.minYear || new Date().getFullYear();
-        datePickerState[prefix].year = year;
-      }
-      
-      monthGrid.innerHTML = '';
-      dayGrid.innerHTML = '';
-      
-      monthNames.forEach((name, idx) => {
-        const btn = document.createElement('div');
-        btn.className = 'month-btn';
-        if (datePickerState[prefix].month === idx) {
-          btn.classList.add('selected');
-        }
-        btn.textContent = name;
-        btn.onclick = () => selectMonth(prefix, idx);
-        monthGrid.appendChild(btn);
-      });
-      
-      // Si ya hay un mes seleccionado, mostrar los días
-      if (datePickerState[prefix].month !== null) {
-        showDays(prefix);
-      }
-    }
-    
-    function selectMonth(prefix, month) {
-      datePickerState[prefix].month = month;
-      showDays(prefix);
-    }
-    
-    function showDays(prefix) {
-      const monthGrid = document.getElementById(prefix + 'MonthGrid');
-      const dayGrid = document.getElementById(prefix + 'DayGrid');
-      const year = datePickerState[prefix].year;
-      const month = datePickerState[prefix].month;
-      
-      // Actualizar selección visual del mes
-      monthGrid.querySelectorAll('.month-btn').forEach((btn, idx) => {
-        btn.classList.toggle('selected', idx === month);
-      });
-      
-      const daysInMonth = new Date(year, month + 1, 0).getDate();
-      
-      dayGrid.innerHTML = '';
-      for (let d = 1; d <= daysInMonth; d++) {
-        const btn = document.createElement('div');
-        btn.className = 'day-btn';
-        if (datePickerState[prefix].day === d) {
-          btn.classList.add('selected');
-        }
-        btn.textContent = d;
-        btn.onclick = () => selectDay(prefix, d);
-        dayGrid.appendChild(btn);
-      }
-    }
-    
-    function selectDay(prefix, day) {
-      datePickerState[prefix].day = day;
-      updateDateDisplay(prefix);
-      closeDatePicker(prefix);
-      syncHiddenDates();
-      onDateChange();
-    }
-    
-    function updateDateDisplay(prefix) {
-      const state = datePickerState[prefix];
-      const displayEl = document.getElementById(prefix + 'DateDisplay');
-      if (state.year && state.month !== null && state.day) {
-        displayEl.value = `${state.day} ${monthNames[state.month]} ${state.year}`;
-      }
-    }
-    
-    function syncHiddenDates() {
-      const start = datePickerState.start;
-      const end = datePickerState.end;
-      
-      if (start.year && start.month !== null && start.day) {
-        startDateEl.value = formatDateISO(new Date(start.year, start.month, start.day));
-      }
-      if (end.year && end.month !== null && end.day) {
-        endDateEl.value = formatDateISO(new Date(end.year, end.month, end.day));
-      }
-    }
-    
-    // Cerrar popups al hacer clic fuera
-    document.addEventListener('click', function(e) {
-      if (!e.target.closest('.date-picker-container')) {
-        closeDatePicker('start');
-        closeDatePicker('end');
-      }
-    });
 
     // Funciones para persistencia de datos usando IndexedDB (soporta archivos grandes)
     const DB_NAME = 'hesego_db';
