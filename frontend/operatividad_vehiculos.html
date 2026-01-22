@@ -1146,6 +1146,8 @@
 
     // Configurar rango de fechas por defecto (últimos 3 meses)
     function setDefaultDateRange(fechaMin, fechaMax) {
+      console.log("📅 setDefaultDateRange llamado con:", fechaMin, fechaMax);
+      
       const today = new Date();
       const startOf2025 = new Date(2025, 0, 1); // 1 de enero de 2025
       
@@ -1153,13 +1155,17 @@
       const minDate = fechaMin ? new Date(fechaMin) : new Date(2020, 0, 1);
       const maxDate = fechaMax ? new Date(fechaMax) : today;
       
+      console.log("📅 Fechas parseadas - minDate:", minDate, "maxDate:", maxDate);
+      
       // Usar fecha de inicio como 1 de enero de 2025 o la fecha mínima si es posterior
       const startDate = startOf2025 < minDate ? minDate : startOf2025;
       const endDate = maxDate > today ? today : maxDate;
       
-      // Actualizar rango de años
+      // Actualizar rango de años - incluir año actual + 1
       datePickerState.minYear = minDate.getFullYear();
-      datePickerState.maxYear = maxDate.getFullYear();
+      datePickerState.maxYear = Math.max(maxDate.getFullYear(), today.getFullYear() + 1);
+      
+      console.log("📅 Rango de años:", datePickerState.minYear, "-", datePickerState.maxYear);
       
       // Inicializar cuadrículas de años
       ['start', 'end'].forEach(prefix => {
