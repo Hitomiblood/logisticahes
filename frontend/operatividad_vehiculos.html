@@ -1545,14 +1545,13 @@
         day: date.getDate()
       };
       
-      // Actualizar selección visual en cuadrícula de años
-      const yearGrid = document.getElementById(prefix + 'YearGrid');
-      if (yearGrid) {
-        yearGrid.querySelectorAll('.year-btn').forEach(btn => {
-          btn.classList.toggle('selected', parseInt(btn.dataset.year) === date.getFullYear());
-        });
-      }
+      // Renderizar cuadrícula de años si no existe
+      renderYearGrid(prefix);
       
+      // Mostrar meses y días
+      showMonths(prefix);
+      
+      // Actualizar display visual
       updateDateDisplay(prefix);
       syncHiddenDates();
     }
