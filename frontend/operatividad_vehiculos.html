@@ -1136,21 +1136,28 @@
     // Configurar rango de fechas por defecto (últimos 3 meses)
     function setDefaultDateRange(fechaMin, fechaMax) {
       const today = new Date();
-      const threeMonthsAgo = new Date();
-      threeMonthsAgo.setMonth(threeMonthsAgo.getMonth() - 3);
+      const startOf2025 = new Date(2025, 0, 1); // 1 de enero de 2025
       
-      // Usar fecha máxima de los datos como fin, o hoy si no hay datos
-      const endDate = fechaMax ? new Date(fechaMax) : today;
-      // Usar 3 meses antes del fin como inicio
-      const startDate = threeMonthsAgo;
+      // Parsear fechas si son strings
+      const minDate = fechaMin ? new Date(fechaMin) : new Date(2020, 0, 1);
+      const maxDate = fechaMax ? new Date(fechaMax) : today;
       
-      // Establecer valores en inputs hidden
-      startDateEl.value = startDate.toISOString().split('T')[0];
-      endDateEl.value = endDate.toISOString().split('T')[0];
+      // Usar fecha de inicio como 1 de enero de 2025 o la fecha mínima si es posterior
+      const startDate = startOf2025 < minDate ? minDate : startOf2025;
+      const endDate = maxDate > today ? today : maxDate;
       
-      // Establecer valores en inputs visibles (usar .value porque son inputs)
-      startDateDisplayEl.value = startDate.toLocaleDateString();
-      endDateDisplayEl.value = endDate.toLocaleDateString();
+      // Actualizar rango de años
+      datePickerState.minYear = minDate.getFullYear();
+      datePickerState.maxYear = maxDate.getFullYear();
+      
+      // Inicializar cuadrículas de años
+      ['start', 'end'].forEach(prefix => {
+        renderYearGrid(prefix);
+      });
+      
+      // Establecer valores usando la función correcta
+      setDatePickerValue('start', startDate);
+      setDatePickerValue('end', endDate);
       
       console.log("📅 Fechas configuradas:", startDateEl.value, "a", endDateEl.value);
     }
