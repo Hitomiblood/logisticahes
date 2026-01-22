@@ -1873,11 +1873,15 @@
     function updateCiudadesByCatalogo() {
       const selectedCatalogos = getSelectedOptions(catalogoFilterEl);
       
-      // Si no hay catálogos seleccionados, mostrar todas las ciudades
-      let dataFiltrada = rawData;
-      if (selectedCatalogos.length > 0) {
-        dataFiltrada = rawData.filter(row => selectedCatalogos.includes(String(row[CATALOGO_COL])));
+      // Si no hay catálogos seleccionados, deseleccionar todo en ciudad
+      if (selectedCatalogos.length === 0) {
+        Array.from(ciudadFilterEl.options).forEach(o => (o.selected = false));
+        updateToggleButton('ciudadFilter', 'ciudadFilterBtn');
+        return;
       }
+      
+      // Filtrar datos según catálogos seleccionados
+      const dataFiltrada = rawData.filter(row => selectedCatalogos.includes(String(row[CATALOGO_COL])));
       
       const ciudadesDisponibles = new Set(dataFiltrada.map(r => r[CIUDAD_COL]).filter(Boolean));
       const selectedCiudades = getSelectedOptions(ciudadFilterEl);
@@ -1885,12 +1889,8 @@
       // Mantener solo las ciudades que siguen siendo válidas
       const ciudadesValidas = selectedCiudades.filter(c => ciudadesDisponibles.has(c));
       
-      // Repoblar con todas seleccionadas si no hay selección previa válida
-      if (ciudadesValidas.length === 0) {
-        populateFilter(ciudadFilterEl, ciudadesDisponibles, [], true);
-      } else {
-        populateFilter(ciudadFilterEl, ciudadesDisponibles, ciudadesValidas);
-      }
+      // Repoblar filtro
+      populateFilter(ciudadFilterEl, ciudadesDisponibles, ciudadesValidas);
       updateToggleButton('ciudadFilter', 'ciudadFilterBtn');
     }
     
@@ -1899,13 +1899,18 @@
       const selectedCatalogos = getSelectedOptions(catalogoFilterEl);
       const selectedCiudades = getSelectedOptions(ciudadFilterEl);
       
-      let dataFiltrada = rawData;
-      if (selectedCatalogos.length > 0) {
-        dataFiltrada = dataFiltrada.filter(row => selectedCatalogos.includes(String(row[CATALOGO_COL])));
+      // Si no hay catálogos o ciudades seleccionadas, deseleccionar todo en terceros
+      if (selectedCatalogos.length === 0 || selectedCiudades.length === 0) {
+        Array.from(terceroFilterEl.options).forEach(o => (o.selected = false));
+        updateToggleButton('terceroFilter', 'terceroFilterBtn');
+        return;
       }
-      if (selectedCiudades.length > 0) {
-        dataFiltrada = dataFiltrada.filter(row => selectedCiudades.includes(String(row[CIUDAD_COL])));
-      }
+      
+      // Filtrar datos según catálogos y ciudades
+      let dataFiltrada = rawData.filter(row => 
+        selectedCatalogos.includes(String(row[CATALOGO_COL])) &&
+        selectedCiudades.includes(String(row[CIUDAD_COL]))
+      );
       
       const tercerosDisponibles = new Set(dataFiltrada.map(r => r[TERCERO_COL]).filter(Boolean));
       const selectedTerceros = getSelectedOptions(terceroFilterEl);
@@ -1913,12 +1918,8 @@
       // Mantener solo los terceros que siguen siendo válidos
       const tercerosValidos = selectedTerceros.filter(t => tercerosDisponibles.has(t));
       
-      // Repoblar con todos seleccionados si no hay selección previa válida
-      if (tercerosValidos.length === 0) {
-        populateFilter(terceroFilterEl, tercerosDisponibles, [], true);
-      } else {
-        populateFilter(terceroFilterEl, tercerosDisponibles, tercerosValidos);
-      }
+      // Repoblar filtro
+      populateFilter(terceroFilterEl, tercerosDisponibles, tercerosValidos);
       updateToggleButton('terceroFilter', 'terceroFilterBtn');
     }
 
@@ -1931,6 +1932,17 @@
       const startFilter = startDateEl.value ? new Date(startDateEl.value) : null;
       const endFilter = endDateEl.value ? new Date(endDateEl.value) : null;
 
+      // Si no hay nada seleccionado en catálogo, no mostrar datos
+      if (selectedCatalogos.length === 0) {
+        filteredData = [];
+        chartFilter = { type: null, value: null };
+        setStatus("⚠️ Seleccione al menos un catálogo para ver datos");
+        updateKPIs();
+        drawCharts();
+        renderTable();
+        return;
+      }
+
       filteredData = rawData.filter(row => {
         // Fecha
         if (startFilter || endFilter) {
@@ -1939,17 +1951,16 @@
           if (startFilter && d < startFilter) return false;
           if (endFilter && d > endFilter) return false;
         }
-        // Catálogo
-        if (selectedCatalogos.length > 0) {
-          const cat = row[CATALOGO_COL];
-          if (!selectedCatalogos.includes(String(cat))) return false;
-        }
-        // Ciudad
+        // Catálogo (ya validamos que hay selección)
+        const cat = row[CATALOGO_COL];
+        if (!selectedCatalogos.includes(String(cat))) return false;
+        
+        // Ciudad (solo filtrar si hay selección)
         if (selectedCiudades.length > 0) {
           const ci = row[CIUDAD_COL];
           if (!selectedCiudades.includes(String(ci))) return false;
         }
-        // Tercero
+        // Tercero (solo filtrar si hay selección)
         if (selectedTerceros.length > 0) {
           const ter = row[TERCERO_COL];
           if (!selectedTerceros.includes(String(ter))) return false;
@@ -1968,10 +1979,6 @@
 
     function resetFilters() {
       if (!rawData.length) return;
-
-      Array.from(catalogoFilterEl.options).forEach(o => (o.selected = false));
-      Array.from(ciudadFilterEl.options).forEach(o => (o.selected = false));
-      Array.from(terceroFilterEl.options).forEach(o => (o.selected = false));
 
       // Limpiar búsquedas
       document.getElementById("catalogoSearch").value = "";
@@ -1999,9 +2006,14 @@
         endDateEl.value = "";
       }
 
-      // Reinicializar filtros encadenados
+      // Reinicializar filtros encadenados (esto selecciona todo por defecto)
       initFilters();
       applyFilters();
+      
+      // Actualizar botones de toggle
+      updateToggleButton('catalogoFilter', 'catalogoFilterBtn');
+      updateToggleButton('ciudadFilter', 'ciudadFilterBtn');
+      updateToggleButton('terceroFilter', 'terceroFilterBtn');
     }
 
     function sumNumeric(arr, col) {
