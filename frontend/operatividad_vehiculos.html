@@ -1038,6 +1038,17 @@
       ? "http://localhost:8000" 
       : "";
 
+    // Variables globales para date picker
+    const monthNames = ['Ene', 'Feb', 'Mar', 'Abr', 'May', 'Jun', 'Jul', 'Ago', 'Sep', 'Oct', 'Nov', 'Dic'];
+    const monthNamesFull = ['Enero', 'Febrero', 'Marzo', 'Abril', 'Mayo', 'Junio', 'Julio', 'Agosto', 'Septiembre', 'Octubre', 'Noviembre', 'Diciembre'];
+    
+    let datePickerState = {
+      start: { year: null, month: null, day: null },
+      end: { year: null, month: null, day: null },
+      minYear: 2020,
+      maxYear: new Date().getFullYear() + 1
+    };
+
     // Variables para paginación de tabla
     let currentPage = 1;
     const pageSize = 100;
@@ -1483,17 +1494,6 @@
       updateToggleButton('placaFilter', 'placaFilterBtn');
       applyFilters();
     });
-    
-    // Nombres de meses
-    const monthNames = ['Ene', 'Feb', 'Mar', 'Abr', 'May', 'Jun', 'Jul', 'Ago', 'Sep', 'Oct', 'Nov', 'Dic'];
-    const monthNamesFull = ['Enero', 'Febrero', 'Marzo', 'Abril', 'Mayo', 'Junio', 'Julio', 'Agosto', 'Septiembre', 'Octubre', 'Noviembre', 'Diciembre'];
-    
-    let datePickerState = {
-      start: { year: null, month: null, day: null },
-      end: { year: null, month: null, day: null },
-      minYear: 2020,
-      maxYear: new Date().getFullYear() + 1
-    };
     
     function initDateSelectors(minDate, maxDate) {
       datePickerState.minYear = minDate.getFullYear();
