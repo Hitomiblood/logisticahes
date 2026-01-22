@@ -1517,6 +1517,15 @@
     
     function renderYearGrid(prefix) {
       const yearGrid = document.getElementById(prefix + 'YearGrid');
+      console.log("🎯 renderYearGrid called for:", prefix);
+      console.log("🎯 yearGrid element:", yearGrid);
+      console.log("🎯 minYear:", datePickerState.minYear, "maxYear:", datePickerState.maxYear);
+      
+      if (!yearGrid) {
+        console.error("❌ yearGrid element not found for prefix:", prefix);
+        return;
+      }
+      
       yearGrid.innerHTML = '';
       
       for (let y = datePickerState.minYear; y <= datePickerState.maxYear; y++) {
@@ -1530,6 +1539,7 @@
         btn.onclick = () => selectYear(prefix, y);
         yearGrid.appendChild(btn);
       }
+      console.log("✅ yearGrid populated with", yearGrid.children.length, "years");
     }
     
     function selectYear(prefix, year) {
