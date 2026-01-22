@@ -1831,14 +1831,20 @@
           day: maxD.getDate()
         };
         
-        // Actualizar displays visuales
-        updateDateDisplay('start');
-        updateDateDisplay('end');
-        
         // Actualizar rango de años si es necesario
         datePickerState.minYear = Math.min(datePickerState.minYear, minD.getFullYear());
         datePickerState.maxYear = Math.max(datePickerState.maxYear, maxD.getFullYear());
+        
+        // Re-inicializar cuadrículas de años con el nuevo rango
         initDatePickerYears();
+        
+        // Mostrar meses y días para ambos date pickers
+        showMonths('start');
+        showMonths('end');
+        
+        // Actualizar displays visuales
+        updateDateDisplay('start');
+        updateDateDisplay('end');
       }
       
       // Actualizar botones de toggle
