@@ -1807,15 +1807,38 @@
       populateFilter(ciudadFilterEl, availableOptions.ciudades, [], true);
       populateFilter(terceroFilterEl, availableOptions.terceros, [], true);
 
-      // Rango de fechas global
+      // Rango de fechas global - actualizar datePickerState también
       const validDates = rawData
         .map(r => r.__date)
         .filter(d => d instanceof Date && !isNaN(d));
       if (validDates.length) {
         const minD = new Date(Math.min.apply(null, validDates));
         const maxD = new Date(Math.max.apply(null, validDates));
+        
+        // Actualizar campos ocultos
         startDateEl.value = formatDateISO(minD);
         endDateEl.value = formatDateISO(maxD);
+        
+        // Actualizar datePickerState para que los selectores visuales se sincronicen
+        datePickerState.start = {
+          year: minD.getFullYear(),
+          month: minD.getMonth(),
+          day: minD.getDate()
+        };
+        datePickerState.end = {
+          year: maxD.getFullYear(),
+          month: maxD.getMonth(),
+          day: maxD.getDate()
+        };
+        
+        // Actualizar displays visuales
+        updateDateDisplay('start');
+        updateDateDisplay('end');
+        
+        // Actualizar rango de años si es necesario
+        datePickerState.minYear = Math.min(datePickerState.minYear, minD.getFullYear());
+        datePickerState.maxYear = Math.max(datePickerState.maxYear, maxD.getFullYear());
+        initDatePickerYears();
       }
       
       // Actualizar botones de toggle
