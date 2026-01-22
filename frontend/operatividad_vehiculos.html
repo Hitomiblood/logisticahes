@@ -1482,7 +1482,7 @@
       start: { year: null, month: null, day: null },
       end: { year: null, month: null, day: null },
       minYear: 2020,
-      maxYear: 2025
+      maxYear: new Date().getFullYear() + 1
     };
     
     function initDateSelectors(minDate, maxDate) {
@@ -1494,13 +1494,12 @@
         renderYearGrid(prefix);
       });
       
-      // Establecer valores iniciales: 3 meses atrás hasta hoy
+      // Establecer valores iniciales: 1 de enero de 2025 hasta hoy
       const today = new Date();
-      const threeMonthsAgo = new Date();
-      threeMonthsAgo.setMonth(threeMonthsAgo.getMonth() - 3);
+      const startOf2025 = new Date(2025, 0, 1); // 1 de enero de 2025
       
-      // Asegurar que 3 meses atrás no sea menor que el mínimo de datos
-      const startDate = threeMonthsAgo < minDate ? minDate : threeMonthsAgo;
+      // Asegurar que la fecha de inicio no sea menor que el mínimo de datos
+      const startDate = startOf2025 < minDate ? minDate : startOf2025;
       
       setDatePickerValue('start', startDate);
       setDatePickerValue('end', today);
