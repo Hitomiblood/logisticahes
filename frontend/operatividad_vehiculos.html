@@ -1053,8 +1053,12 @@
     // Funciones del Date Picker
     // =====================================================
     function initDatePickerYears() {
+      console.log("🔵 initDatePickerYears ejecutándose");
+      console.log("🔵 minYear:", datePickerState.minYear, "maxYear:", datePickerState.maxYear);
+      
       ['start', 'end'].forEach(prefix => {
         const yearGrid = document.getElementById(prefix + 'YearGrid');
+        console.log("🔵 yearGrid para", prefix, ":", yearGrid);
         if (!yearGrid) return;
         yearGrid.innerHTML = '';
         
@@ -1069,6 +1073,7 @@
           btn.onclick = () => selectYear(prefix, y);
           yearGrid.appendChild(btn);
         }
+        console.log("🔵 yearGrid para", prefix, "tiene", yearGrid.children.length, "hijos");
       });
     }
 
