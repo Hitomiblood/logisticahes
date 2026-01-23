@@ -1401,6 +1401,12 @@
 
     // Dibujar gráficos desde datos de API
     function drawChartsFromAPI(diario, sede, estado, taller) {
+      // Limpiar todos los gráficos primero para forzar redibujado
+      Plotly.purge("chart_operacion_diaria");
+      Plotly.purge("chart_operacion_sede");
+      Plotly.purge("chart_estado");
+      Plotly.purge("chart_taller");
+      
       // Gráfico de operación diaria
       if (diario.length > 0) {
         const tracePct = {
@@ -1416,8 +1422,6 @@
           xaxis: { type: "category", tickangle: -45 }
         };
         Plotly.newPlot("chart_operacion_diaria", [tracePct], layoutDiario, { responsive: true });
-      } else {
-        Plotly.purge("chart_operacion_diaria");
       }
       
       // Gráfico por sede
@@ -1434,8 +1438,6 @@
           xaxis: { tickangle: -40 }
         };
         Plotly.newPlot("chart_operacion_sede", [traceSede], layoutSede, { responsive: true });
-      } else {
-        Plotly.purge("chart_operacion_sede");
       }
       
       // Gráfico de estado (pie)
@@ -1449,8 +1451,6 @@
         };
         const layoutEstado = { margin: { t: 10, r: 10, b: 10, l: 10 } };
         Plotly.newPlot("chart_estado", [traceEstado], layoutEstado, { responsive: true });
-      } else {
-        Plotly.purge("chart_estado");
       }
       
       // Gráfico de taller (barras horizontales)
@@ -1468,8 +1468,6 @@
           yaxis: { autorange: "reversed" }
         };
         Plotly.newPlot("chart_taller", [traceTaller], layoutTaller, { responsive: true });
-      } else {
-        Plotly.purge("chart_taller");
       }
     }
 
