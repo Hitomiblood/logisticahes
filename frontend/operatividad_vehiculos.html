@@ -1177,6 +1177,7 @@
       updateDateDisplay(prefix);
       closeDatePicker(prefix);
       syncHiddenDates();
+      console.log('📅 Fecha seleccionada:', prefix, '=', startDateEl.value, 'a', endDateEl.value);
       applyFilters(); // Aplicar filtros automáticamente
     }
 
@@ -1239,6 +1240,7 @@
       const selectedPlacas = getSelectedOptions(placaFilterEl);
       if (selectedPlacas.length > 0) params.append('placas', selectedPlacas.join(','));
       
+      console.log('🔍 Filter params:', params.toString());
       return params.toString();
     }
 
