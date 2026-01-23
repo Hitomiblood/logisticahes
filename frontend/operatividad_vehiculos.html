@@ -929,9 +929,22 @@
 
     <!-- Tabla detalle -->
     <div class="table-container">
-      <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:0.4rem;">
+      <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:0.4rem; flex-wrap:wrap; gap:0.5rem;">
         <strong>Detalle de registros filtrados</strong>
-        <span id="tableInfo" style="font-size:0.8rem; color:#666;"></span>
+        <div style="display:flex; align-items:center; gap:1rem;">
+          <label style="font-size:0.8rem; color:#666;">
+            Mostrar: 
+            <select id="pageSizeSelect" onchange="changePageSize(this.value)" style="padding:0.3rem; border-radius:4px; border:1px solid #ddd;">
+              <option value="25">25</option>
+              <option value="50">50</option>
+              <option value="100" selected>100</option>
+              <option value="250">250</option>
+              <option value="500">500</option>
+            </select>
+            registros
+          </label>
+          <span id="tableInfo" style="font-size:0.8rem; color:#666;"></span>
+        </div>
       </div>
       <table id="detailTable">
         <thead></thead>
@@ -1278,11 +1291,37 @@
     // El date picker se inicializa cuando se cargan los datos de la API
     // (los años se obtienen dinámicamente de fecha_min y fecha_max de la data)
 
-    // Variables para paginación de tabla
+    // Variables para paginación y ordenamiento de tabla
     let currentPage = 1;
-    const pageSize = 100;
+    let pageSize = 100;
     let totalRecords = 0;
     let tableData = []; // Datos de la tabla actual (paginados)
+    let orderBy = 'fecha_ejecucion';
+    let orderDir = 'DESC';
+    
+    // Mapeo de columnas del frontend a campos de la API
+    const columnToApiField = {
+      [DATE_COL]: 'fecha_ejecucion',
+      [SEDE_COL]: 'sede',
+      [ESTADO_COL]: 'estado_vehiculo',
+      [PLACA_COL]: 'placa',
+      [PROGRAMADOS_COL]: 'vehiculos_programados',
+      [OPERATIVOS_COL]: 'vehiculos_operativos',
+      [DIAS_TALLER_COL]: 'dias_en_taller',
+      "Tipo vehiculo": 'tipo_vehiculo',
+      "Brigada": 'brigada',
+      "Conductor": 'conductor',
+      "Contrato": 'contrato',
+      "Motivo de inoperatividad": 'motivo_inoperatividad'
+    };
+
+    // Función para cambiar tamaño de página
+    function changePageSize(newSize) {
+      pageSize = parseInt(newSize);
+      currentPage = 1; // Volver a página 1
+      loadTablePage(1);
+    }
+    window.changePageSize = changePageSize;
 
     // Función para construir query params de filtros actuales
     function buildFilterParams() {
@@ -1737,17 +1776,35 @@
       setStatus(`🔄 Cargando página ${page}...`);
       
       try {
-        const response = await fetch(`${API_BASE}/api/operatividad/datos?${filterParams}&limit=${pageSize}&offset=${offset}`);
+        const url = `${API_BASE}/api/operatividad/datos?${filterParams}&limit=${pageSize}&offset=${offset}&order_by=${orderBy}&order_dir=${orderDir}`;
+        const response = await fetch(url);
         const datos = await response.json();
         
         tableData = datos.data || [];
         renderTableFromAPI();
+        
+        // Actualizar indicadores de ordenamiento en cabeceras
+        updateSortIndicators();
         
         setStatus(`✅ Página ${page} cargada.`);
       } catch (error) {
         console.error("Error cargando página:", error);
         setStatus(`❌ Error: ${error.message}`);
       }
+    }
+    
+    // Actualizar indicadores visuales de ordenamiento
+    function updateSortIndicators() {
+      const headers = detailTableHead.querySelectorAll('th');
+      headers.forEach(th => {
+        const headerText = th.textContent.replace(' ↑', '').replace(' ↓', '');
+        const apiField = columnToApiField[headerText];
+        if (apiField === orderBy) {
+          th.textContent = headerText + (orderDir === 'ASC' ? ' ↑' : ' ↓');
+        } else {
+          th.textContent = headerText;
+        }
+      });
     }
     
     // Exponer función globalmente para onclick
@@ -1757,69 +1814,26 @@
     let sortColumn = null;
     let sortAscending = true;
 
-    // Función para ordenar la tabla por columna
+    // Función para ordenar la tabla por columna (usa backend)
     function sortTable(column) {
       // Mapear columna visible a campo de API
-      const apiField = {
-        [DATE_COL]: 'fecha_ejecucion',
-        [SEDE_COL]: 'sede',
-        [ESTADO_COL]: 'estado_vehiculo',
-        [PLACA_COL]: 'placa',
-        [PROGRAMADOS_COL]: 'vehiculos_programados',
-        [OPERATIVOS_COL]: 'vehiculos_operativos',
-        [DIAS_TALLER_COL]: 'dias_en_taller',
-        "Tipo vehiculo": 'tipo_vehiculo',
-        "Brigada": 'brigada',
-        "Conductor": 'conductor',
-        "Contrato": 'contrato',
-        "Motivo de inoperatividad": 'motivo_inoperatividad'
-      }[column];
+      const apiField = columnToApiField[column];
       
       if (!apiField) return;
       
       // Alternar dirección si es la misma columna
-      if (sortColumn === column) {
-        sortAscending = !sortAscending;
+      if (orderBy === apiField) {
+        orderDir = orderDir === 'ASC' ? 'DESC' : 'ASC';
       } else {
-        sortColumn = column;
-        sortAscending = true;
+        orderBy = apiField;
+        orderDir = 'ASC';
       }
       
-      // Ordenar datos localmente
-      tableData.sort((a, b) => {
-        let valA = a[apiField] ?? '';
-        let valB = b[apiField] ?? '';
-        
-        // Intentar ordenar como números si es posible
-        const numA = parseFloat(valA);
-        const numB = parseFloat(valB);
-        
-        if (!isNaN(numA) && !isNaN(numB)) {
-          return sortAscending ? numA - numB : numB - numA;
-        }
-        
-        // Ordenar como strings
-        valA = String(valA).toLowerCase();
-        valB = String(valB).toLowerCase();
-        
-        if (valA < valB) return sortAscending ? -1 : 1;
-        if (valA > valB) return sortAscending ? 1 : -1;
-        return 0;
-      });
+      sortColumn = column;
+      sortAscending = orderDir === 'ASC';
       
-      // Re-renderizar tabla
-      renderTableFromAPI();
-      
-      // Actualizar indicador visual en cabecera
-      const headers = detailTableHead.querySelectorAll('th');
-      headers.forEach(th => {
-        const headerText = th.textContent.replace(' ↑', '').replace(' ↓', '');
-        if (headerText === column) {
-          th.textContent = headerText + (sortAscending ? ' ↑' : ' ↓');
-        } else {
-          th.textContent = headerText;
-        }
-      });
+      // Recargar desde página 1 con nuevo ordenamiento
+      loadTablePage(1);
     }
     
     // Exponer sortTable globalmente

@@ -50,9 +50,23 @@ async def get_datos(
     estados: Optional[str] = None,
     placas: Optional[str] = None,
     limit: int = Query(default=100, le=150000),
-    offset: int = Query(default=0, ge=0)
+    offset: int = Query(default=0, ge=0),
+    order_by: Optional[str] = Query(default="fecha_ejecucion"),
+    order_dir: Optional[str] = Query(default="DESC")
 ):
-    """Obtener datos de operatividad con filtros y paginación"""
+    """Obtener datos de operatividad con filtros, paginación y ordenamiento"""
+    # Validar columna de ordenamiento para evitar SQL injection
+    valid_columns = {
+        'fecha_ejecucion', 'sede', 'estado_vehiculo', 'placa', 'tipo_vehiculo',
+        'brigada', 'conductor', 'contrato', 'vehiculos_programados', 
+        'vehiculos_operativos', 'dias_en_taller', 'motivo_inoperatividad'
+    }
+    if order_by not in valid_columns:
+        order_by = 'fecha_ejecucion'
+    
+    # Validar dirección de ordenamiento
+    order_dir = 'DESC' if order_dir.upper() == 'DESC' else 'ASC'
+    
     with get_db() as conn:
         cursor = conn.cursor()
         where_clause, params = build_where_clause(fecha_inicio, fecha_fin, sedes, estados, placas)
@@ -62,8 +76,8 @@ async def get_datos(
         cursor.execute(count_query, params)
         total = cursor.fetchone()[0]
         
-        # Obtener registros paginados
-        query = f"SELECT * FROM operatividad_vehiculos {where_clause} ORDER BY fecha_ejecucion DESC LIMIT {limit} OFFSET {offset}"
+        # Obtener registros paginados con ordenamiento
+        query = f"SELECT * FROM operatividad_vehiculos {where_clause} ORDER BY {order_by} {order_dir} LIMIT {limit} OFFSET {offset}"
         cursor.execute(query, params)
         rows = cursor.fetchall()
         return {"data": [dict(row) for row in rows], "total": total}
