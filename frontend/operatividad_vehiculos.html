@@ -1211,9 +1211,12 @@
     });
 
     // Inicializar date picker al cargar la página
+    console.log("🟢 Script cargado, document.readyState =", document.readyState);
     if (document.readyState === 'loading') {
+      console.log("🟡 Agregando listener DOMContentLoaded");
       document.addEventListener('DOMContentLoaded', initDatePickerYears);
     } else {
+      console.log("🟢 DOM ya listo, llamando initDatePickerYears directamente");
       initDatePickerYears();
     }
 
