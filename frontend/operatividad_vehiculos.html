@@ -1206,9 +1206,16 @@
     });
 
     // Inicializar date picker al cargar la página
-    document.addEventListener('DOMContentLoaded', function() {
+    if (document.readyState === 'loading') {
+      document.addEventListener('DOMContentLoaded', function() {
+        initDatePickerYears();
+        setDefaultDateRange();
+      });
+    } else {
+      // DOM ya está listo
       initDatePickerYears();
-    });
+      setDefaultDateRange();
+    }
 
     // Variables para paginación de tabla
     let currentPage = 1;
