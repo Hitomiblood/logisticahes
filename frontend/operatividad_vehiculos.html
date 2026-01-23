@@ -1401,6 +1401,8 @@
 
     // Dibujar gráficos desde datos de API
     function drawChartsFromAPI(diario, sede, estado, taller) {
+      console.log('🎨 drawChartsFromAPI llamado con taller:', taller.length, 'placas');
+      
       // Limpiar todos los gráficos primero para forzar redibujado
       Plotly.purge("chart_operacion_diaria");
       Plotly.purge("chart_operacion_sede");
@@ -2673,6 +2675,7 @@
     }
 
     function drawCharts() {
+      console.log('⚠️ drawCharts LEGACY llamado - NO debería usarse');
       if (!filteredData.length) {
         Plotly.purge("chart_operacion_diaria");
         Plotly.purge("chart_operacion_sede");
