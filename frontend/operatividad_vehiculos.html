@@ -2520,7 +2520,19 @@
     }
 
     function applyFilters() {
-      // NUEVA IMPLEMENTACIÓN: Usar endpoints de agregación del backend
+      // Verificar si hay al menos una opción seleccionada en cada filtro requerido
+      const selectedSedes = getSelectedOptions(sedeFilterEl);
+      const selectedEstados = getSelectedOptions(estadoFilterEl);
+      const selectedPlacas = getSelectedOptions(placaFilterEl);
+      
+      // Si no hay nada seleccionado, limpiar gráficos y mostrar mensaje
+      if (selectedSedes.length === 0 && selectedEstados.length === 0 && selectedPlacas.length === 0) {
+        console.log('⚠️ No hay filtros seleccionados, limpiando dashboard...');
+        clearDashboard();
+        setStatus('⚠️ Selecciona al menos un filtro para ver datos');
+        return;
+      }
+      
       console.log('Aplicando filtros via API...');
       setStatus('🔄 Actualizando dashboard...');
       
@@ -2531,6 +2543,31 @@
       if (!isLoadingFilters) {
         saveFiltersToStorage();
       }
+    }
+    
+    // Limpiar dashboard cuando no hay filtros
+    function clearDashboard() {
+      // Limpiar KPIs
+      kpiOperacionEl.textContent = "-";
+      kpiOperacionSubEl.textContent = "";
+      kpiProgOperEl.textContent = "-";
+      kpiPlacasEl.textContent = "-";
+      kpiPlacasSubEl.textContent = "";
+      kpiRangoFechasEl.textContent = "-";
+      kpiRangoFechasSubEl.textContent = "";
+      kpiDiasEstadoEl.textContent = "-";
+      kpiDiasEstadoSubEl.textContent = "";
+      
+      // Limpiar gráficos
+      Plotly.purge("chart_operacion_diaria");
+      Plotly.purge("chart_operacion_sede");
+      Plotly.purge("chart_estado");
+      Plotly.purge("chart_taller");
+      
+      // Limpiar tabla
+      detailTableHead.innerHTML = "";
+      detailTableBody.innerHTML = "";
+      tableInfoEl.textContent = "Sin filtros seleccionados";
     }
 
     function resetFilters() {
