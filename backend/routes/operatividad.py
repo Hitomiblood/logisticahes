@@ -232,11 +232,16 @@ async def get_top_dias_taller(
         sedes=sedes, estados=estados, placas=placas, limit=limit)
     cached = cache_get(cache_key)
     if cached:
+        print(f"🔵 CACHE HIT para taller: {cache_key}")
         return cached
+    
+    print(f"🟡 CACHE MISS para taller: {cache_key}")
+    print(f"🟡 Filtros: fecha_inicio={fecha_inicio}, fecha_fin={fecha_fin}, sedes={sedes}")
     
     with get_db() as conn:
         cursor = conn.cursor()
         where_clause, params = build_where_clause(fecha_inicio, fecha_fin, sedes, estados, placas)
+        print(f"🟡 WHERE: {where_clause}, params: {params}")
         cursor.execute(f'''
             SELECT placa, SUM(dias_en_taller) as total_dias
             FROM operatividad_vehiculos {where_clause}
@@ -244,6 +249,7 @@ async def get_top_dias_taller(
             ORDER BY total_dias DESC LIMIT {limit}
         ''', params)
         results = [{"placa": row[0], "dias": row[1]} for row in cursor.fetchall()]
+        print(f"🟢 Resultados taller: {len(results)} placas, top: {results[:3] if results else 'ninguno'}")
         
         cache_set(cache_key, results, CACHE_TTL)
         return results
