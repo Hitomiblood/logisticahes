@@ -705,6 +705,25 @@
     tr:nth-child(even) td {
       background: #fafbfc;
     }
+    /* Botones de paginación */
+    .btn-pagination {
+      padding: 0.5rem 1rem;
+      border: none;
+      border-radius: 6px;
+      background: #1e3a5f;
+      color: white;
+      cursor: pointer;
+      font-weight: 600;
+      transition: background 0.2s;
+    }
+    .btn-pagination:hover:not(:disabled) {
+      background: #2d5a8a;
+    }
+    .btn-pagination.btn-disabled {
+      background: #9ca3af;
+      cursor: not-allowed;
+      opacity: 0.6;
+    }
     .badge {
       display: inline-flex;
       align-items: center;
@@ -886,7 +905,7 @@
 
     <div class="chart-card full-width-chart">
       <div class="chart-header">
-        <div class="chart-title">Distribución por estado de vehículo & Top 10 días en taller</div>
+        <div class="chart-title">Distribución por estado de vehículo & Días por estado por placa</div>
         <button class="chart-expand-btn" onclick="expandDualChart()">🔍 Ampliar</button>
       </div>
       <div class="chart-container">
@@ -895,6 +914,17 @@
           <div id="chart_taller" class="chart"></div>
         </div>
       </div>
+    </div>
+
+    <!-- Tabla Resumen BI por Sede -->
+    <div class="table-container" style="margin-bottom: 1.5rem;">
+      <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:0.4rem;">
+        <strong>📊 Resumen BI - Días por Estado y Sede</strong>
+      </div>
+      <table id="resumenBITable">
+        <thead id="resumenBIHead"></thead>
+        <tbody id="resumenBIBody"></tbody>
+      </table>
     </div>
 
     <!-- Tabla detalle -->
@@ -988,7 +1018,7 @@
       const modalTitle = document.getElementById('modalTitle');
       const modalChart = document.getElementById('modalChart');
       
-      modalTitle.textContent = 'Distribución por estado & Top 10 días en taller';
+      modalTitle.textContent = 'Distribución por estado & Días por estado por placa';
       modal.classList.add('active');
       
       modalChart.innerHTML = '<div style="display:grid; grid-template-columns: 1fr 1fr; gap:1rem; height:100%;"><div id="modalEstado" style="height:100%;"></div><div id="modalTaller" style="height:100%;"></div></div>';
@@ -1144,7 +1174,22 @@
 
     function selectMonth(prefix, month) {
       datePickerState[prefix].month = month;
+      
+      // Si no hay día seleccionado, usar día 1
+      if (!datePickerState[prefix].day) {
+        datePickerState[prefix].day = 1;
+      }
+      
+      // Validar que el día no exceda los días del mes seleccionado
+      const year = datePickerState[prefix].year;
+      const lastDay = new Date(year, month + 1, 0).getDate();
+      if (datePickerState[prefix].day > lastDay) {
+        datePickerState[prefix].day = lastDay;
+      }
+      
       showDays(prefix);
+      updateDateDisplay(prefix);
+      syncHiddenDates();
     }
 
     function showDays(prefix) {
@@ -1178,7 +1223,8 @@
       closeDatePicker(prefix);
       syncHiddenDates();
       console.log('📅 Fecha seleccionada:', prefix, '=', startDateEl.value, 'a', endDateEl.value);
-      applyFilters(); // Aplicar filtros automáticamente
+      // Actualizar filtros en cascada con nuevas fechas y luego aplicar
+      updateFiltersAndApply();
     }
 
     function updateDateDisplay(prefix) {
@@ -1203,13 +1249,31 @@
       }
     }
 
-    // Cerrar popups al hacer clic fuera
+    // Cerrar popups al hacer clic fuera y aplicar filtros
+    let datePickerWasOpen = false;
     document.addEventListener('click', function(e) {
       if (!e.target.closest('.date-picker-container')) {
+        const startPopup = document.getElementById('startDatePopup');
+        const endPopup = document.getElementById('endDatePopup');
+        const wasOpen = startPopup.classList.contains('active') || endPopup.classList.contains('active');
+        
         closeDatePicker('start');
         closeDatePicker('end');
+        
+        // Si había un popup abierto y se cerró, actualizar filtros en cascada y aplicar
+        if (wasOpen) {
+          console.log('📅 Date picker cerrado, actualizando filtros...');
+          updateFiltersAndApply();
+        }
       }
     });
+    
+    // Función para actualizar filtros en cascada y luego aplicar
+    async function updateFiltersAndApply() {
+      await updateEstadosBySede();
+      await updatePlacasBySedeYEstado();
+      applyFilters();
+    }
 
     // El date picker se inicializa cuando se cargan los datos de la API
     // (los años se obtienen dinámicamente de fecha_min y fecha_max de la data)
@@ -1346,32 +1410,37 @@
       console.log("📊 Cargando datos agregados con filtros:", filterParams);
       
       try {
-        // Cargar KPIs, gráficos y primeros registros de tabla en paralelo
-        const [kpisRes, diarioRes, sedeRes, estadoRes, tallerRes, datosRes] = await Promise.all([
+        // Cargar KPIs, gráficos, resumen BI y primeros registros de tabla en paralelo
+        const [kpisRes, diarioRes, sedeRes, estadoRes, tallerRes, resumenBIRes, datosRes] = await Promise.all([
           fetch(`${API_BASE}/api/operatividad/kpis?${filterParams}`),
           fetch(`${API_BASE}/api/operatividad/grafico/diario?${filterParams}`),
           fetch(`${API_BASE}/api/operatividad/grafico/sede?${filterParams}`),
           fetch(`${API_BASE}/api/operatividad/grafico/estado?${filterParams}`),
           fetch(`${API_BASE}/api/operatividad/grafico/taller?${filterParams}&limit=10`),
+          fetch(`${API_BASE}/api/operatividad/resumen/sede?${filterParams}`),
           fetch(`${API_BASE}/api/operatividad/datos?${filterParams}&limit=${pageSize}&offset=0`)
         ]);
         
-        const [kpis, diario, sede, estado, taller, datos] = await Promise.all([
-          kpisRes.json(), diarioRes.json(), sedeRes.json(), estadoRes.json(), tallerRes.json(), datosRes.json()
+        const [kpis, diario, sede, estado, taller, resumenBI, datos] = await Promise.all([
+          kpisRes.json(), diarioRes.json(), sedeRes.json(), estadoRes.json(), tallerRes.json(), resumenBIRes.json(), datosRes.json()
         ]);
         
         console.log("📈 KPIs:", kpis);
-        console.log("📊 Diario:", diario.length, "puntos");
-        console.log("📊 Sede:", sede.length, "sedes");
-        console.log("📊 Estado:", estado.length, "estados");
-        console.log("📊 Taller:", taller.length, "placas");
-        console.log("📋 Tabla:", datos.total, "registros totales");
+        console.log("📊 Diario:", diario ? diario.length : 0, "puntos");
+        console.log("📊 Sede:", sede ? sede.length : 0, "sedes");
+        console.log("📊 Estado:", estado ? estado.length : 0, "estados");
+        console.log("📊 Taller:", taller ? taller.length : 0, "placas");
+        console.log("📊 Resumen BI:", resumenBI ? resumenBI.data?.length : 0, "sedes");
+        console.log("📋 Tabla:", datos ? datos.total : 0, "registros totales");
         
         // Actualizar KPIs
-        updateKPIsFromAPI(kpis);
+        updateKPIsFromAPI(kpis || {});
         
         // Dibujar gráficos
-        drawChartsFromAPI(diario, sede, estado, taller);
+        drawChartsFromAPI(diario || [], sede || [], estado || [], taller || []);
+        
+        // Renderizar tabla de resumen BI
+        renderResumenBITable(resumenBI || { data: [], estados: [] });
         
         // Cargar tabla con paginación
         totalRecords = datos.total || 0;
@@ -1442,35 +1511,168 @@
         Plotly.newPlot("chart_operacion_sede", [traceSede], layoutSede, { responsive: true });
       }
       
+      // Colores unificados para estados
+      const estadoColores = {
+        'Operativo': '#3b82f6',      // Azul
+        'Taller': '#f97316',         // Naranja
+        'Siniestro': '#22c55e',      // Verde
+        'Back-up': '#a855f7',        // Púrpura
+        'Inoperativo': '#6b7280'     // Gris
+      };
+      
       // Gráfico de estado (pie)
       if (estado.length > 0) {
+        const coloresPie = estado.map(e => estadoColores[e.estado] || '#9ca3af');
         const traceEstado = {
           labels: estado.map(e => e.estado),
           values: estado.map(e => e.cantidad),
           type: "pie",
           textinfo: "label+percent",
-          hovertemplate: "%{label}<br>%{value} registros<extra></extra>"
+          hovertemplate: "%{label}<br>%{value} registros<extra></extra>",
+          marker: { colors: coloresPie }
         };
         const layoutEstado = { margin: { t: 10, r: 10, b: 10, l: 10 } };
         Plotly.newPlot("chart_estado", [traceEstado], layoutEstado, { responsive: true });
       }
       
-      // Gráfico de taller (barras horizontales)
+      // Gráfico de taller (barras horizontales apiladas por estado)
+      console.log('🎨 Datos taller recibidos:', taller);
       if (taller.length > 0) {
-        const traceTaller = {
-          y: taller.map(t => t.placa),
-          x: taller.map(t => t.dias),
-          type: "bar",
-          orientation: "h",
-          hovertemplate: "%{y}<br>%{x} días<extra></extra>"
-        };
+        // Obtener todos los estados únicos
+        const allEstados = new Set();
+        taller.forEach(t => {
+          if (t.estados) {
+            Object.keys(t.estados).forEach(e => allEstados.add(e));
+          }
+        });
+        
+        console.log('🎨 Estados encontrados:', Array.from(allEstados));
+        
+        // Crear una traza por cada estado
+        const traces = [];
+        allEstados.forEach(est => {
+          traces.push({
+            y: taller.map(t => t.placa),
+            x: taller.map(t => (t.estados && t.estados[est]) || 0),
+            name: est,
+            type: "bar",
+            orientation: "h",
+            marker: { color: estadoColores[est] || '#9ca3af' },
+            hovertemplate: `%{y}<br>${est}: %{x} días<extra></extra>`
+          });
+        });
+        
+        console.log('🎨 Traces creadas:', traces.length);
+        
         const layoutTaller = {
           margin: { t: 10, r: 10, b: 40, l: 80 },
-          xaxis: { title: "Días en taller" },
-          yaxis: { autorange: "reversed" }
+          xaxis: { title: "Días" },
+          yaxis: { autorange: "reversed" },
+          barmode: 'stack',
+          showlegend: true,
+          legend: { orientation: 'h', y: 1.1 }
         };
-        Plotly.newPlot("chart_taller", [traceTaller], layoutTaller, { responsive: true });
+        Plotly.newPlot("chart_taller", traces, layoutTaller, { responsive: true });
       }
+    }
+
+    // Renderizar tabla de Resumen BI por Sede
+    function renderResumenBITable(resumenBI) {
+      const tableHead = document.getElementById('resumenBIHead');
+      const tableBody = document.getElementById('resumenBIBody');
+      
+      if (!resumenBI || !resumenBI.data || resumenBI.data.length === 0) {
+        tableHead.innerHTML = '';
+        tableBody.innerHTML = '<tr><td colspan="12" style="text-align:center; color:#666;">Sin datos de resumen</td></tr>';
+        return;
+      }
+      
+      // Estados a mostrar (orden específico)
+      const estadosOrden = ['Operativo', 'Taller', 'Siniestro', 'Back-up', 'Inoperativo'];
+      const estadosPresentes = estadosOrden.filter(e => resumenBI.estados.includes(e));
+      // Agregar estados que no estén en el orden predefinido
+      resumenBI.estados.forEach(e => {
+        if (!estadosOrden.includes(e)) estadosPresentes.push(e);
+      });
+      
+      // Colores para estados
+      const estadoColoresBG = {
+        'Operativo': '#dbeafe',
+        'Taller': '#ffedd5',
+        'Siniestro': '#dcfce7',
+        'Back-up': '#f3e8ff',
+        'Inoperativo': '#f3f4f6'
+      };
+      
+      // Cabeceras con dos filas (Placas y Días por estado)
+      let headerRow1 = '<tr><th rowspan="2" style="min-width:120px; vertical-align:middle;">Sede</th>';
+      let headerRow2 = '<tr>';
+      
+      estadosPresentes.forEach(e => {
+        headerRow1 += `<th colspan="2" style="background-color:${estadoColoresBG[e] || '#f9fafb'}; text-align:center;">${e}</th>`;
+        headerRow2 += `<th style="background-color:${estadoColoresBG[e] || '#f9fafb'}; font-size:0.7rem;">Placas</th>`;
+        headerRow2 += `<th style="background-color:${estadoColoresBG[e] || '#f9fafb'}; font-size:0.7rem;">Días</th>`;
+      });
+      
+      headerRow1 += '<th rowspan="2" style="background-color:#1e3a5f; color:white; min-width:60px; vertical-align:middle;">Total Días</th>';
+      headerRow1 += '<th rowspan="2" style="background-color:#22c55e; color:white; min-width:80px; vertical-align:middle;">% Operatividad</th>';
+      headerRow1 += '</tr>';
+      headerRow2 += '</tr>';
+      
+      tableHead.innerHTML = headerRow1 + headerRow2;
+      
+      // Filas de datos
+      let totalGeneral = { dias: 0, diasOperativo: 0 };
+      estadosPresentes.forEach(e => {
+        totalGeneral[`${e}_placas`] = 0;
+        totalGeneral[`${e}_dias`] = 0;
+      });
+      
+      tableBody.innerHTML = resumenBI.data.map(row => {
+        // Acumular totales
+        estadosPresentes.forEach(e => {
+          totalGeneral[`${e}_placas`] += (row[`${e}_placas`] || 0);
+          totalGeneral[`${e}_dias`] += (row[`${e}_dias`] || 0);
+        });
+        totalGeneral.dias += row.total_dias || 0;
+        totalGeneral.diasOperativo += row.dias_operativo || 0;
+        
+        // Color del porcentaje según valor
+        const pct = row.pct_operatividad || 0;
+        let pctColor = '#ef4444'; // rojo < 70%
+        if (pct >= 90) pctColor = '#22c55e'; // verde
+        else if (pct >= 70) pctColor = '#f59e0b'; // amarillo
+        
+        return '<tr>' +
+          `<td style="font-weight:600;">${row.sede}</td>` +
+          estadosPresentes.map(e => {
+            const placas = row[`${e}_placas`] || 0;
+            const dias = row[`${e}_dias`] || 0;
+            const bg = (placas > 0 || dias > 0) ? estadoColoresBG[e] || '#f9fafb' : 'transparent';
+            return `<td style="text-align:center; background-color:${bg};">${placas}</td>` +
+                   `<td style="text-align:center; background-color:${bg};">${dias}</td>`;
+          }).join('') +
+          `<td style="text-align:center; font-weight:700; background-color:#e0e7ff;">${row.total_dias || 0}</td>` +
+          `<td style="text-align:center; font-weight:700; color:white; background-color:${pctColor};">${pct}%</td>` +
+          '</tr>';
+      }).join('');
+      
+      // Calcular porcentaje total
+      const pctTotal = totalGeneral.dias > 0 ? Math.round((totalGeneral.diasOperativo / totalGeneral.dias) * 100 * 10) / 10 : 0;
+      let pctTotalColor = '#ef4444';
+      if (pctTotal >= 90) pctTotalColor = '#22c55e';
+      else if (pctTotal >= 70) pctTotalColor = '#f59e0b';
+      
+      // Fila de totales
+      tableBody.innerHTML += '<tr style="font-weight:700; background-color:#1e3a5f; color:white;">' +
+        '<td>TOTAL</td>' +
+        estadosPresentes.map(e => 
+          `<td style="text-align:center;">${totalGeneral[`${e}_placas`]}</td>` +
+          `<td style="text-align:center;">${totalGeneral[`${e}_dias`]}</td>`
+        ).join('') +
+        `<td style="text-align:center;">${totalGeneral.dias}</td>` +
+        `<td style="text-align:center; background-color:${pctTotalColor};">${pctTotal}%</td>` +
+        '</tr>';
     }
 
     // Renderizar tabla con datos de API y paginación
@@ -1505,13 +1707,24 @@
         }).join('') + '</tr>';
       }).join('');
       
-      // Info de paginación
+      // Info de paginación con botones al inicio y al final
       const startRecord = (currentPage - 1) * pageSize + 1;
       const endRecord = Math.min(currentPage * pageSize, totalRecords);
+      const totalPages = Math.ceil(totalRecords / pageSize);
+      
+      const prevBtn = currentPage > 1 
+        ? `<button onclick="loadTablePage(${currentPage - 1})" class="btn-pagination">← Anterior</button>` 
+        : `<button disabled class="btn-pagination btn-disabled">← Anterior</button>`;
+      const nextBtn = endRecord < totalRecords 
+        ? `<button onclick="loadTablePage(${currentPage + 1})" class="btn-pagination">Siguiente →</button>` 
+        : `<button disabled class="btn-pagination btn-disabled">Siguiente →</button>`;
+      
       tableInfoEl.innerHTML = `
-        Mostrando ${startRecord}-${endRecord} de ${totalRecords} registros
-        ${currentPage > 1 ? `<button onclick="loadTablePage(${currentPage - 1})">← Anterior</button>` : ''}
-        ${endRecord < totalRecords ? `<button onclick="loadTablePage(${currentPage + 1})">Siguiente →</button>` : ''}
+        <div style="display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:0.5rem;">
+          <div>${prevBtn}</div>
+          <div style="text-align:center;">Mostrando ${startRecord}-${endRecord} de ${totalRecords} registros (Página ${currentPage} de ${totalPages})</div>
+          <div>${nextBtn}</div>
+        </div>
       `;
     }
 
@@ -1539,6 +1752,78 @@
     
     // Exponer función globalmente para onclick
     window.loadTablePage = loadTablePage;
+
+    // Variable para trackear el estado del ordenamiento
+    let sortColumn = null;
+    let sortAscending = true;
+
+    // Función para ordenar la tabla por columna
+    function sortTable(column) {
+      // Mapear columna visible a campo de API
+      const apiField = {
+        [DATE_COL]: 'fecha_ejecucion',
+        [SEDE_COL]: 'sede',
+        [ESTADO_COL]: 'estado_vehiculo',
+        [PLACA_COL]: 'placa',
+        [PROGRAMADOS_COL]: 'vehiculos_programados',
+        [OPERATIVOS_COL]: 'vehiculos_operativos',
+        [DIAS_TALLER_COL]: 'dias_en_taller',
+        "Tipo vehiculo": 'tipo_vehiculo',
+        "Brigada": 'brigada',
+        "Conductor": 'conductor',
+        "Contrato": 'contrato',
+        "Motivo de inoperatividad": 'motivo_inoperatividad'
+      }[column];
+      
+      if (!apiField) return;
+      
+      // Alternar dirección si es la misma columna
+      if (sortColumn === column) {
+        sortAscending = !sortAscending;
+      } else {
+        sortColumn = column;
+        sortAscending = true;
+      }
+      
+      // Ordenar datos localmente
+      tableData.sort((a, b) => {
+        let valA = a[apiField] ?? '';
+        let valB = b[apiField] ?? '';
+        
+        // Intentar ordenar como números si es posible
+        const numA = parseFloat(valA);
+        const numB = parseFloat(valB);
+        
+        if (!isNaN(numA) && !isNaN(numB)) {
+          return sortAscending ? numA - numB : numB - numA;
+        }
+        
+        // Ordenar como strings
+        valA = String(valA).toLowerCase();
+        valB = String(valB).toLowerCase();
+        
+        if (valA < valB) return sortAscending ? -1 : 1;
+        if (valA > valB) return sortAscending ? 1 : -1;
+        return 0;
+      });
+      
+      // Re-renderizar tabla
+      renderTableFromAPI();
+      
+      // Actualizar indicador visual en cabecera
+      const headers = detailTableHead.querySelectorAll('th');
+      headers.forEach(th => {
+        const headerText = th.textContent.replace(' ↑', '').replace(' ↓', '');
+        if (headerText === column) {
+          th.textContent = headerText + (sortAscending ? ' ↑' : ' ↓');
+        } else {
+          th.textContent = headerText;
+        }
+      });
+    }
+    
+    // Exponer sortTable globalmente
+    window.sortTable = sortTable;
 
     // Función para cargar archivo desde ruta fija
     async function loadFromPath() {
@@ -1646,15 +1931,15 @@
     enableClickToggleSelection(placaFilterEl);
     
     // Eventos para actualizar filtros encadenados y aplicar automáticamente
-    sedeFilterEl.addEventListener("change", function() {
+    sedeFilterEl.addEventListener("change", async function() {
       updateToggleButton('sedeFilter', 'sedeFilterBtn');
-      updateEstadosBySede();
-      updatePlacasBySedeYEstado();
+      await updateEstadosBySede();
+      await updatePlacasBySedeYEstado();
       applyFilters();
     });
-    estadoFilterEl.addEventListener("change", function() {
+    estadoFilterEl.addEventListener("change", async function() {
       updateToggleButton('estadoFilter', 'estadoFilterBtn');
-      updatePlacasBySedeYEstado();
+      await updatePlacasBySedeYEstado();
       applyFilters();
     });
     placaFilterEl.addEventListener("change", function() {
@@ -2135,8 +2420,50 @@
     }
     
     // Filtrar estados según sedes seleccionadas
-    function updateEstadosBySede() {
+    async function updateEstadosBySede() {
       const selectedSedes = getSelectedOptions(sedeFilterEl);
+      
+      // Si no hay sedes seleccionadas, limpiar estados y placas
+      if (selectedSedes.length === 0) {
+        estadoFilterEl.innerHTML = "";
+        updateToggleButton('estadoFilter', 'estadoFilterBtn');
+        return;
+      }
+      
+      // Si no hay rawData (modo API), usar la API para filtros encadenados
+      if (rawData.length === 0) {
+        try {
+          const params = new URLSearchParams();
+          if (startDateEl.value) params.append('fecha_inicio', startDateEl.value);
+          if (endDateEl.value) params.append('fecha_fin', endDateEl.value);
+          if (selectedSedes.length > 0) params.append('sedes', selectedSedes.join(','));
+          
+          const response = await fetch(`${API_BASE}/api/operatividad/filters?${params.toString()}`);
+          if (response.ok) {
+            const filters = await response.json();
+            const estadosDisponibles = filters.estados || [];
+            
+            const previousSelection = getSelectedOptions(estadoFilterEl);
+            const estadosValidos = previousSelection.filter(e => estadosDisponibles.includes(e));
+            
+            estadoFilterEl.innerHTML = "";
+            estadosDisponibles.forEach(est => {
+              const opt = document.createElement("option");
+              opt.value = est;
+              opt.textContent = est;
+              // Si no hay selección válida previa, seleccionar todos
+              opt.selected = estadosValidos.length === 0 || estadosValidos.includes(est);
+              estadoFilterEl.appendChild(opt);
+            });
+            updateToggleButton('estadoFilter', 'estadoFilterBtn');
+          }
+        } catch (error) {
+          console.error('Error actualizando estados:', error);
+        }
+        return;
+      }
+      
+      // Modo local con rawData (carga desde archivo Excel)
       const startFilter = startDateEl.value ? new Date(startDateEl.value) : null;
       const endFilter = endDateEl.value ? new Date(endDateEl.value) : null;
       
@@ -2178,9 +2505,47 @@
     }
     
     // Filtrar placas según sedes y estados seleccionados
-    function updatePlacasBySedeYEstado() {
+    async function updatePlacasBySedeYEstado() {
       const selectedSedes = getSelectedOptions(sedeFilterEl);
       const selectedEstados = getSelectedOptions(estadoFilterEl);
+      
+      // Si no hay rawData (modo API), usar la API para filtros encadenados
+      if (rawData.length === 0) {
+        try {
+          const params = new URLSearchParams();
+          if (startDateEl.value) params.append('fecha_inicio', startDateEl.value);
+          if (endDateEl.value) params.append('fecha_fin', endDateEl.value);
+          if (selectedSedes.length > 0) params.append('sedes', selectedSedes.join(','));
+          if (selectedEstados.length > 0) params.append('estados', selectedEstados.join(','));
+          
+          const response = await fetch(`${API_BASE}/api/operatividad/filters?${params.toString()}`);
+          if (response.ok) {
+            const filters = await response.json();
+            const placasDisponibles = filters.placas || [];
+            
+            console.log('📋 Placas disponibles:', placasDisponibles.length);
+            
+            const previousSelection = getSelectedOptions(placaFilterEl);
+            const placasValidas = previousSelection.filter(p => placasDisponibles.includes(p));
+            
+            placaFilterEl.innerHTML = "";
+            placasDisponibles.forEach(placa => {
+              const opt = document.createElement("option");
+              opt.value = placa;
+              opt.textContent = placa;
+              // Mantener selección previa si es válida
+              opt.selected = placasValidas.includes(placa);
+              placaFilterEl.appendChild(opt);
+            });
+            updateToggleButton('placaFilter', 'placaFilterBtn');
+          }
+        } catch (error) {
+          console.error('Error actualizando placas:', error);
+        }
+        return;
+      }
+      
+      // Modo local con rawData (carga desde archivo Excel)
       const startFilter = startDateEl.value ? new Date(startDateEl.value) : null;
       const endFilter = endDateEl.value ? new Date(endDateEl.value) : null;
       
@@ -2526,16 +2891,17 @@
       const selectedSedes = getSelectedOptions(sedeFilterEl);
       const selectedEstados = getSelectedOptions(estadoFilterEl);
       const selectedPlacas = getSelectedOptions(placaFilterEl);
+      const hasDateRange = startDateEl.value && endDateEl.value;
       
-      // Si no hay nada seleccionado, limpiar gráficos y mostrar mensaje
-      if (selectedSedes.length === 0 && selectedEstados.length === 0 && selectedPlacas.length === 0) {
+      // Si no hay nada seleccionado (ni filtros ni fechas), limpiar gráficos y mostrar mensaje
+      if (selectedSedes.length === 0 && selectedEstados.length === 0 && selectedPlacas.length === 0 && !hasDateRange) {
         console.log('⚠️ No hay filtros seleccionados, limpiando dashboard...');
         clearDashboard();
         setStatus('⚠️ Selecciona al menos un filtro para ver datos');
         return;
       }
       
-      console.log('Aplicando filtros via API...');
+      console.log('Aplicando filtros via API...', {sedes: selectedSedes.length, estados: selectedEstados.length, placas: selectedPlacas.length, fechas: hasDateRange});
       setStatus('🔄 Actualizando dashboard...');
       
       // Recargar datos agregados con los nuevos filtros
@@ -2564,6 +2930,10 @@
       Plotly.purge("chart_operacion_sede");
       Plotly.purge("chart_estado");
       Plotly.purge("chart_taller");
+      
+      // Limpiar tabla de resumen BI
+      document.getElementById('resumenBIHead').innerHTML = "";
+      document.getElementById('resumenBIBody').innerHTML = "";
       
       // Limpiar tabla
       detailTableHead.innerHTML = "";

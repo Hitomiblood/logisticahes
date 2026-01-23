@@ -4,6 +4,7 @@ Módulo de caché con Redis para LogísticaHES
 import json
 import os
 import hashlib
+import time
 from typing import Optional, Any
 from functools import wraps
 
@@ -16,7 +17,7 @@ except ImportError:
     print("⚠️ Redis no disponible, usando caché en memoria")
 
 # Configuración de Redis
-REDIS_HOST = os.getenv("REDIS_HOST", "logistica-redis")
+REDIS_HOST = os.getenv("REDIS_HOST", "localhost")
 REDIS_PORT = int(os.getenv("REDIS_PORT", 6379))
 REDIS_DB = int(os.getenv("REDIS_DB", 0))
 CACHE_TTL = int(os.getenv("CACHE_TTL", 300))  # 5 minutos por defecto
@@ -76,8 +77,16 @@ def cache_get(key: str) -> Optional[Any]:
         except Exception as e:
             print(f"⚠️ Error leyendo caché: {e}")
     
-    # Fallback a memoria
-    return _memory_cache.get(key)
+# Fallback a memoria
+    cached = _memory_cache.get(key)
+    if cached:
+        # Verificar TTL
+        if cached.get('expires_at', 0) > time.time():
+            return cached.get('value')
+        else:
+            # Expirado, eliminar
+            del _memory_cache[key]
+    return None
 
 
 def cache_set(key: str, value: Any, ttl: int = CACHE_TTL) -> bool:
@@ -92,14 +101,17 @@ def cache_set(key: str, value: Any, ttl: int = CACHE_TTL) -> bool:
         except Exception as e:
             print(f"⚠️ Error escribiendo caché: {e}")
     
-    # Fallback a memoria (sin TTL real, pero limitamos tamaño)
+    # Fallback a memoria con TTL
     if len(_memory_cache) > 1000:
         # Limpiar mitad del caché cuando está lleno
         keys = list(_memory_cache.keys())[:500]
         for k in keys:
             del _memory_cache[k]
     
-    _memory_cache[key] = value
+    _memory_cache[key] = {
+        'value': value,
+        'expires_at': time.time() + ttl
+    }
     return True
 
 
