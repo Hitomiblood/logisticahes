@@ -1385,7 +1385,29 @@
     
     function selectMonth(prefix, month) {
       datePickerState[prefix].month = month;
+      
+      // Si no hay día seleccionado, usar el día actual o el último del mes
+      if (!datePickerState[prefix].day) {
+        const year = datePickerState[prefix].year;
+        const today = new Date();
+        const daysInMonth = new Date(year, month + 1, 0).getDate();
+        
+        // Usar el día de hoy si estamos en el mismo mes/año, sino usar el último día
+        if (year === today.getFullYear() && month === today.getMonth()) {
+          datePickerState[prefix].day = today.getDate();
+        } else {
+          datePickerState[prefix].day = Math.min(daysInMonth, 15); // Usar el 15 como default
+        }
+      } else {
+        // Verificar que el día seleccionado sea válido para el nuevo mes
+        const daysInMonth = new Date(datePickerState[prefix].year, month + 1, 0).getDate();
+        if (datePickerState[prefix].day > daysInMonth) {
+          datePickerState[prefix].day = daysInMonth;
+        }
+      }
+      
       showDays(prefix);
+      updateDateDisplay(prefix);
     }
     
     function showDays(prefix) {
