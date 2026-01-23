@@ -1212,14 +1212,9 @@
 
     // Inicializar date picker al cargar la página
     if (document.readyState === 'loading') {
-      document.addEventListener('DOMContentLoaded', function() {
-        initDatePickerYears();
-        setDefaultDateRange();
-      });
+      document.addEventListener('DOMContentLoaded', initDatePickerYears);
     } else {
-      // DOM ya está listo
       initDatePickerYears();
-      setDefaultDateRange();
     }
 
     // Variables para paginación de tabla
@@ -1317,10 +1312,8 @@
       window.dataFechaMax = filters.fecha_max;
     }
 
-    // Configurar rango de fechas por defecto (últimos 3 meses)
+    // Configurar rango de fechas por defecto
     function setDefaultDateRange(fechaMin, fechaMax) {
-      console.log("📅 setDefaultDateRange llamado con:", fechaMin, fechaMax);
-      
       const today = new Date();
       const startOf2025 = new Date(2025, 0, 1); // 1 de enero de 2025
       
@@ -1328,28 +1321,20 @@
       const minDate = fechaMin ? new Date(fechaMin) : new Date(2020, 0, 1);
       const maxDate = fechaMax ? new Date(fechaMax) : today;
       
-      console.log("📅 Fechas parseadas - minDate:", minDate, "maxDate:", maxDate);
-      
       // Usar fecha de inicio como 1 de enero de 2025 o la fecha mínima si es posterior
       const startDate = startOf2025 < minDate ? minDate : startOf2025;
       const endDate = maxDate > today ? today : maxDate;
       
-      // Actualizar rango de años - incluir año actual + 1
+      // Actualizar rango de años
       datePickerState.minYear = minDate.getFullYear();
       datePickerState.maxYear = Math.max(maxDate.getFullYear(), today.getFullYear() + 1);
       
-      console.log("📅 Rango de años:", datePickerState.minYear, "-", datePickerState.maxYear);
-      
       // Inicializar cuadrículas de años
-      ['start', 'end'].forEach(prefix => {
-        renderYearGrid(prefix);
-      });
+      initDatePickerYears();
       
-      // Establecer valores usando la función correcta
+      // Establecer valores
       setDatePickerValue('start', startDate);
       setDatePickerValue('end', endDate);
-      
-      console.log("📅 Fechas configuradas:", startDateEl.value, "a", endDateEl.value);
     }
 
     // Cargar datos agregados (KPIs y gráficos) desde el backend
@@ -1685,14 +1670,6 @@
       showMonths(prefix);
       updateDateDisplay(prefix);
       syncHiddenDates();
-    }
-    
-    function setDefaultDateRange() {
-      const today = new Date();
-      const startOf2025 = new Date(2025, 0, 1);
-      
-      setDatePickerValue('start', startOf2025);
-      setDatePickerValue('end', today);
     }
 
     // Funciones para persistencia de datos usando IndexedDB (soporta archivos grandes)
