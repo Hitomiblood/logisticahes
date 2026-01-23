@@ -1045,20 +1045,21 @@
     let datePickerState = {
       start: { year: null, month: null, day: null },
       end: { year: null, month: null, day: null },
-      minYear: 2020,
-      maxYear: new Date().getFullYear() + 1
+      minYear: null,
+      maxYear: null
     };
 
     // =====================================================
     // Funciones del Date Picker
     // =====================================================
     function initDatePickerYears() {
-      console.log("🔵 initDatePickerYears ejecutándose");
-      console.log("🔵 minYear:", datePickerState.minYear, "maxYear:", datePickerState.maxYear);
+      // Solo inicializar si tenemos datos de años
+      if (!datePickerState.minYear || !datePickerState.maxYear) {
+        return;
+      }
       
       ['start', 'end'].forEach(prefix => {
         const yearGrid = document.getElementById(prefix + 'YearGrid');
-        console.log("🔵 yearGrid para", prefix, ":", yearGrid);
         if (!yearGrid) return;
         yearGrid.innerHTML = '';
         
@@ -1073,7 +1074,6 @@
           btn.onclick = () => selectYear(prefix, y);
           yearGrid.appendChild(btn);
         }
-        console.log("🔵 yearGrid para", prefix, "tiene", yearGrid.children.length, "hijos");
       });
     }
 
@@ -1210,15 +1210,8 @@
       }
     });
 
-    // Inicializar date picker al cargar la página
-    console.log("🟢 Script cargado, document.readyState =", document.readyState);
-    if (document.readyState === 'loading') {
-      console.log("🟡 Agregando listener DOMContentLoaded");
-      document.addEventListener('DOMContentLoaded', initDatePickerYears);
-    } else {
-      console.log("🟢 DOM ya listo, llamando initDatePickerYears directamente");
-      initDatePickerYears();
-    }
+    // El date picker se inicializa cuando se cargan los datos de la API
+    // (los años se obtienen dinámicamente de fecha_min y fecha_max de la data)
 
     // Variables para paginación de tabla
     let currentPage = 1;
@@ -1321,16 +1314,21 @@
       const startOf2025 = new Date(2025, 0, 1); // 1 de enero de 2025
       
       // Parsear fechas si son strings
-      const minDate = fechaMin ? new Date(fechaMin) : new Date(2020, 0, 1);
-      const maxDate = fechaMax ? new Date(fechaMax) : today;
+      const minDate = fechaMin ? new Date(fechaMin) : null;
+      const maxDate = fechaMax ? new Date(fechaMax) : null;
+      
+      if (!minDate || !maxDate) {
+        console.warn('No hay rango de fechas en la data');
+        return;
+      }
       
       // Usar fecha de inicio como 1 de enero de 2025 o la fecha mínima si es posterior
       const startDate = startOf2025 < minDate ? minDate : startOf2025;
       const endDate = maxDate > today ? today : maxDate;
       
-      // Actualizar rango de años
+      // Actualizar rango de años - 100% dinámico basado en la data
       datePickerState.minYear = minDate.getFullYear();
-      datePickerState.maxYear = Math.max(maxDate.getFullYear(), today.getFullYear() + 1);
+      datePickerState.maxYear = maxDate.getFullYear();
       
       // Inicializar cuadrículas de años
       initDatePickerYears();
