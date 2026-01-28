@@ -14,33 +14,17 @@ MESES_MAP = {
     "SEPTIEMBRE": 9, "OCTUBRE": 10, "NOVIEMBRE": 11, "DICIEMBRE": 12
 }
 
-def build_where_clause(fecha_inicio: Optional[str], fecha_fin: Optional[str], sedes: Optional[str]):
+def build_where_clause(anios: Optional[str] = None, meses: Optional[str] = None, sedes: Optional[str] = None):
     """Construir cláusula WHERE dinámica"""
     conditions = []
     params = []
     
-    # Filtro de tiempo por fecha YYYY-MM
-    if fecha_inicio and fecha_fin:
-        try:
-            # Convertir YYYY-MM a rango de meses
-            year_inicio, mes_inicio = map(int, fecha_inicio.split('-'))
-            year_fin, mes_fin = map(int, fecha_fin.split('-'))
-            
-            # Para simplificar, asumimos que todos los datos están en el mismo año
-            # y filtramos por nombre del mes
-            meses_incluidos = []
-            for mes_num in range(mes_inicio, mes_fin + 1):
-                for mes_nombre, num in MESES_MAP.items():
-                    if num == mes_num:
-                        meses_incluidos.append(mes_nombre)
-            
-            if meses_incluidos:
-                placeholders = ','.join('?' * len(meses_incluidos))
-                # Comparar sin espacios
-                conditions.append(f"TRIM(mes) IN ({placeholders})")
-                params.extend(meses_incluidos)
-        except:
-            pass
+    # Filtro por meses (nombres)
+    if meses:
+        meses_list = [m.strip() for m in meses.split(',')]
+        placeholders = ','.join('?' * len(meses_list))
+        conditions.append(f"TRIM(mes) IN ({placeholders})")
+        params.extend(meses_list)
     
     # Filtro de sedes
     if sedes:
@@ -75,12 +59,12 @@ def get_filtros():
 
 @router.get("/kpis")
 def get_kpis(
-    fecha_inicio: Optional[str] = Query(None),
-    fecha_fin: Optional[str] = Query(None),
+    anios: Optional[str] = Query(None),
+    meses: Optional[str] = Query(None),
     sedes: Optional[str] = Query(None)
 ):
     """Obtener KPIs de Brigadas"""
-    where_clause, params = build_where_clause(fecha_inicio, fecha_fin, sedes)
+    where_clause, params = build_where_clause(anios, meses, sedes)
     
     with get_db() as conn:
         cursor = conn.cursor()
@@ -111,12 +95,12 @@ def get_kpis(
 
 @router.get("/grafico/por-sede")
 def get_por_sede(
-    fecha_inicio: Optional[str] = Query(None),
-    fecha_fin: Optional[str] = Query(None),
+    anios: Optional[str] = Query(None),
+    meses: Optional[str] = Query(None),
     sedes: Optional[str] = Query(None)
 ):
     """Obtener datos agrupados por sede para gráfico"""
-    where_clause, params = build_where_clause(fecha_inicio, fecha_fin, sedes)
+    where_clause, params = build_where_clause(anios, meses, sedes)
     
     with get_db() as conn:
         cursor = conn.cursor()

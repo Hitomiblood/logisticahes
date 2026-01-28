@@ -16,8 +16,8 @@ MESES_MAP = {
 }
 
 def build_where_clause(
-    fecha_inicio: Optional[str] = None,
-    fecha_fin: Optional[str] = None,
+    anios: Optional[str] = None,
+    meses: Optional[str] = None,
     sedes: Optional[str] = None,
     tipos_inventario: Optional[str] = None,
     responsables: Optional[str] = None
@@ -26,40 +26,28 @@ def build_where_clause(
     conditions = []
     params = []
     
-    # Filtro por rango de fechas (usando mes)
-    if fecha_inicio:
-        try:
-            fecha = datetime.strptime(fecha_inicio, '%Y-%m-%d')
-            mes_inicio = fecha.month
-            conditions.append("CAST(substr('0' || CASE mes WHEN 'ENERO' THEN 1 WHEN 'FEBRERO' THEN 2 WHEN 'MARZO' THEN 3 WHEN 'ABRIL' THEN 4 WHEN 'MAYO' THEN 5 WHEN 'JUNIO' THEN 6 WHEN 'JULIO' THEN 7 WHEN 'AGOSTO' THEN 8 WHEN 'SEPTIEMBRE' THEN 9 WHEN 'OCTUBRE' THEN 10 WHEN 'NOVIEMBRE' THEN 11 WHEN 'DICIEMBRE' THEN 12 END, -2, 2) AS INTEGER) >= ?")
-            params.append(mes_inicio)
-        except:
-            pass
-    
-    if fecha_fin:
-        try:
-            fecha = datetime.strptime(fecha_fin, '%Y-%m-%d')
-            mes_fin = fecha.month
-            conditions.append("CAST(substr('0' || CASE mes WHEN 'ENERO' THEN 1 WHEN 'FEBRERO' THEN 2 WHEN 'MARZO' THEN 3 WHEN 'ABRIL' THEN 4 WHEN 'MAYO' THEN 5 WHEN 'JUNIO' THEN 6 WHEN 'JULIO' THEN 7 WHEN 'AGOSTO' THEN 8 WHEN 'SEPTIEMBRE' THEN 9 WHEN 'OCTUBRE' THEN 10 WHEN 'NOVIEMBRE' THEN 11 WHEN 'DICIEMBRE' THEN 12 END, -2, 2) AS INTEGER) <= ?")
-            params.append(mes_fin)
-        except:
-            pass
+    # Filtro por meses (nombres)
+    if meses:
+        meses_list = [m.strip() for m in meses.split(',')]
+        placeholders = ','.join('?' * len(meses_list))
+        conditions.append(f"TRIM(mes) IN ({placeholders})")
+        params.extend(meses_list)
     
     # Filtros por listas
     if sedes:
-        sede_list = sedes.split(',')
+        sede_list = [s.strip() for s in sedes.split(',')]
         placeholders = ','.join('?' * len(sede_list))
         conditions.append(f"sede IN ({placeholders})")
         params.extend(sede_list)
     
     if tipos_inventario:
-        tipo_list = tipos_inventario.split(',')
+        tipo_list = [t.strip() for t in tipos_inventario.split(',')]
         placeholders = ','.join('?' * len(tipo_list))
         conditions.append(f"tipo_inventario IN ({placeholders})")
         params.extend(tipo_list)
     
     if responsables:
-        resp_list = responsables.split(',')
+        resp_list = [r.strip() for r in responsables.split(',')]
         placeholders = ','.join('?' * len(resp_list))
         conditions.append(f"almacenista IN ({placeholders})")
         params.extend(resp_list)
@@ -87,14 +75,14 @@ async def get_filtros():
 
 @router.get("/kpis")
 async def get_kpis(
-    fecha_inicio: Optional[str] = Query(None),
-    fecha_fin: Optional[str] = Query(None),
+    anios: Optional[str] = Query(None),
+    meses: Optional[str] = Query(None),
     sedes: Optional[str] = Query(None),
     tipos_inventario: Optional[str] = Query(None),
     responsables: Optional[str] = Query(None)
 ):
     """Obtener KPIs de gestión"""
-    where_clause, params = build_where_clause(fecha_inicio, fecha_fin, sedes, tipos_inventario, responsables)
+    where_clause, params = build_where_clause(anios, meses, sedes, tipos_inventario, responsables)
     
     with get_db() as conn:
         cursor = conn.cursor()
@@ -130,14 +118,14 @@ async def get_kpis(
 
 @router.get("/grafico/por-sede")
 async def get_por_sede(
-    fecha_inicio: Optional[str] = Query(None),
-    fecha_fin: Optional[str] = Query(None),
+    anios: Optional[str] = Query(None),
+    meses: Optional[str] = Query(None),
     sedes: Optional[str] = Query(None),
     tipos_inventario: Optional[str] = Query(None),
     responsables: Optional[str] = Query(None)
 ):
     """Obtener datos agrupados por sede (indicador de respuesta)"""
-    where_clause, params = build_where_clause(fecha_inicio, fecha_fin, sedes, tipos_inventario, responsables)
+    where_clause, params = build_where_clause(anios, meses, sedes, tipos_inventario, responsables)
     
     with get_db() as conn:
         cursor = conn.cursor()
@@ -181,14 +169,14 @@ async def get_por_sede(
 
 @router.get("/grafico/por-responsable")
 async def get_por_responsable(
-    fecha_inicio: Optional[str] = Query(None),
-    fecha_fin: Optional[str] = Query(None),
+    anios: Optional[str] = Query(None),
+    meses: Optional[str] = Query(None),
     sedes: Optional[str] = Query(None),
     tipos_inventario: Optional[str] = Query(None),
     responsables: Optional[str] = Query(None)
 ):
     """Obtener datos agrupados por responsable"""
-    where_clause, params = build_where_clause(fecha_inicio, fecha_fin, sedes, tipos_inventario, responsables)
+    where_clause, params = build_where_clause(anios, meses, sedes, tipos_inventario, responsables)
     
     with get_db() as conn:
         cursor = conn.cursor()
