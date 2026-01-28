@@ -140,5 +140,5 @@ def get_por_sede(
             "sedes": [row[0] for row in rows],
             "costo_total": [row[1] for row in rows],
             "costo_diferencia": [row[2] for row in rows],
-            "diferencia": [row[3] for row in rows]
+            "desviacion": [row[3] for row in rows]  # Cambiar 'diferencia' a 'desviacion'
         }
