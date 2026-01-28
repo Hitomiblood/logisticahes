@@ -19,32 +19,20 @@ def build_where_clause(fecha_inicio: Optional[str], fecha_fin: Optional[str], se
     conditions = []
     params = []
     
-    # Filtro de tiempo por fecha YYYY-MM
+    # Filtro de tiempo por fecha
     if fecha_inicio and fecha_fin:
         try:
-            # Convertir YYYY-MM a rango de meses
-            year_inicio, mes_inicio = map(int, fecha_inicio.split('-'))
-            year_fin, mes_fin = map(int, fecha_fin.split('-'))
-            
-            # Obtener meses incluidos
-            meses_incluidos = []
-            for mes_num in range(mes_inicio, mes_fin + 1):
-                for mes_nombre, num in MESES_MAP.items():
-                    if num == mes_num:
-                        meses_incluidos.append(mes_nombre)
-            
-            if meses_incluidos:
-                placeholders = ','.join('?' * len(meses_incluidos))
-                conditions.append(f"mes IN ({placeholders})")
-                params.extend(meses_incluidos)
+            # Usar la columna fecha directamente
+            conditions.append("fecha >= ? AND fecha <= ?")
+            params.extend([fecha_inicio, fecha_fin])
         except:
             pass
     
-    # Filtro de sedes
+    # Filtro de zonas (sedes)
     if sedes:
         sedes_list = [s.strip() for s in sedes.split(',')]
         placeholders = ','.join('?' * len(sedes_list))
-        conditions.append(f"sede IN ({placeholders})")
+        conditions.append(f"zona IN ({placeholders})")
         params.extend(sedes_list)
     
     # Filtro de errores
@@ -64,8 +52,8 @@ def get_filtros():
     with get_db() as conn:
         cursor = conn.cursor()
         
-        # Sedes
-        cursor.execute("SELECT DISTINCT sede FROM errores WHERE sede IS NOT NULL ORDER BY sede")
+        # Zonas (equivalente a sedes)
+        cursor.execute("SELECT DISTINCT zona FROM errores WHERE zona IS NOT NULL ORDER BY zona")
         sedes = [row[0] for row in cursor.fetchall()]
         
         # Tipos de error
@@ -153,7 +141,7 @@ def get_por_sede(
     sedes: Optional[str] = Query(None),
     errores: Optional[str] = Query(None)
 ):
-    """Obtener datos agrupados por sede para gráfico"""
+    """Obtener datos agrupados por zona para gráfico"""
     where_clause, params = build_where_clause(fecha_inicio, fecha_fin, sedes, errores)
     
     with get_db() as conn:
@@ -161,14 +149,14 @@ def get_por_sede(
         
         query = f'''
             SELECT 
-                sede,
+                zona,
                 SUM(CASE WHEN error = 'No' THEN 1 ELSE 0 END) as sin_error,
                 SUM(CASE WHEN error = 'Revisar' THEN 1 ELSE 0 END) as revisar,
                 SUM(CASE WHEN error = 'Si' THEN 1 ELSE 0 END) as con_error
             FROM errores
             WHERE {where_clause}
-            GROUP BY sede
-            ORDER BY sede
+            GROUP BY zona
+            ORDER BY zona
         '''
         
         cursor.execute(query, params)

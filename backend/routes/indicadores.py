@@ -13,43 +13,22 @@ MESES_MAP = {
     'JULIO': 7, 'AGOSTO': 8, 'SEPTIEMBRE': 9, 'OCTUBRE': 10, 'NOVIEMBRE': 11, 'DICIEMBRE': 12
 }
 
-def build_where_clause(fecha_inicio: Optional[str], fecha_fin: Optional[str], sedes: Optional[str], responsables: Optional[str]):
+def build_where_clause(fecha_inicio: Optional[str] = None, fecha_fin: Optional[str] = None, sedes: Optional[str] = None, responsables: Optional[str] = None, estados: Optional[str] = None, anios: Optional[str] = None, meses: Optional[str] = None):
     """Construir cláusula WHERE y parámetros"""
     where_clause = "WHERE 1=1"
     params = []
     
-    if fecha_inicio and fecha_fin:
-        from datetime import datetime
-        # Manejar formato YYYY-MM del input type="month"
-        fecha_ini_obj = datetime.strptime(fecha_inicio, "%Y-%m")
-        fecha_fin_obj = datetime.strptime(fecha_fin, "%Y-%m")
-        mes_inicio = fecha_ini_obj.month
-        mes_fin = fecha_fin_obj.month
-        
-        # Obtener meses válidos en el rango
-        meses_validos = [k for k, v in MESES_MAP.items() if mes_inicio <= v <= mes_fin]
-        if meses_validos:
-            placeholders = ",".join(["?" for _ in meses_validos])
-            where_clause += f" AND mes IN ({placeholders})"
-            params.extend(meses_validos)
-    elif fecha_inicio:
-        from datetime import datetime
-        fecha_obj = datetime.strptime(fecha_inicio, "%Y-%m")
-        mes_inicio = fecha_obj.month
-        meses_validos = [k for k, v in MESES_MAP.items() if v >= mes_inicio]
-        if meses_validos:
-            placeholders = ",".join(["?" for _ in meses_validos])
-            where_clause += f" AND mes IN ({placeholders})"
-            params.extend(meses_validos)
-    elif fecha_fin:
-        from datetime import datetime
-        fecha_obj = datetime.strptime(fecha_fin, "%Y-%m")
-        mes_fin = fecha_obj.month
-        meses_validos = [k for k, v in MESES_MAP.items() if v <= mes_fin]
-        if meses_validos:
-            placeholders = ",".join(["?" for _ in meses_validos])
-            where_clause += f" AND mes IN ({placeholders})"
-            params.extend(meses_validos)
+    if anios:
+        anio_list = [int(a) for a in anios.split(",")]
+        placeholders = ",".join(["?" for _ in anio_list])
+        where_clause += f" AND anio IN ({placeholders})"
+        params.extend(anio_list)
+    
+    if meses:
+        mes_list = meses.split(",")
+        placeholders = ",".join(["?" for _ in mes_list])
+        where_clause += f" AND mes IN ({placeholders})"
+        params.extend(mes_list)
     
     if sedes:
         sede_list = sedes.split(",")
@@ -63,6 +42,12 @@ def build_where_clause(fecha_inicio: Optional[str], fecha_fin: Optional[str], se
         where_clause += f" AND responsable IN ({placeholders})"
         params.extend(responsable_list)
     
+    if estados:
+        estado_list = estados.split(",")
+        placeholders = ",".join(["?" for _ in estado_list])
+        where_clause += f" AND estado IN ({placeholders})"
+        params.extend(estado_list)
+    
     return where_clause, params
 
 
@@ -72,13 +57,16 @@ async def get_datos(
     fecha_fin: Optional[str] = None,
     sedes: Optional[str] = None,
     responsables: Optional[str] = None,
+    estados: Optional[str] = None,
+    anios: Optional[str] = None,
+    meses: Optional[str] = None,
     limit: int = Query(default=50000, le=150000)
 ):
     """Obtener datos de indicadores con filtros"""
     with get_db() as conn:
         cursor = conn.cursor()
-        where_clause, params = build_where_clause(fecha_inicio, fecha_fin, sedes, responsables)
-        query = f"SELECT * FROM indicadores {where_clause} ORDER BY mes, sede LIMIT {limit}"
+        where_clause, params = build_where_clause(fecha_inicio, fecha_fin, sedes, responsables, estados, anios, meses)
+        query = f"SELECT * FROM indicadores {where_clause} ORDER BY anio DESC, mes, sede LIMIT {limit}"
         cursor.execute(query, params)
         rows = cursor.fetchall()
         return {"data": [dict(row) for row in rows], "total": len(rows)}
@@ -90,6 +78,14 @@ async def get_filtros():
     with get_db() as conn:
         cursor = conn.cursor()
         
+        # Obtener años únicos
+        cursor.execute("SELECT DISTINCT anio FROM indicadores WHERE anio IS NOT NULL ORDER BY anio DESC")
+        anios = [row[0] for row in cursor.fetchall()]
+        
+        # Obtener meses únicos
+        cursor.execute("SELECT DISTINCT mes FROM indicadores WHERE mes IS NOT NULL ORDER BY CASE mes WHEN 'ENERO' THEN 1 WHEN 'FEBRERO' THEN 2 WHEN 'MARZO' THEN 3 WHEN 'ABRIL' THEN 4 WHEN 'MAYO' THEN 5 WHEN 'JUNIO' THEN 6 WHEN 'JULIO' THEN 7 WHEN 'AGOSTO' THEN 8 WHEN 'SEPTIEMBRE' THEN 9 WHEN 'OCTUBRE' THEN 10 WHEN 'NOVIEMBRE' THEN 11 WHEN 'DICIEMBRE' THEN 12 END")
+        meses = [row[0] for row in cursor.fetchall()]
+        
         # Obtener sedes únicas
         cursor.execute("SELECT DISTINCT sede FROM indicadores WHERE sede IS NOT NULL ORDER BY sede")
         sedes = [row[0] for row in cursor.fetchall()]
@@ -98,9 +94,16 @@ async def get_filtros():
         cursor.execute("SELECT DISTINCT responsable FROM indicadores WHERE responsable IS NOT NULL ORDER BY responsable")
         responsables = [row[0] for row in cursor.fetchall()]
         
+        # Obtener estados únicos
+        cursor.execute("SELECT DISTINCT estado FROM indicadores WHERE estado IS NOT NULL ORDER BY estado")
+        estados = [row[0] for row in cursor.fetchall()]
+        
         return {
+            "anios": anios,
+            "meses": meses,
             "sedes": sedes,
-            "responsables": responsables
+            "responsables": responsables,
+            "estados": estados
         }
 
 
@@ -109,12 +112,15 @@ async def get_kpis(
     fecha_inicio: Optional[str] = None,
     fecha_fin: Optional[str] = None,
     sedes: Optional[str] = None,
-    responsables: Optional[str] = None
+    responsables: Optional[str] = None,
+    estados: Optional[str] = None,
+    anios: Optional[str] = None,
+    meses: Optional[str] = None
 ):
     """Obtener KPIs de indicadores"""
     with get_db() as conn:
         cursor = conn.cursor()
-        where_clause, params = build_where_clause(fecha_inicio, fecha_fin, sedes, responsables)
+        where_clause, params = build_where_clause(fecha_inicio, fecha_fin, sedes, responsables, estados, anios, meses)
         
         # Contar registros totales
         cursor.execute(f"SELECT COUNT(*) FROM indicadores {where_clause}", params)
@@ -157,12 +163,15 @@ async def get_inventario_por_sede(
     fecha_inicio: Optional[str] = None,
     fecha_fin: Optional[str] = None,
     sedes: Optional[str] = None,
-    responsables: Optional[str] = None
+    responsables: Optional[str] = None,
+    estados: Optional[str] = None,
+    anios: Optional[str] = None,
+    meses: Optional[str] = None
 ):
     """Datos para gráfico de inventario por sede"""
     with get_db() as conn:
         cursor = conn.cursor()
-        where_clause, params = build_where_clause(fecha_inicio, fecha_fin, sedes, responsables)
+        where_clause, params = build_where_clause(fecha_inicio, fecha_fin, sedes, responsables, estados, anios, meses)
         
         cursor.execute(f"""
             SELECT sede, 

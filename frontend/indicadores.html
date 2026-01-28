@@ -80,7 +80,7 @@
       <a href="index.html?section=almacenes" class="btn-back">← Regresar</a>
     </div>
     <div class="sidebar-filters">
-      <h3>⏱️ Periodo Global</h3>
+      <h3>⏱️ Periodo de Análisis</h3>
       <div class="filter-group">
         <label>📅 Fecha Inicio:</label>
         <div class="date-picker-container">
@@ -92,7 +92,6 @@
             </div>
             <div class="year-grid" id="fechaInicioYearGrid"></div>
             <div class="month-grid" id="fechaInicioMonthGrid"></div>
-            <div class="day-grid" id="fechaInicioDayGrid"></div>
           </div>
         </div>
       </div>
@@ -107,7 +106,6 @@
             </div>
             <div class="year-grid" id="fechaFinYearGrid"></div>
             <div class="month-grid" id="fechaFinMonthGrid"></div>
-            <div class="day-grid" id="fechaFinDayGrid"></div>
           </div>
         </div>
       </div>
@@ -115,12 +113,28 @@
       <input type="hidden" id="fechaFin" />
       <button class="btn-apply-sidebar" onclick="aplicarFiltroGlobal()">Aplicar Periodo</button>
       
-      <h3 style="margin-top: 1.5rem;">🏢 Sede Global</h3>
+      <h3 style="margin-top: 1.5rem;">📅 Mes</h3>
       <div class="filter-group">
-        <input type="text" class="filter-search-sidebar" id="sedeGlobalSearch" placeholder="🔍 Buscar sede..." onkeyup="filterSelect('sedeGlobalFilter', this.value)" />
-        <select multiple id="sedeGlobalFilter" class="select-sidebar"></select>
-        <button class="btn-toggle-sidebar" id="sedeGlobalFilterBtn" onclick="toggleSelectAll('sedeGlobalFilter', 'sedeGlobalFilterBtn')">Seleccionar todo</button>
-        <button class="btn-apply-filter-sidebar" onclick="aplicarFiltroSedeGlobal()">✓ Aplicar Sedes</button>
+        <input type="text" class="filter-search-sidebar" id="mesGlobalSearch" placeholder="🔍 Buscar mes..." onkeyup="filterSelect('mesGlobalFilter', this.value)" />
+        <select multiple id="mesGlobalFilter" class="select-sidebar"></select>
+        <button class="btn-toggle-sidebar" id="mesGlobalFilterBtn" onclick="toggleSelectAll('mesGlobalFilter', 'mesGlobalFilterBtn')">Seleccionar todo</button>
+        <button class="btn-apply-filter-sidebar" onclick="aplicarFiltros()">✓ Aplicar Meses</button>
+      </div>
+      
+      <h3 style="margin-top: 1.5rem;">📊 Estado</h3>
+      <div class="filter-group">
+        <input type="text" class="filter-search-sidebar" id="estadoGlobalSearch" placeholder="🔍 Buscar..." onkeyup="filterSelect('estadoGlobalFilter', this.value)" />
+        <select multiple id="estadoGlobalFilter" class="select-sidebar"></select>
+        <button class="btn-toggle-sidebar" id="estadoGlobalFilterBtn" onclick="toggleSelectAll('estadoGlobalFilter', 'estadoGlobalFilterBtn')">Seleccionar todo</button>
+        <button class="btn-apply-filter-sidebar" onclick="aplicarFiltros()">✓ Aplicar Estado</button>
+      </div>
+      
+      <h3 style="margin-top: 1.5rem;">👤 Responsable</h3>
+      <div class="filter-group">
+        <input type="text" class="filter-search-sidebar" id="responsableGlobalSearch" placeholder="🔍 Buscar..." onkeyup="filterSelect('responsableGlobalFilter', this.value)" />
+        <select multiple id="responsableGlobalFilter" class="select-sidebar"></select>
+        <button class="btn-toggle-sidebar" id="responsableGlobalFilterBtn" onclick="toggleSelectAll('responsableGlobalFilter', 'responsableGlobalFilterBtn')">Seleccionar todo</button>
+        <button class="btn-apply-filter-sidebar" onclick="aplicarFiltros()">✓ Aplicar Responsable</button>
       </div>
     </div>
     <div class="sidebar-footer">
@@ -146,11 +160,18 @@
           <h3 class="chart-title">📈 Inventario OYMM por Sede</h3>
           <div class="chart-filters">
             <div class="chart-filter-group">
-              <label>Responsable:</label>
-              <input type="text" class="filter-search" id="responsableSearch" placeholder="Buscar..." onkeyup="filterSelect('responsableFilter', this.value)" />
-              <select multiple id="responsableFilter"></select>
-              <button class="btn-filter-chart" id="responsableFilterBtn" onclick="toggleSelectAll('responsableFilter', 'responsableFilterBtn')">Seleccionar todo</button>
+              <label>Estado:</label>
+              <input type="text" class="filter-search" id="estadoOYMMSearch" placeholder="Buscar..." onkeyup="filterSelect('estadoOYMMFilter', this.value)" />
+              <select multiple id="estadoOYMMFilter"></select>
+              <button class="btn-filter-chart" id="estadoOYMMFilterBtn" onclick="toggleSelectAll('estadoOYMMFilter', 'estadoOYMMFilterBtn')">Seleccionar todo</button>
             </div>
+            <div class="chart-filter-group">
+              <label>Responsable:</label>
+              <input type="text" class="filter-search" id="responsableOYMMSearch" placeholder="Buscar..." onkeyup="filterSelect('responsableOYMMFilter', this.value)" />
+              <select multiple id="responsableOYMMFilter"></select>
+              <button class="btn-filter-chart" id="responsableOYMMFilterBtn" onclick="toggleSelectAll('responsableOYMMFilter', 'responsableOYMMFilterBtn')">Seleccionar todo</button>
+            </div>
+            <button class="btn-apply-filter" onclick="aplicarFiltrosGraficaOYMM()">✓ Aplicar Filtros</button>
           </div>
         </div>
         <div id="chartPrincipal" class="chart"></div>
@@ -237,16 +258,15 @@
     </div>
   </div>
   <script>
-    let filtrosDisponibles = {}, filtrosDisponiblesFiscal = {}, filtrosDisponiblesErrores = {}, filtrosDisponiblesProgramados = {}, filtrosDisponiblesGestion = {}, filtrosGlobales = {}, filtrosGrafica = {}, filtrosGraficaFiscal = {}, filtrosGraficaErrores = {}, filtrosGraficaProgramados = {}, filtrosGraficaGestion = {};
-    const fechaInicioEl = document.getElementById("fechaInicio"), fechaFinEl = document.getElementById("fechaFin"), sedeGlobalFilterEl = document.getElementById("sedeGlobalFilter"), responsableFilterEl = document.getElementById("responsableFilter"), estadoFilterEl = document.getElementById("estadoFilter"), tipoFilterEl = document.getElementById("tipoFilter"), errorFilterEl = document.getElementById("errorFilter"), tipoProgFilterEl = document.getElementById("tipoProgFilter"), tipoGestionFilterEl = document.getElementById("tipoGestionFilter"), responsableGestionFilterEl = document.getElementById("responsableGestionFilter"), statusEl = document.getElementById("status");
+    let filtrosDisponibles = {}, filtrosDisponiblesFiscal = {}, filtrosDisponiblesErrores = {}, filtrosDisponiblesProgramados = {}, filtrosDisponiblesGestion = {}, filtrosGlobales = {}, filtrosGraficaOYMM = {}, filtrosGraficaFiscal = {}, filtrosGraficaErrores = {}, filtrosGraficaProgramados = {}, filtrosGraficaGestion = {};
+    const fechaInicioEl = document.getElementById("fechaInicio"), fechaFinEl = document.getElementById("fechaFin"), mesGlobalFilterEl = document.getElementById("mesGlobalFilter"), estadoGlobalFilterEl = document.getElementById("estadoGlobalFilter"), responsableGlobalFilterEl = document.getElementById("responsableGlobalFilter"), estadoOYMMFilterEl = document.getElementById("estadoOYMMFilter"), responsableOYMMFilterEl = document.getElementById("responsableOYMMFilter"), estadoFilterEl = document.getElementById("estadoFilter"), tipoFilterEl = document.getElementById("tipoFilter"), errorFilterEl = document.getElementById("errorFilter"), tipoProgFilterEl = document.getElementById("tipoProgFilter"), tipoGestionFilterEl = document.getElementById("tipoGestionFilter"), responsableGestionFilterEl = document.getElementById("responsableGestionFilter"), statusEl = document.getElementById("status");
     
-    // Date Picker State
+    const mesesOrdenados = ['ENERO', 'FEBRERO', 'MARZO', 'ABRIL', 'MAYO', 'JUNIO', 'JULIO', 'AGOSTO', 'SEPTIEMBRE', 'OCTUBRE', 'NOVIEMBRE', 'DICIEMBRE'];
     const monthNames = ['Ene', 'Feb', 'Mar', 'Abr', 'May', 'Jun', 'Jul', 'Ago', 'Sep', 'Oct', 'Nov', 'Dic'];
     const datePickerState = {
-      minYear: 2020,
-      maxYear: new Date().getFullYear(),
-      fechaInicio: { year: null, month: null, day: null },
-      fechaFin: { year: null, month: null, day: null }
+      aniosDisponibles: [],
+      fechaInicio: { year: null, month: null },
+      fechaFin: { year: null, month: null }
     };
     
     function initDatePickerYears() {
@@ -255,7 +275,10 @@
         if (!yearGrid) return;
         yearGrid.innerHTML = '';
         
-        for (let y = datePickerState.minYear; y <= datePickerState.maxYear; y++) {
+        // Usar años disponibles de los datos
+        const anios = datePickerState.aniosDisponibles.length > 0 ? datePickerState.aniosDisponibles : [new Date().getFullYear()];
+        
+        anios.forEach(y => {
           const btn = document.createElement('div');
           btn.className = 'year-btn';
           btn.textContent = y;
@@ -265,7 +288,7 @@
           }
           btn.onclick = () => selectYear(prefix, y);
           yearGrid.appendChild(btn);
-        }
+        });
       });
     }
     
@@ -287,8 +310,8 @@
       const popup = document.getElementById(prefix + 'DatePopup');
       popup.classList.add('active');
       
-      if (!datePickerState[prefix].year) {
-        datePickerState[prefix].year = datePickerState.minYear || new Date().getFullYear();
+      if (!datePickerState[prefix].year && datePickerState.aniosDisponibles.length > 0) {
+        datePickerState[prefix].year = datePickerState.aniosDisponibles[0];
       }
       
       const yearGrid = document.getElementById(prefix + 'YearGrid');
@@ -307,16 +330,14 @@
     
     function showMonths(prefix) {
       const monthGrid = document.getElementById(prefix + 'MonthGrid');
-      const dayGrid = document.getElementById(prefix + 'DayGrid');
       
       let year = datePickerState[prefix].year;
-      if (!year) {
-        year = datePickerState.minYear || new Date().getFullYear();
+      if (!year && datePickerState.aniosDisponibles.length > 0) {
+        year = datePickerState.aniosDisponibles[0];
         datePickerState[prefix].year = year;
       }
       
       monthGrid.innerHTML = '';
-      dayGrid.innerHTML = '';
       
       monthNames.forEach((name, idx) => {
         const btn = document.createElement('div');
@@ -328,44 +349,16 @@
         btn.onclick = () => selectMonth(prefix, idx);
         monthGrid.appendChild(btn);
       });
-      
-      if (datePickerState[prefix].month !== null) {
-        showDays(prefix);
-      }
     }
     
     function selectMonth(prefix, month) {
       datePickerState[prefix].month = month;
-      showDays(prefix);
-    }
-    
-    function showDays(prefix) {
-      const monthGrid = document.getElementById(prefix + 'MonthGrid');
-      const dayGrid = document.getElementById(prefix + 'DayGrid');
-      const year = datePickerState[prefix].year;
-      const month = datePickerState[prefix].month;
       
+      const monthGrid = document.getElementById(prefix + 'MonthGrid');
       monthGrid.querySelectorAll('.month-btn').forEach((btn, idx) => {
         btn.classList.toggle('selected', idx === month);
       });
       
-      const daysInMonth = new Date(year, month + 1, 0).getDate();
-      
-      dayGrid.innerHTML = '';
-      for (let d = 1; d <= daysInMonth; d++) {
-        const btn = document.createElement('div');
-        btn.className = 'day-btn';
-        if (datePickerState[prefix].day === d) {
-          btn.classList.add('selected');
-        }
-        btn.textContent = d;
-        btn.onclick = () => selectDay(prefix, d);
-        dayGrid.appendChild(btn);
-      }
-    }
-    
-    function selectDay(prefix, day) {
-      datePickerState[prefix].day = day;
       updateDateDisplay(prefix);
       closeDatePicker(prefix);
       syncHiddenDates();
@@ -374,8 +367,8 @@
     function updateDateDisplay(prefix) {
       const state = datePickerState[prefix];
       const displayEl = document.getElementById(prefix + 'Display');
-      if (state.year && state.month !== null && state.day) {
-        displayEl.value = `${state.day} ${monthNames[state.month]} ${state.year}`;
+      if (state.year && state.month !== null) {
+        displayEl.value = `${monthNames[state.month]} ${state.year}`;
       }
     }
     
@@ -383,13 +376,13 @@
       const inicio = datePickerState.fechaInicio;
       const fin = datePickerState.fechaFin;
       
-      if (inicio.year && inicio.month !== null && inicio.day) {
-        const d = new Date(inicio.year, inicio.month, inicio.day);
-        document.getElementById('fechaInicio').value = d.toISOString().split('T')[0];
+      if (inicio.year && inicio.month !== null) {
+        const d = new Date(inicio.year, inicio.month, 1);
+        document.getElementById('fechaInicio').value = d.toISOString().split('T')[0].substring(0, 7);
       }
-      if (fin.year && fin.month !== null && fin.day) {
-        const d = new Date(fin.year, fin.month, fin.day);
-        document.getElementById('fechaFin').value = d.toISOString().split('T')[0];
+      if (fin.year && fin.month !== null) {
+        const d = new Date(fin.year, fin.month, 1);
+        document.getElementById('fechaFin').value = d.toISOString().split('T')[0].substring(0, 7);
       }
     }
     
@@ -400,14 +393,34 @@
       }
     });
     
-    window.addEventListener('DOMContentLoaded', async () => { initDatePickerYears(); await cargarFiltros(); await cargarDatos(); });
+    window.addEventListener('DOMContentLoaded', async () => { await cargarFiltros(); await cargarDatos(); });
     
     async function cargarFiltros() {
       // Filtros para Indicadores OYMM
       const r = await fetch('/api/indicadores/filtros'); filtrosDisponibles = await r.json();
-      populateFilter(sedeGlobalFilterEl, filtrosDisponibles.sedes, filtrosDisponibles.sedes);
-      populateFilter(responsableFilterEl, filtrosDisponibles.responsables, filtrosDisponibles.responsables);
-      updateToggleButton('sedeGlobalFilter', 'sedeGlobalFilterBtn'); updateToggleButton('responsableFilter', 'responsableFilterBtn');
+      
+      // Cargar años disponibles para los date pickers
+      datePickerState.aniosDisponibles = (filtrosDisponibles.anios || []).sort((a, b) => b - a);
+      initDatePickerYears();
+      
+      // Poblar filtro de Mes ordenado
+      const meses = (filtrosDisponibles.meses || []).sort((a, b) => mesesOrdenados.indexOf(a) - mesesOrdenados.indexOf(b));
+      
+      populateFilter(mesGlobalFilterEl, meses, meses);
+      updateToggleButton('mesGlobalFilter', 'mesGlobalFilterBtn');
+      
+      // Poblar filtros globales de Estado y Responsable
+      populateFilter(estadoGlobalFilterEl, filtrosDisponibles.estados || [], filtrosDisponibles.estados || []);
+      updateToggleButton('estadoGlobalFilter', 'estadoGlobalFilterBtn');
+      
+      populateFilter(responsableGlobalFilterEl, filtrosDisponibles.responsables || [], filtrosDisponibles.responsables || []);
+      updateToggleButton('responsableGlobalFilter', 'responsableGlobalFilterBtn');
+      
+      // Poblar filtros específicos de OYMM
+      populateFilter(estadoOYMMFilterEl, filtrosDisponibles.estados || [], filtrosDisponibles.estados || []);
+      populateFilter(responsableOYMMFilterEl, filtrosDisponibles.responsables || [], filtrosDisponibles.responsables || []);
+      updateToggleButton('estadoOYMMFilter', 'estadoOYMMFilterBtn');
+      updateToggleButton('responsableOYMMFilter', 'responsableOYMMFilterBtn');
       
       // Filtros para Fiscal RU
       const r2 = await fetch('/api/fiscal-ru/filtros'); filtrosDisponiblesFiscal = await r2.json();
@@ -441,9 +454,12 @@
       selectEl.addEventListener('click', e => e.preventDefault());
     }
     
-    enableClickToggleSelection(sedeGlobalFilterEl); enableClickToggleSelection(responsableFilterEl); enableClickToggleSelection(estadoFilterEl); enableClickToggleSelection(tipoFilterEl); enableClickToggleSelection(errorFilterEl); enableClickToggleSelection(tipoProgFilterEl); enableClickToggleSelection(tipoGestionFilterEl); enableClickToggleSelection(responsableGestionFilterEl);
-    sedeGlobalFilterEl.addEventListener("change", () => { updateToggleButton('sedeGlobalFilter', 'sedeGlobalFilterBtn'); aplicarFiltroSedeGlobal(); });
-    responsableFilterEl.addEventListener("change", () => { updateToggleButton('responsableFilter', 'responsableFilterBtn'); aplicarFiltrosGrafica(); });
+    enableClickToggleSelection(mesGlobalFilterEl); enableClickToggleSelection(estadoGlobalFilterEl); enableClickToggleSelection(responsableGlobalFilterEl); enableClickToggleSelection(estadoOYMMFilterEl); enableClickToggleSelection(responsableOYMMFilterEl); enableClickToggleSelection(estadoFilterEl); enableClickToggleSelection(tipoFilterEl); enableClickToggleSelection(errorFilterEl); enableClickToggleSelection(tipoProgFilterEl); enableClickToggleSelection(tipoGestionFilterEl); enableClickToggleSelection(responsableGestionFilterEl);
+    mesGlobalFilterEl.addEventListener("change", () => { updateToggleButton('mesGlobalFilter', 'mesGlobalFilterBtn'); });
+    estadoGlobalFilterEl.addEventListener("change", () => { updateToggleButton('estadoGlobalFilter', 'estadoGlobalFilterBtn'); });
+    responsableGlobalFilterEl.addEventListener("change", () => { updateToggleButton('responsableGlobalFilter', 'responsableGlobalFilterBtn'); });
+    estadoOYMMFilterEl.addEventListener("change", () => { updateToggleButton('estadoOYMMFilter', 'estadoOYMMFilterBtn'); aplicarFiltrosGraficaOYMM(); });
+    responsableOYMMFilterEl.addEventListener("change", () => { updateToggleButton('responsableOYMMFilter', 'responsableOYMMFilterBtn'); aplicarFiltrosGraficaOYMM(); });
     estadoFilterEl.addEventListener("change", () => { updateToggleButton('estadoFilter', 'estadoFilterBtn'); aplicarFiltrosGraficaFiscal(); });
     tipoFilterEl.addEventListener("change", () => { updateToggleButton('tipoFilter', 'tipoFilterBtn'); aplicarFiltrosGraficaFiscal(); });
     errorFilterEl.addEventListener("change", () => { updateToggleButton('errorFilter', 'errorFilterBtn'); aplicarFiltrosGraficaErrores(); });
@@ -451,36 +467,82 @@
     tipoGestionFilterEl.addEventListener("change", () => { updateToggleButton('tipoGestionFilter', 'tipoGestionFilterBtn'); aplicarFiltrosGraficaGestion(); });
     responsableGestionFilterEl.addEventListener("change", () => { updateToggleButton('responsableGestionFilter', 'responsableGestionFilterBtn'); aplicarFiltrosGraficaGestion(); });
     
-    // Aplicar filtro global de tiempo
+    // Aplicar filtros de Mes, Estado y Responsable del Sidebar
+    async function aplicarFiltros() {
+      filtrosGlobales = {};
+      
+      const meses = getSelectedOptions(mesGlobalFilterEl);
+      if (meses.length > 0 && meses.length < (filtrosDisponibles.meses || []).length) {
+        filtrosGlobales.meses = meses.join(",");
+      }
+      
+      const estados = getSelectedOptions(estadoGlobalFilterEl);
+      if (estados.length > 0 && estados.length < (filtrosDisponibles.estados || []).length) {
+        filtrosGlobales.estados = estados.join(",");
+      }
+      
+      const responsables = getSelectedOptions(responsableGlobalFilterEl);
+      if (responsables.length > 0 && responsables.length < (filtrosDisponibles.responsables || []).length) {
+        filtrosGlobales.responsables = responsables.join(",");
+      }
+      
+      await cargarDatos();
+    }
+    
+    // Aplicar filtro global de periodo (calendarios)
     async function aplicarFiltroGlobal() {
       filtrosGlobales = {};
       const fechaInicio = fechaInicioEl.value;
       const fechaFin = fechaFinEl.value;
-      if (fechaInicio) filtrosGlobales.fecha_inicio = fechaInicio;
-      if (fechaFin) filtrosGlobales.fecha_fin = fechaFin;
-      // Incluir sede global
-      const sedes = getSelectedOptions(sedeGlobalFilterEl);
-      if (sedes.length > 0 && sedes.length < filtrosDisponibles.sedes.length) filtrosGlobales.sedes = sedes.join(",");
+      
+      // Convertir fechas a filtros de año y mes
+      if (fechaInicio && fechaFin) {
+        const [anioInicio, mesInicio] = fechaInicio.split('-').map(Number);
+        const [anioFin, mesFin] = fechaFin.split('-').map(Number);
+        
+        // Generar lista de años
+        const anios = [];
+        for (let anio = anioInicio; anio <= anioFin; anio++) {
+          anios.push(anio);
+        }
+        
+        // Generar lista de meses basado en el rango
+        const meses = [];
+        if (anioInicio === anioFin) {
+          // Mismo año: filtrar solo los meses en el rango
+          for (let mes = mesInicio; mes <= mesFin; mes++) {
+            meses.push(mesesOrdenados[mes - 1]);
+          }
+        } else {
+          // Diferentes años: incluir todos los meses para simplificar
+          // O podríamos hacer lógica más compleja para cada año
+          meses.push(...mesesOrdenados);
+        }
+        
+        if (anios.length > 0) filtrosGlobales.anios = anios.join(',');
+        if (meses.length > 0 && meses.length < mesesOrdenados.length) {
+          filtrosGlobales.meses = meses.join(',');
+        }
+      } else if (fechaInicio) {
+        const [anioInicio, mesInicio] = fechaInicio.split('-').map(Number);
+        filtrosGlobales.anios = String(anioInicio);
+        filtrosGlobales.meses = mesesOrdenados[mesInicio - 1];
+      } else if (fechaFin) {
+        const [anioFin, mesFin] = fechaFin.split('-').map(Number);
+        filtrosGlobales.anios = String(anioFin);
+        filtrosGlobales.meses = mesesOrdenados[mesFin - 1];
+      }
+      
       await cargarDatos();
     }
     
-    // Aplicar filtro de Sede Global (compartido entre todas las gráficas)
-    async function aplicarFiltroSedeGlobal() {
-      const sedes = getSelectedOptions(sedeGlobalFilterEl);
-      if (sedes.length > 0 && sedes.length < filtrosDisponibles.sedes.length) {
-        filtrosGlobales.sedes = sedes.join(",");
-      } else {
-        delete filtrosGlobales.sedes;
-      }
-      // Actualizar todas las gráficas
-      await Promise.all([actualizarGraficas(), actualizarGraficaFiscalRU(), actualizarGraficaBrigadas(), actualizarGraficaErrores(), actualizarGraficaProgramados(), actualizarGraficaGestion()]);
-    }
-    
     // Aplicar filtros específicos de la gráfica OYMM (sin recargar todo)
-    async function aplicarFiltrosGrafica() {
-      filtrosGrafica = {};
-      const resp = getSelectedOptions(responsableFilterEl);
-      if (resp.length > 0 && resp.length < filtrosDisponibles.responsables.length) filtrosGrafica.responsables = resp.join(",");
+    async function aplicarFiltrosGraficaOYMM() {
+      filtrosGraficaOYMM = {};
+      const resp = getSelectedOptions(responsableOYMMFilterEl);
+      const estados = getSelectedOptions(estadoOYMMFilterEl);
+      if (resp.length > 0 && resp.length < filtrosDisponibles.responsables.length) filtrosGraficaOYMM.responsables = resp.join(",");
+      if (estados.length > 0 && estados.length < (filtrosDisponibles.estados || []).length) filtrosGraficaOYMM.estados = estados.join(",");
       await actualizarGraficas();
     }
     
@@ -523,12 +585,8 @@
       setStatus('🔄 Cargando...'); await Promise.all([actualizarKPIs(), actualizarGraficas(), actualizarGraficaFiscalRU(), actualizarGraficaBrigadas(), actualizarGraficaErrores(), actualizarGraficaProgramados(), actualizarGraficaGestion()]); setStatus('✅ OK'); setTimeout(() => setStatus(''), 2000);
     }
     
-    function combinarFiltros() {
-      return { ...filtrosGlobales, ...filtrosGrafica };
-    }
-    
     async function actualizarKPIs() {
-      const filtros = combinarFiltros();
+      const filtros = filtrosGlobales;
       const r = await fetch(`/api/indicadores/kpis?${new URLSearchParams(filtros)}`), kpis = await r.json();
       document.getElementById('kpiCostoInventario').textContent = formatMoney(kpis.costo_inventario_final);
       document.getElementById('kpiCostoDiferencia').textContent = formatMoney(kpis.costo_diferencia);
@@ -538,8 +596,16 @@
     }
     
     async function actualizarGraficas() {
-      const filtros = combinarFiltros();
+      const filtros = { ...filtrosGlobales, ...filtrosGraficaOYMM };
       const r = await fetch(`/api/indicadores/grafico/inventario-por-sede?${new URLSearchParams(filtros)}`), data = await r.json();
+      
+      if (!data || !Array.isArray(data) || data.length === 0) {
+        Plotly.newPlot('chartPrincipal', [], { 
+          annotations: [{ text: 'No hay datos disponibles', showarrow: false, x: 0.5, y: 0.5, xref: 'paper', yref: 'paper' }]
+        }, { responsive: true });
+        return;
+      }
+      
       const sedes = data.map(d => d.sede), costosInv = data.map(d => d.costo_inventario), costosDif = data.map(d => d.costo_diferencia), desv = data.map(d => d.desviacion_promedio);
       const traces = [
         { x: sedes, y: costosInv, name: 'Costo Inventario', type: 'bar', marker: { color: '#16a34a' } },
@@ -553,6 +619,14 @@
     async function actualizarGraficaFiscalRU() {
       const filtros = { ...filtrosGlobales, ...filtrosGraficaFiscal };
       const r = await fetch(`/api/fiscal-ru/grafico/por-sede?${new URLSearchParams(filtros)}`), data = await r.json();
+      
+      if (!data || !Array.isArray(data) || data.length === 0) {
+        Plotly.newPlot('chartFiscalRU', [], { 
+          annotations: [{ text: 'No hay datos disponibles', showarrow: false, x: 0.5, y: 0.5, xref: 'paper', yref: 'paper' }]
+        }, { responsive: true });
+        return;
+      }
+      
       const sedes = data.map(d => d.sede), costosInv = data.map(d => d.costo_inventario), desv = data.map(d => d.desviacion);
       const traces = [
         { x: sedes, y: costosInv, name: 'Costo Inventario', type: 'bar', marker: { color: '#10b981' } },
@@ -565,6 +639,14 @@
     async function actualizarGraficaBrigadas() {
       const filtros = filtrosGlobales; // Solo usa filtros globales (Tiempo + Sede)
       const r = await fetch(`/api/brigadas/grafico/por-sede?${new URLSearchParams(filtros)}`), data = await r.json();
+      
+      if (!data || !data.sedes || !data.costo_total || !data.costo_diferencia || !data.desviacion) {
+        Plotly.newPlot('chartBrigadas', [], { 
+          annotations: [{ text: 'No hay datos disponibles', showarrow: false, x: 0.5, y: 0.5, xref: 'paper', yref: 'paper' }]
+        }, { responsive: true });
+        return;
+      }
+      
       const sedes = data.sedes, costosTotal = data.costo_total, costosDif = data.costo_diferencia, desv = data.desviacion;
       const traces = [
         { x: sedes, y: costosTotal, name: 'Costo Total', type: 'bar', marker: { color: '#3b82f6' } },
@@ -578,6 +660,14 @@
     async function actualizarGraficaErrores() {
       const filtros = { ...filtrosGlobales, ...filtrosGraficaErrores }; // Filtros globales + filtro de Error
       const r = await fetch(`/api/errores/grafico/por-error?${new URLSearchParams(filtros)}`), data = await r.json();
+      
+      if (!data || !data.labels || !data.valores) {
+        Plotly.newPlot('chartErrores', [], { 
+          annotations: [{ text: 'No hay datos disponibles', showarrow: false, x: 0.5, y: 0.5, xref: 'paper', yref: 'paper' }]
+        }, { responsive: true });
+        return;
+      }
+      
       const labels = data.labels, valores = data.valores;
       
       // Colores por tipo de error
@@ -611,6 +701,13 @@
     async function actualizarGraficaProgramados() {
       const filtros = { ...filtrosGlobales, ...filtrosGraficaProgramados };
       const r = await fetch(`/api/programados/grafico/por-sede?${new URLSearchParams(filtros)}`), data = await r.json();
+      
+      if (!data || !data.sedes || !data.programados || !data.ejecutados) {
+        Plotly.newPlot('chartProgramados', [], { 
+          annotations: [{ text: 'No hay datos disponibles', showarrow: false, x: 0.5, y: 0.5, xref: 'paper', yref: 'paper' }]
+        }, { responsive: true });
+        return;
+      }
       
       const traces = [
         {
@@ -647,6 +744,14 @@
     async function actualizarGraficaGestion() {
       const filtros = { ...filtrosGlobales, ...filtrosGraficaGestion };
       const r = await fetch(`/api/gestion/grafico/por-sede?${new URLSearchParams(filtros)}`), data = await r.json();
+      
+      // Validar que existan los datos
+      if (!data || !data.sedes || !data.dentro_plazo || !data.fuera_plazo) {
+        Plotly.newPlot('chartGestion', [], { 
+          annotations: [{ text: 'No hay datos disponibles', showarrow: false, x: 0.5, y: 0.5, xref: 'paper', yref: 'paper' }]
+        }, { responsive: true });
+        return;
+      }
       
       const traces = [
         {

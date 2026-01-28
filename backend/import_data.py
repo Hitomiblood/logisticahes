@@ -197,6 +197,7 @@ def import_indicadores_almacenes():
         clear_table("indicadores")
         
         column_mapping = {
+            "AÑO": "anio",
             "MES": "mes",
             "SEDE": "sede",
             "RESPONSABLE": "responsable",
@@ -213,7 +214,8 @@ def import_indicadores_almacenes():
             "PRECIO TOTAL": "precio_total",
             "COSTO FINAL  INVENTARIO ": "costo_inventario_final",
             "COSTO DIFERENCIA ": "costo_diferencia",
-            "OBJETIVO ": "objetivo"
+            "OBJETIVO ": "objetivo",
+            "ESTADO": "estado"
         }
         
         records = []
@@ -235,16 +237,16 @@ def import_indicadores_almacenes():
                 batch = records[i:i+batch_size]
                 cursor.executemany('''
                     INSERT INTO indicadores 
-                    (mes, sede, responsable, codigo, descripcion, inventario_inicial,
+                    (anio, mes, sede, responsable, codigo, descripcion, inventario_inicial,
                      total_entregado, total_consumos, total_reintegros, denuncio_fiscalia,
                      inventario_final, diferencia, precio_unidad, precio_total,
-                     costo_inventario_final, costo_diferencia, objetivo)
-                    VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
-                ''', [(r["mes"], r["sede"], r["responsable"], r["codigo"], r["descripcion"],
+                     costo_inventario_final, costo_diferencia, objetivo, estado)
+                    VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+                ''', [(r.get("anio"), r["mes"], r["sede"], r["responsable"], r["codigo"], r["descripcion"],
                        r["inventario_inicial"], r["total_entregado"], r["total_consumos"],
                        r["total_reintegros"], r["denuncio_fiscalia"], r["inventario_final"],
                        r["diferencia"], r["precio_unidad"], r["precio_total"],
-                       r["costo_inventario_final"], r["costo_diferencia"], r["objetivo"]) for r in batch])
+                       r["costo_inventario_final"], r["costo_diferencia"], r["objetivo"], r.get("estado")) for r in batch])
                 conn.commit()
                 print(f"      Insertados {min(i+batch_size, len(records))}/{len(records)}...")
         

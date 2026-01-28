@@ -61,7 +61,7 @@ def build_where_clause(
     if responsables:
         resp_list = responsables.split(',')
         placeholders = ','.join('?' * len(resp_list))
-        conditions.append(f"responsable IN ({placeholders})")
+        conditions.append(f"almacenista IN ({placeholders})")
         params.extend(resp_list)
     
     where_clause = " WHERE " + " AND ".join(conditions) if conditions else ""
@@ -76,12 +76,12 @@ async def get_filtros():
         
         sedes = [row[0] for row in cursor.execute("SELECT DISTINCT sede FROM gestion WHERE sede IS NOT NULL ORDER BY sede").fetchall()]
         tipos = [row[0] for row in cursor.execute("SELECT DISTINCT tipo_inventario FROM gestion WHERE tipo_inventario IS NOT NULL ORDER BY tipo_inventario").fetchall()]
-        responsables = [row[0] for row in cursor.execute("SELECT DISTINCT responsable FROM gestion WHERE responsable IS NOT NULL ORDER BY responsable").fetchall()]
+        almacenistas = [row[0] for row in cursor.execute("SELECT DISTINCT almacenista FROM gestion WHERE almacenista IS NOT NULL ORDER BY almacenista").fetchall()]
         
         return {
             "sedes": sedes,
             "tipos_inventario": tipos,
-            "responsables": responsables
+            "responsables": almacenistas
         }
 
 
@@ -100,30 +100,31 @@ async def get_kpis(
         cursor = conn.cursor()
         
         # Promedio de días de inventario
-        query = f"SELECT AVG(dias) FROM gestion {where_clause} AND dias IS NOT NULL"
+        if where_clause:
+            query = f"SELECT AVG(dias) FROM gestion {where_clause} AND dias IS NOT NULL"
+        else:
+            query = "SELECT AVG(dias) FROM gestion WHERE dias IS NOT NULL"
         promedio_dias = cursor.execute(query, params).fetchone()[0] or 0
-        
-        # Promedio de días de respuesta
-        query = f"SELECT AVG(dias_respuesta) FROM gestion {where_clause} AND dias_respuesta IS NOT NULL"
-        promedio_dias_respuesta = cursor.execute(query, params).fetchone()[0] or 0
         
         # Total de registros
         query = f"SELECT COUNT(*) FROM gestion {where_clause}"
         total_registros = cursor.execute(query, params).fetchone()[0]
         
-        # Dentro del plazo (respuesta)
-        query = f"SELECT COUNT(*) FROM gestion {where_clause} AND indicador_respuesta = 'Dentro del plazo'"
-        dentro_plazo = cursor.execute(query, params).fetchone()[0]
+        # Cumple indicador (indicador_inventario = 1 o cercano)
+        if where_clause:
+            query = f"SELECT COUNT(*) FROM gestion {where_clause} AND indicador_inventario >= 0.9"
+        else:
+            query = "SELECT COUNT(*) FROM gestion WHERE indicador_inventario >= 0.9"
+        cumple_indicador = cursor.execute(query, params).fetchone()[0]
         
-        # Porcentaje dentro del plazo
-        porcentaje_plazo = (dentro_plazo / total_registros * 100) if total_registros > 0 else 0
+        # Porcentaje que cumple
+        porcentaje_cumple = (cumple_indicador / total_registros * 100) if total_registros > 0 else 0
         
         return {
             "promedio_dias_inventario": round(promedio_dias, 2),
-            "promedio_dias_respuesta": round(promedio_dias_respuesta, 2),
             "total_registros": total_registros,
-            "dentro_plazo": dentro_plazo,
-            "porcentaje_plazo": round(porcentaje_plazo, 2)
+            "cumple_indicador": cumple_indicador,
+            "porcentaje_cumple": round(porcentaje_cumple, 2)
         }
 
 
@@ -144,8 +145,9 @@ async def get_por_sede(
         query = f"""
             SELECT 
                 sede,
-                SUM(CASE WHEN indicador_respuesta = 'Dentro del plazo' THEN 1 ELSE 0 END) as dentro_plazo,
-                SUM(CASE WHEN indicador_respuesta = 'Fuera del plazo' THEN 1 ELSE 0 END) as fuera_plazo,
+                SUM(CASE WHEN indicador_inventario >= 0.9 THEN 1 ELSE 0 END) as cumple,
+                SUM(CASE WHEN indicador_inventario < 0.9 THEN 1 ELSE 0 END) as no_cumple,
+                AVG(dias) as promedio_dias,
                 COUNT(*) as total
             FROM gestion
             {where_clause}
@@ -156,20 +158,23 @@ async def get_por_sede(
         rows = cursor.execute(query, params).fetchall()
         
         sedes_list = []
-        dentro_plazo = []
-        fuera_plazo = []
+        cumple = []
+        no_cumple = []
+        promedio_dias = []
         total = []
         
         for row in rows:
             sedes_list.append(row[0])
-            dentro_plazo.append(row[1])
-            fuera_plazo.append(row[2])
-            total.append(row[3])
+            cumple.append(row[1])
+            no_cumple.append(row[2])
+            promedio_dias.append(round(row[3], 2) if row[3] else 0)
+            total.append(row[4])
         
         return {
             "sedes": sedes_list,
-            "dentro_plazo": dentro_plazo,
-            "fuera_plazo": fuera_plazo,
+            "cumple": cumple,
+            "no_cumple": no_cumple,
+            "promedio_dias": promedio_dias,
             "total": total
         }
 
@@ -190,36 +195,36 @@ async def get_por_responsable(
         
         query = f"""
             SELECT 
-                responsable,
-                SUM(CASE WHEN indicador_respuesta = 'Dentro del plazo' THEN 1 ELSE 0 END) as dentro_plazo,
-                SUM(CASE WHEN indicador_respuesta = 'Fuera del plazo' THEN 1 ELSE 0 END) as fuera_plazo,
-                AVG(dias_respuesta) as promedio_dias_respuesta,
+                almacenista,
+                SUM(CASE WHEN indicador_inventario >= 0.9 THEN 1 ELSE 0 END) as cumple,
+                SUM(CASE WHEN indicador_inventario < 0.9 THEN 1 ELSE 0 END) as no_cumple,
+                AVG(dias) as promedio_dias,
                 COUNT(*) as total
             FROM gestion
             {where_clause}
-            GROUP BY responsable
-            ORDER BY promedio_dias_respuesta DESC
+            GROUP BY almacenista
+            ORDER BY promedio_dias DESC
         """
         
         rows = cursor.execute(query, params).fetchall()
         
         responsables_list = []
-        dentro_plazo = []
-        fuera_plazo = []
+        cumple = []
+        no_cumple = []
         promedio_dias = []
         total = []
         
         for row in rows:
             responsables_list.append(row[0])
-            dentro_plazo.append(row[1])
-            fuera_plazo.append(row[2])
+            cumple.append(row[1])
+            no_cumple.append(row[2])
             promedio_dias.append(round(row[3], 2) if row[3] else 0)
             total.append(row[4])
         
         return {
             "responsables": responsables_list,
-            "dentro_plazo": dentro_plazo,
-            "fuera_plazo": fuera_plazo,
-            "promedio_dias_respuesta": promedio_dias,
+            "cumple": cumple,
+            "no_cumple": no_cumple,
+            "promedio_dias": promedio_dias,
             "total": total
         }

@@ -90,7 +90,7 @@ def get_kpis(
             SELECT 
                 COALESCE(SUM(costo_total), 0) as costo_total,
                 COALESCE(SUM(costo_diferencia), 0) as costo_diferencia,
-                COALESCE(AVG(desviacion), 0) as desviacion_promedio,
+                COALESCE(AVG(diferencia), 0) as diferencia_promedio,
                 COUNT(DISTINCT item_codigo) as items_unicos,
                 COUNT(*) as total_registros
             FROM brigadas
@@ -103,7 +103,7 @@ def get_kpis(
         return {
             "costo_total": row[0],
             "costo_diferencia": row[1],
-            "desviacion_promedio": row[2],
+            "diferencia_promedio": row[2],
             "items_unicos": row[3],
             "total_registros": row[4]
         }
@@ -126,7 +126,7 @@ def get_por_sede(
                 sede,
                 COALESCE(SUM(costo_total), 0) as costo_total,
                 COALESCE(SUM(costo_diferencia), 0) as costo_diferencia,
-                COALESCE(AVG(desviacion), 0) as desviacion
+                COALESCE(AVG(diferencia), 0) as diferencia
             FROM brigadas
             WHERE {where_clause}
             GROUP BY sede
@@ -140,5 +140,5 @@ def get_por_sede(
             "sedes": [row[0] for row in rows],
             "costo_total": [row[1] for row in rows],
             "costo_diferencia": [row[2] for row in rows],
-            "desviacion": [row[3] for row in rows]
+            "diferencia": [row[3] for row in rows]
         }

@@ -228,6 +228,7 @@ def init_db():
         cursor.execute('''
             CREATE TABLE IF NOT EXISTS indicadores (
                 id INTEGER PRIMARY KEY AUTOINCREMENT,
+                anio INTEGER,
                 mes TEXT,
                 sede TEXT,
                 responsable TEXT,
@@ -245,14 +246,17 @@ def init_db():
                 costo_inventario_final REAL,
                 costo_diferencia REAL,
                 objetivo REAL,
+                estado TEXT,
                 created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
             )
         ''')
         
         # Índices para indicadores
+        cursor.execute('CREATE INDEX IF NOT EXISTS idx_indicadores_anio ON indicadores(anio)')
         cursor.execute('CREATE INDEX IF NOT EXISTS idx_indicadores_mes ON indicadores(mes)')
         cursor.execute('CREATE INDEX IF NOT EXISTS idx_indicadores_sede ON indicadores(sede)')
         cursor.execute('CREATE INDEX IF NOT EXISTS idx_indicadores_responsable ON indicadores(responsable)')
+        cursor.execute('CREATE INDEX IF NOT EXISTS idx_indicadores_estado ON indicadores(estado)')
         
         # Tabla para Fiscal RU
         cursor.execute('''
