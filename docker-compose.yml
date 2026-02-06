@@ -1,10 +1,111 @@
 version: '3.8'
 
 services:
-  # Servicio principal - Nginx con la aplicación web
-  logisticahesego:
-    build: .
-    container_name: logisticahesego
+  # ========================================
+  # PostgreSQL Database
+  # ========================================
+  postgres:
+    image: postgres:15-alpine
+    container_name: logistica_postgres
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: ${POSTGRES_USER:-logistica_user}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-logistica_password_2026}
+      POSTGRES_DB: ${POSTGRES_DB:-logistica_hesego}
+      PGDATA: /var/lib/postgresql/data/pgdata
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    networks:
+      - web
+    ports:
+      - "5433:5432"  # Puerto 5433 en host para evitar conflicto con PostgreSQL local
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER:-logistica_user}"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  # ========================================
+  # Redis Cache
+  # ========================================
+  redis:
+    image: redis:7-alpine
+    container_name: logistica_redis
+    restart: unless-stopped
+    command: redis-server --appendonly yes --maxmemory 512mb --maxmemory-policy allkeys-lru
+    volumes:
+      - redis_data:/data
+    networks:
+      - web
+    ports:
+      - "6380:6379"  # Puerto 6380 en host para evitar conflicto con Redis local
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 10s
+      timeout: 3s
+      retries: 5
+
+  # ========================================
+  # Backend API (FastAPI)
+  # ========================================
+  backend:
+    build:
+      context: .
+      dockerfile: Dockerfile.backend
+    container_name: logistica_backend
+    restart: unless-stopped
+    environment:
+      # Entorno
+      ENVIRONMENT: ${ENVIRONMENT:-production}
+      
+      # Base de datos
+      DB_TYPE: postgresql
+      POSTGRES_HOST: postgres
+      POSTGRES_PORT: 5432
+      POSTGRES_USER: ${POSTGRES_USER:-logistica_user}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-logistica_password_2026}
+      POSTGRES_DB: ${POSTGRES_DB:-logistica_hesego}
+      
+      # Redis
+      REDIS_HOST: redis
+      REDIS_PORT: 6379
+      REDIS_DB: 0
+      CACHE_TTL: ${CACHE_TTL:-300}
+      
+      # API
+      API_HOST: 0.0.0.0
+      API_PORT: 8000
+      CORS_ORIGINS: ${CORS_ORIGINS:-*}
+      
+      # Logging
+      LOG_LEVEL: ${LOG_LEVEL:-INFO}
+      LOG_FORMAT: ${LOG_FORMAT:-json}
+    volumes:
+      - sharepoint_data:/app/data:ro
+    networks:
+      - web
+    ports:
+      - "8000:8000"
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD", "python", "-c", "import urllib.request; urllib.request.urlopen('http://localhost:8000/api/health')"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 40s
+
+  # ========================================
+  # Frontend Nginx
+  # ========================================
+  nginx:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: logistica_nginx
     restart: unless-stopped
     ports:
       - "8085:80"
@@ -13,9 +114,16 @@ services:
     networks:
       - web
     depends_on:
-      - webhook-server
+      - backend
+    healthcheck:
+      test: ["CMD", "wget", "--quiet", "--tries=1", "--spider", "http://localhost/"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
 
+  # ========================================
   # Servidor Webhook - Recibe archivos desde Power Automate
+  # ========================================
   webhook-server:
     build:
       context: .
@@ -31,9 +139,20 @@ services:
     networks:
       - web
 
+# ========================================
+# Volúmenes Persistentes
+# ========================================
 volumes:
+  postgres_data:
+    name: logistica_postgres_data
+  redis_data:
+    name: logistica_redis_data
   sharepoint_data:
+    name: logistica_sharepoint_data
 
+# ========================================
+# Red
+# ========================================
 networks:
   web:
     external: true

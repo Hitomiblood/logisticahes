@@ -1,12 +1,29 @@
 import sqlite3
+import psycopg2
+import psycopg2.extras
 from contextlib import contextmanager
-from .config import DB_PATH
+from .config import DB_TYPE, DATABASE_URL, DB_PATH, POSTGRES_HOST, POSTGRES_PORT, POSTGRES_USER, POSTGRES_PASSWORD, POSTGRES_DB
 
 def get_connection():
-    """Obtener conexión a la base de datos"""
-    conn = sqlite3.connect(str(DB_PATH), check_same_thread=False)
-    conn.row_factory = sqlite3.Row
-    return conn
+    """Obtener conexión a la base de datos (SQLite o PostgreSQL)"""
+    if DB_TYPE == "postgresql":
+        try:
+            conn = psycopg2.connect(
+                host=POSTGRES_HOST,
+                port=POSTGRES_PORT,
+                user=POSTGRES_USER,
+                password=POSTGRES_PASSWORD,
+                database=POSTGRES_DB
+            )
+            return conn
+        except psycopg2.Error as e:
+            print(f"❌ Error conectando a PostgreSQL: {e}")
+            raise
+    else:
+        # SQLite
+        conn = sqlite3.connect(str(DB_PATH), check_same_thread=False)
+        conn.row_factory = sqlite3.Row
+        return conn
 
 @contextmanager
 def get_db():
@@ -17,15 +34,33 @@ def get_db():
     finally:
         conn.close()
 
+def execute_sql(cursor, sql, params=None):
+    """Ejecutar SQL adaptando el marcador de parámetros según DB_TYPE"""
+    if DB_TYPE == "postgresql":
+        # PostgreSQL usa %s en lugar de ?
+        sql_adapted = sql.replace("?", "%s")
+        cursor.execute(sql_adapted, params or [])
+    else:
+        cursor.execute(sql, params or [])
+    return cursor
+
 def init_db():
     """Inicializar tablas de la base de datos"""
     with get_db() as conn:
         cursor = conn.cursor()
         
+        # Detectar tipo de BD para usar AUTO_INCREMENT (SQLite) o SERIAL (PostgreSQL)
+        if DB_TYPE == "postgresql":
+            id_type = "SERIAL PRIMARY KEY"
+            timestamp_default = "TIMESTAMP DEFAULT CURRENT_TIMESTAMP"
+        else:
+            id_type = "INTEGER PRIMARY KEY AUTOINCREMENT"
+            timestamp_default = "TIMESTAMP DEFAULT CURRENT_TIMESTAMP"
+        
         # Tabla para Costos Mensuales
-        cursor.execute('''
+        execute_sql(cursor, f'''
             CREATE TABLE IF NOT EXISTS costos_mensuales (
-                id INTEGER PRIMARY KEY AUTOINCREMENT,
+                id {id_type},
                 fecha TEXT,
                 catalogo TEXT,
                 neto REAL,
@@ -33,14 +68,14 @@ def init_db():
                 proyecto TEXT,
                 tercero TEXT,
                 descripcion TEXT,
-                created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+                created_at {timestamp_default}
             )
         ''')
         
         # Tabla para Operatividad Vehículos
-        cursor.execute('''
+        execute_sql(cursor, f'''
             CREATE TABLE IF NOT EXISTS operatividad_vehiculos (
-                id INTEGER PRIMARY KEY AUTOINCREMENT,
+                id {id_type},
                 fecha_ejecucion TEXT,
                 placa TEXT,
                 tipo_vehiculo TEXT,
@@ -62,16 +97,16 @@ def init_db():
                 dias_en_taller REAL,
                 propietario TEXT,
                 indicador REAL,
-                created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+                created_at {timestamp_default}
             )
         ''')
         
         # ========== TABLAS PARA COMPRAS ==========
         
         # Tabla para TRAZA REQ OC (Trazabilidad Requisición a OC)
-        cursor.execute('''
+        execute_sql(cursor, f'''
             CREATE TABLE IF NOT EXISTS traza_req_oc (
-                id INTEGER PRIMARY KEY AUTOINCREMENT,
+                id {id_type},
                 req_fecha_entrega TEXT,
                 req_fecha TEXT,
                 req_usuario TEXT,
@@ -118,14 +153,14 @@ def init_db():
                 dias_entrada_almacen REAL,
                 mes REAL,
                 suma_rq INTEGER,
-                created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+                created_at {timestamp_default}
             )
         ''')
         
         # Tabla para OC DESCUENTOS
-        cursor.execute('''
+        execute_sql(cursor, f'''
             CREATE TABLE IF NOT EXISTS oc_descuentos (
-                id INTEGER PRIMARY KEY AUTOINCREMENT,
+                id {id_type},
                 fecha TEXT,
                 fecha_entrega TEXT,
                 dias_entrega INTEGER,
@@ -158,14 +193,14 @@ def init_db():
                 proceso TEXT,
                 concatenado TEXT,
                 porcentaje_descuento REAL,
-                created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+                created_at {timestamp_default}
             )
         ''')
         
         # Tabla para BASE OC GENERADAS
-        cursor.execute('''
+        execute_sql(cursor, f'''
             CREATE TABLE IF NOT EXISTS base_oc_generadas (
-                id INTEGER PRIMARY KEY AUTOINCREMENT,
+                id {id_type},
                 fecha TEXT,
                 fecha_entrega TEXT,
                 dias_entrega INTEGER,
@@ -195,39 +230,39 @@ def init_db():
                 estado TEXT,
                 moneda TEXT,
                 observaciones TEXT,
-                created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+                created_at {timestamp_default}
             )
         ''')
         
         # Índices para mejorar rendimiento
-        cursor.execute('CREATE INDEX IF NOT EXISTS idx_costos_fecha ON costos_mensuales(fecha)')
-        cursor.execute('CREATE INDEX IF NOT EXISTS idx_costos_catalogo ON costos_mensuales(catalogo)')
-        cursor.execute('CREATE INDEX IF NOT EXISTS idx_costos_ciudad ON costos_mensuales(ciudad)')
-        cursor.execute('CREATE INDEX IF NOT EXISTS idx_operatividad_fecha ON operatividad_vehiculos(fecha_ejecucion)')
-        cursor.execute('CREATE INDEX IF NOT EXISTS idx_operatividad_sede ON operatividad_vehiculos(sede)')
-        cursor.execute('CREATE INDEX IF NOT EXISTS idx_operatividad_estado ON operatividad_vehiculos(estado_vehiculo)')
+        execute_sql(cursor, 'CREATE INDEX IF NOT EXISTS idx_costos_fecha ON costos_mensuales(fecha)')
+        execute_sql(cursor, 'CREATE INDEX IF NOT EXISTS idx_costos_catalogo ON costos_mensuales(catalogo)')
+        execute_sql(cursor, 'CREATE INDEX IF NOT EXISTS idx_costos_ciudad ON costos_mensuales(ciudad)')
+        execute_sql(cursor, 'CREATE INDEX IF NOT EXISTS idx_operatividad_fecha ON operatividad_vehiculos(fecha_ejecucion)')
+        execute_sql(cursor, 'CREATE INDEX IF NOT EXISTS idx_operatividad_sede ON operatividad_vehiculos(sede)')
+        execute_sql(cursor, 'CREATE INDEX IF NOT EXISTS idx_operatividad_estado ON operatividad_vehiculos(estado_vehiculo)')
         
         # Índices para compras
-        cursor.execute('CREATE INDEX IF NOT EXISTS idx_traza_oc_fecha ON traza_req_oc(oc_fecha)')
-        cursor.execute('CREATE INDEX IF NOT EXISTS idx_traza_req_estado ON traza_req_oc(req_estado)')
-        cursor.execute('CREATE INDEX IF NOT EXISTS idx_traza_oc_estado ON traza_req_oc(oc_estado)')
-        cursor.execute('CREATE INDEX IF NOT EXISTS idx_traza_oc_tercero ON traza_req_oc(oc_tercero_nombre)')
-        cursor.execute('CREATE INDEX IF NOT EXISTS idx_traza_oc_tipo_num ON traza_req_oc(oc_tipo, oc_numero)')
-        cursor.execute('CREATE INDEX IF NOT EXISTS idx_oc_desc_fecha ON oc_descuentos(fecha)')
-        cursor.execute('CREATE INDEX IF NOT EXISTS idx_oc_desc_proceso ON oc_descuentos(proceso)')
-        cursor.execute('CREATE INDEX IF NOT EXISTS idx_oc_desc_tercero ON oc_descuentos(tercero_nombre)')
-        cursor.execute('CREATE INDEX IF NOT EXISTS idx_oc_desc_doc ON oc_descuentos(documento_tipo, documento_num)')
-        cursor.execute('CREATE INDEX IF NOT EXISTS idx_oc_desc_estado ON oc_descuentos(estado)')
-        cursor.execute('CREATE INDEX IF NOT EXISTS idx_base_oc_fecha ON base_oc_generadas(fecha)')
-        cursor.execute('CREATE INDEX IF NOT EXISTS idx_base_oc_estado ON base_oc_generadas(estado)')
-        cursor.execute('CREATE INDEX IF NOT EXISTS idx_base_oc_tercero ON base_oc_generadas(tercero_nombre)')
+        execute_sql(cursor, 'CREATE INDEX IF NOT EXISTS idx_traza_oc_fecha ON traza_req_oc(oc_fecha)')
+        execute_sql(cursor, 'CREATE INDEX IF NOT EXISTS idx_traza_req_estado ON traza_req_oc(req_estado)')
+        execute_sql(cursor, 'CREATE INDEX IF NOT EXISTS idx_traza_oc_estado ON traza_req_oc(oc_estado)')
+        execute_sql(cursor, 'CREATE INDEX IF NOT EXISTS idx_traza_oc_tercero ON traza_req_oc(oc_tercero_nombre)')
+        execute_sql(cursor, 'CREATE INDEX IF NOT EXISTS idx_traza_oc_tipo_num ON traza_req_oc(oc_tipo, oc_numero)')
+        execute_sql(cursor, 'CREATE INDEX IF NOT EXISTS idx_oc_desc_fecha ON oc_descuentos(fecha)')
+        execute_sql(cursor, 'CREATE INDEX IF NOT EXISTS idx_oc_desc_proceso ON oc_descuentos(proceso)')
+        execute_sql(cursor, 'CREATE INDEX IF NOT EXISTS idx_oc_desc_tercero ON oc_descuentos(tercero_nombre)')
+        execute_sql(cursor, 'CREATE INDEX IF NOT EXISTS idx_oc_desc_doc ON oc_descuentos(documento_tipo, documento_num)')
+        execute_sql(cursor, 'CREATE INDEX IF NOT EXISTS idx_oc_desc_estado ON oc_descuentos(estado)')
+        execute_sql(cursor, 'CREATE INDEX IF NOT EXISTS idx_base_oc_fecha ON base_oc_generadas(fecha)')
+        execute_sql(cursor, 'CREATE INDEX IF NOT EXISTS idx_base_oc_estado ON base_oc_generadas(estado)')
+        execute_sql(cursor, 'CREATE INDEX IF NOT EXISTS idx_base_oc_tercero ON base_oc_generadas(tercero_nombre)')
         
         # ========== TABLAS PARA INDICADORES ALMACENES ==========
         
         # Tabla para Indicadores de Almacenes (OYMM)
-        cursor.execute('''
+        execute_sql(cursor, f'''
             CREATE TABLE IF NOT EXISTS indicadores (
-                id INTEGER PRIMARY KEY AUTOINCREMENT,
+                id {id_type},
                 anio INTEGER,
                 mes TEXT,
                 sede TEXT,
@@ -247,21 +282,21 @@ def init_db():
                 costo_diferencia REAL,
                 objetivo REAL,
                 estado TEXT,
-                created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+                created_at {timestamp_default}
             )
         ''')
         
         # Índices para indicadores
-        cursor.execute('CREATE INDEX IF NOT EXISTS idx_indicadores_anio ON indicadores(anio)')
-        cursor.execute('CREATE INDEX IF NOT EXISTS idx_indicadores_mes ON indicadores(mes)')
-        cursor.execute('CREATE INDEX IF NOT EXISTS idx_indicadores_sede ON indicadores(sede)')
-        cursor.execute('CREATE INDEX IF NOT EXISTS idx_indicadores_responsable ON indicadores(responsable)')
-        cursor.execute('CREATE INDEX IF NOT EXISTS idx_indicadores_estado ON indicadores(estado)')
+        execute_sql(cursor, 'CREATE INDEX IF NOT EXISTS idx_indicadores_anio ON indicadores(anio)')
+        execute_sql(cursor, 'CREATE INDEX IF NOT EXISTS idx_indicadores_mes ON indicadores(mes)')
+        execute_sql(cursor, 'CREATE INDEX IF NOT EXISTS idx_indicadores_sede ON indicadores(sede)')
+        execute_sql(cursor, 'CREATE INDEX IF NOT EXISTS idx_indicadores_responsable ON indicadores(responsable)')
+        execute_sql(cursor, 'CREATE INDEX IF NOT EXISTS idx_indicadores_estado ON indicadores(estado)')
         
         # Tabla para Fiscal RU
-        cursor.execute('''
+        execute_sql(cursor, f'''
             CREATE TABLE IF NOT EXISTS fiscal_ru (
-                id INTEGER PRIMARY KEY AUTOINCREMENT,
+                id {id_type},
                 mes TEXT,
                 item TEXT,
                 descripcion TEXT,
@@ -279,18 +314,18 @@ def init_db():
                 descripcion3 TEXT,
                 tipo_inventario TEXT,
                 objetivo REAL,
-                created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+                created_at {timestamp_default}
             )
         ''')
-        cursor.execute('CREATE INDEX IF NOT EXISTS idx_fiscal_ru_mes ON fiscal_ru(mes)')
+        execute_sql(cursor, 'CREATE INDEX IF NOT EXISTS idx_fiscal_ru_mes ON fiscal_ru(mes)')
         cursor.execute('CREATE INDEX IF NOT EXISTS idx_fiscal_ru_estado ON fiscal_ru(estado)')
         cursor.execute('CREATE INDEX IF NOT EXISTS idx_fiscal_ru_tipo ON fiscal_ru(tipo_inventario)')
         cursor.execute('CREATE INDEX IF NOT EXISTS idx_fiscal_ru_sede ON fiscal_ru(sede)')
         
         # Tabla para Brigadas
-        cursor.execute('''
+        execute_sql(cursor, f'''
             CREATE TABLE IF NOT EXISTS brigadas (
-                id INTEGER PRIMARY KEY AUTOINCREMENT,
+                id {id_type},
                 mes TEXT,
                 sede TEXT,
                 item_codigo TEXT,
@@ -305,17 +340,17 @@ def init_db():
                 costo_unitario REAL,
                 costo_total REAL,
                 costo_diferencia REAL,
-                created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+                created_at {timestamp_default}
             )
         ''')
-        cursor.execute('CREATE INDEX IF NOT EXISTS idx_brigadas_mes ON brigadas(mes)')
-        cursor.execute('CREATE INDEX IF NOT EXISTS idx_brigadas_sede ON brigadas(sede)')
-        cursor.execute('CREATE INDEX IF NOT EXISTS idx_brigadas_estado ON brigadas(estado)')
+        execute_sql(cursor, 'CREATE INDEX IF NOT EXISTS idx_brigadas_mes ON brigadas(mes)')
+        execute_sql(cursor, 'CREATE INDEX IF NOT EXISTS idx_brigadas_sede ON brigadas(sede)')
+        execute_sql(cursor, 'CREATE INDEX IF NOT EXISTS idx_brigadas_estado ON brigadas(estado)')
         
         # Tabla para Errores Movimientos
-        cursor.execute('''
+        execute_sql(cursor, f'''
             CREATE TABLE IF NOT EXISTS errores (
-                id INTEGER PRIMARY KEY AUTOINCREMENT,
+                id {id_type},
                 error TEXT,
                 zona TEXT,
                 bodega TEXT,
@@ -338,34 +373,34 @@ def init_db():
                 codigo6 TEXT,
                 nombre7 TEXT,
                 observacion TEXT,
-                created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+                created_at {timestamp_default}
             )
         ''')
-        cursor.execute('CREATE INDEX IF NOT EXISTS idx_errores_fecha ON errores(fecha)')
-        cursor.execute('CREATE INDEX IF NOT EXISTS idx_errores_zona ON errores(zona)')
-        cursor.execute('CREATE INDEX IF NOT EXISTS idx_errores_error ON errores(error)')
+        execute_sql(cursor, 'CREATE INDEX IF NOT EXISTS idx_errores_fecha ON errores(fecha)')
+        execute_sql(cursor, 'CREATE INDEX IF NOT EXISTS idx_errores_zona ON errores(zona)')
+        execute_sql(cursor, 'CREATE INDEX IF NOT EXISTS idx_errores_error ON errores(error)')
         
         # Tabla para Programados vs Ejecutados
-        cursor.execute('''
+        execute_sql(cursor, f'''
             CREATE TABLE IF NOT EXISTS programados_ejecutados (
-                id INTEGER PRIMARY KEY AUTOINCREMENT,
+                id {id_type},
                 fecha_propuesta TEXT,
                 sede TEXT,
                 tipo_inventario TEXT,
                 programados REAL,
                 ejecutados REAL,
                 indicador_programacion REAL,
-                created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+                created_at {timestamp_default}
             )
         ''')
-        cursor.execute('CREATE INDEX IF NOT EXISTS idx_prog_fecha ON programados_ejecutados(fecha_propuesta)')
-        cursor.execute('CREATE INDEX IF NOT EXISTS idx_prog_sede ON programados_ejecutados(sede)')
-        cursor.execute('CREATE INDEX IF NOT EXISTS idx_prog_tipo ON programados_ejecutados(tipo_inventario)')
+        execute_sql(cursor, 'CREATE INDEX IF NOT EXISTS idx_prog_fecha ON programados_ejecutados(fecha_propuesta)')
+        execute_sql(cursor, 'CREATE INDEX IF NOT EXISTS idx_prog_sede ON programados_ejecutados(sede)')
+        execute_sql(cursor, 'CREATE INDEX IF NOT EXISTS idx_prog_tipo ON programados_ejecutados(tipo_inventario)')
         
         # Tabla gestion (GESTION PROCESO)
-        cursor.execute('''
+        execute_sql(cursor, f'''
             CREATE TABLE IF NOT EXISTS gestion (
-                id INTEGER PRIMARY KEY AUTOINCREMENT,
+                id {id_type},
                 mes TEXT,
                 sede TEXT,
                 tipo_inventario TEXT,
@@ -374,20 +409,20 @@ def init_db():
                 fecha_reporte TEXT,
                 dias REAL,
                 indicador_inventario REAL,
-                created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+                created_at {timestamp_default}
             )
         ''')
-        cursor.execute('CREATE INDEX IF NOT EXISTS idx_gestion_mes ON gestion(mes)')
-        cursor.execute('CREATE INDEX IF NOT EXISTS idx_gestion_sede ON gestion(sede)')
-        cursor.execute('CREATE INDEX IF NOT EXISTS idx_gestion_tipo ON gestion(tipo_inventario)')
+        execute_sql(cursor, 'CREATE INDEX IF NOT EXISTS idx_gestion_mes ON gestion(mes)')
+        execute_sql(cursor, 'CREATE INDEX IF NOT EXISTS idx_gestion_sede ON gestion(sede)')
+        execute_sql(cursor, 'CREATE INDEX IF NOT EXISTS idx_gestion_tipo ON gestion(tipo_inventario)')
         
         conn.commit()
-        print("✅ Base de datos inicializada correctamente")
+        print(f"✅ Base de datos inicializada correctamente ({DB_TYPE})")
 
 def clear_table(table_name: str):
     """Limpiar una tabla antes de reimportar"""
     with get_db() as conn:
         cursor = conn.cursor()
-        cursor.execute(f'DELETE FROM {table_name}')
+        execute_sql(cursor, f'DELETE FROM {table_name}')
         conn.commit()
         print(f"🗑️ Tabla {table_name} limpiada")

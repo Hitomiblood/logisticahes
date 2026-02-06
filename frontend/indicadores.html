@@ -69,6 +69,17 @@
     .btn-filter-chart { padding: 0.3rem 0.6rem; border-radius: 4px; border: none; font-size: 0.65rem; font-weight: 500; background: #e5e7eb; color: #374151; cursor: pointer; transition: all 0.3s; }
     .btn-filter-chart:hover { background: #d1d5db; }
     .chart { width: 100%; height: 450px; }
+    .data-table-container { margin-top: 1rem; max-height: 400px; overflow-y: auto; border: 1px solid #e5e7eb; border-radius: 8px; }
+    .data-table { width: 100%; border-collapse: collapse; font-size: 0.75rem; }
+    .data-table thead { background: linear-gradient(135deg, #15803d, #16a34a); color: white; position: sticky; top: 0; z-index: 10; }
+    .data-table th { padding: 0.5rem; text-align: left; font-weight: 600; border-bottom: 2px solid #15803d; }
+    .data-table tbody tr:nth-child(even) { background: #f9fafb; }
+    .data-table tbody tr:hover { background: #f0fdf4; }
+    .data-table td { padding: 0.4rem 0.5rem; border-bottom: 1px solid #e5e7eb; }
+    .data-table td.number { text-align: right; font-variant-numeric: tabular-nums; }
+    .data-table td.positive { color: #16a34a; font-weight: 600; }
+    .data-table td.negative { color: #dc2626; font-weight: 600; }
+    .table-title { font-size: 0.85rem; font-weight: 600; color: #374151; margin-bottom: 0.5rem; padding-left: 0.2rem; }
     @keyframes spin { to { transform: rotate(360deg); } }
   </style>
 </head>
@@ -113,12 +124,12 @@
       <input type="hidden" id="fechaFin" />
       <button class="btn-apply-sidebar" onclick="aplicarFiltroGlobal()">Aplicar Periodo</button>
       
-      <h3 style="margin-top: 1.5rem;">📅 Mes</h3>
+      <h3 style="margin-top: 1.5rem;">🏢 Sede</h3>
       <div class="filter-group">
-        <input type="text" class="filter-search-sidebar" id="mesGlobalSearch" placeholder="🔍 Buscar mes..." onkeyup="filterSelect('mesGlobalFilter', this.value)" />
-        <select multiple id="mesGlobalFilter" class="select-sidebar"></select>
-        <button class="btn-toggle-sidebar" id="mesGlobalFilterBtn" onclick="toggleSelectAll('mesGlobalFilter', 'mesGlobalFilterBtn')">Seleccionar todo</button>
-        <button class="btn-apply-filter-sidebar" onclick="aplicarFiltros()">✓ Aplicar Meses</button>
+        <input type="text" class="filter-search-sidebar" id="sedeGlobalSearch" placeholder="🔍 Buscar sede..." onkeyup="filterSelect('sedeGlobalFilter', this.value)" />
+        <select multiple id="sedeGlobalFilter" class="select-sidebar"></select>
+        <button class="btn-toggle-sidebar" id="sedeGlobalFilterBtn" onclick="toggleSelectAll('sedeGlobalFilter', 'sedeGlobalFilterBtn')">Seleccionar todo</button>
+        <button class="btn-apply-filter-sidebar" onclick="aplicarFiltros()">✓ Aplicar Sedes</button>
       </div>
       
       <h3 style="margin-top: 1.5rem;">📊 Estado</h3>
@@ -175,6 +186,21 @@
           </div>
         </div>
         <div id="chartPrincipal" class="chart"></div>
+        <div class="table-title">📊 Datos del Gráfico</div>
+        <div class="data-table-container">
+          <table class="data-table" id="tablePrincipal">
+            <thead>
+              <tr>
+                <th>Sede</th>
+                <th class="number">Costo Inventario</th>
+                <th class="number">Costo Diferencia</th>
+                <th class="number">Desviación %</th>
+                <th class="number">Códigos</th>
+              </tr>
+            </thead>
+            <tbody></tbody>
+          </table>
+        </div>
       </div>
       
       <div class="chart-card">
@@ -196,6 +222,20 @@
           </div>
         </div>
         <div id="chartFiscalRU" class="chart"></div>
+        <div class="table-title">📊 Datos del Gráfico</div>
+        <div class="data-table-container">
+          <table class="data-table" id="tableFiscalRU">
+            <thead>
+              <tr>
+                <th>Sede</th>
+                <th class="number">Costo Inventario</th>
+                <th class="number">Desviación %</th>
+                <th class="number">Registros</th>
+              </tr>
+            </thead>
+            <tbody></tbody>
+          </table>
+        </div>
       </div>
       
       <div class="chart-card">
@@ -203,6 +243,21 @@
           <h3 class="chart-title">🚒 Inventario Brigadas por Sede</h3>
         </div>
         <div id="chartBrigadas" class="chart"></div>
+        <div class="table-title">📊 Datos del Gráfico</div>
+        <div class="data-table-container">
+          <table class="data-table" id="tableBrigadas">
+            <thead>
+              <tr>
+                <th>Sede</th>
+                <th class="number">Costo Total</th>
+                <th class="number">Costo Diferencia</th>
+                <th class="number">Desviación %</th>
+                <th class="number">Registros</th>
+              </tr>
+            </thead>
+            <tbody></tbody>
+          </table>
+        </div>
       </div>
       
       <div class="chart-card">
@@ -218,6 +273,19 @@
           </div>
         </div>
         <div id="chartErrores" class="chart"></div>
+        <div class="table-title">📊 Datos del Gráfico</div>
+        <div class="data-table-container">
+          <table class="data-table" id="tableErrores">
+            <thead>
+              <tr>
+                <th>Tipo de Error</th>
+                <th class="number">Total Registros</th>
+                <th class="number">Porcentaje</th>
+              </tr>
+            </thead>
+            <tbody></tbody>
+          </table>
+        </div>
       </div>
       
       <div class="chart-card">
@@ -233,6 +301,21 @@
           </div>
         </div>
         <div id="chartProgramados" class="chart"></div>
+        <div class="table-title">📊 Datos del Gráfico</div>
+        <div class="data-table-container">
+          <table class="data-table" id="tableProgramados">
+            <thead>
+              <tr>
+                <th>Sede</th>
+                <th class="number">Programados</th>
+                <th class="number">Ejecutados</th>
+                <th class="number">Diferencia</th>
+                <th class="number">% Cumplimiento</th>
+              </tr>
+            </thead>
+            <tbody></tbody>
+          </table>
+        </div>
       </div>
       
       <div class="chart-card">
@@ -254,12 +337,27 @@
           </div>
         </div>
         <div id="chartGestion" class="chart"></div>
+        <div class="table-title">📊 Datos del Gráfico</div>
+        <div class="data-table-container">
+          <table class="data-table" id="tableGestion">
+            <thead>
+              <tr>
+                <th>Sede</th>
+                <th class="number">Dentro del Plazo</th>
+                <th class="number">Fuera del Plazo</th>
+                <th class="number">Total</th>
+                <th class="number">% Cumplimiento</th>
+              </tr>
+            </thead>
+            <tbody></tbody>
+          </table>
+        </div>
       </div>
     </div>
   </div>
   <script>
     let filtrosDisponibles = {}, filtrosDisponiblesFiscal = {}, filtrosDisponiblesErrores = {}, filtrosDisponiblesProgramados = {}, filtrosDisponiblesGestion = {}, filtrosGlobales = {}, filtrosGraficaOYMM = {}, filtrosGraficaFiscal = {}, filtrosGraficaErrores = {}, filtrosGraficaProgramados = {}, filtrosGraficaGestion = {};
-    const fechaInicioEl = document.getElementById("fechaInicio"), fechaFinEl = document.getElementById("fechaFin"), mesGlobalFilterEl = document.getElementById("mesGlobalFilter"), estadoGlobalFilterEl = document.getElementById("estadoGlobalFilter"), responsableGlobalFilterEl = document.getElementById("responsableGlobalFilter"), estadoOYMMFilterEl = document.getElementById("estadoOYMMFilter"), responsableOYMMFilterEl = document.getElementById("responsableOYMMFilter"), estadoFilterEl = document.getElementById("estadoFilter"), tipoFilterEl = document.getElementById("tipoFilter"), errorFilterEl = document.getElementById("errorFilter"), tipoProgFilterEl = document.getElementById("tipoProgFilter"), tipoGestionFilterEl = document.getElementById("tipoGestionFilter"), responsableGestionFilterEl = document.getElementById("responsableGestionFilter"), statusEl = document.getElementById("status");
+    const fechaInicioEl = document.getElementById("fechaInicio"), fechaFinEl = document.getElementById("fechaFin"), sedeGlobalFilterEl = document.getElementById("sedeGlobalFilter"), estadoGlobalFilterEl = document.getElementById("estadoGlobalFilter"), responsableGlobalFilterEl = document.getElementById("responsableGlobalFilter"), estadoOYMMFilterEl = document.getElementById("estadoOYMMFilter"), responsableOYMMFilterEl = document.getElementById("responsableOYMMFilter"), estadoFilterEl = document.getElementById("estadoFilter"), tipoFilterEl = document.getElementById("tipoFilter"), errorFilterEl = document.getElementById("errorFilter"), tipoProgFilterEl = document.getElementById("tipoProgFilter"), tipoGestionFilterEl = document.getElementById("tipoGestionFilter"), responsableGestionFilterEl = document.getElementById("responsableGestionFilter"), statusEl = document.getElementById("status");
     
     const mesesOrdenados = ['ENERO', 'FEBRERO', 'MARZO', 'ABRIL', 'MAYO', 'JUNIO', 'JULIO', 'AGOSTO', 'SEPTIEMBRE', 'OCTUBRE', 'NOVIEMBRE', 'DICIEMBRE'];
     const monthNames = ['Ene', 'Feb', 'Mar', 'Abr', 'May', 'Jun', 'Jul', 'Ago', 'Sep', 'Oct', 'Nov', 'Dic'];
@@ -403,11 +501,11 @@
       datePickerState.aniosDisponibles = (filtrosDisponibles.anios || []).sort((a, b) => b - a);
       initDatePickerYears();
       
-      // Poblar filtro de Mes ordenado
-      const meses = (filtrosDisponibles.meses || []).sort((a, b) => mesesOrdenados.indexOf(a) - mesesOrdenados.indexOf(b));
+      // Poblar filtro de Sede
+      const sedes = (filtrosDisponibles.sedes || []).sort();
       
-      populateFilter(mesGlobalFilterEl, meses, meses);
-      updateToggleButton('mesGlobalFilter', 'mesGlobalFilterBtn');
+      populateFilter(sedeGlobalFilterEl, sedes, sedes);
+      updateToggleButton('sedeGlobalFilter', 'sedeGlobalFilterBtn');
       
       // Poblar filtros globales de Estado y Responsable
       populateFilter(estadoGlobalFilterEl, filtrosDisponibles.estados || [], filtrosDisponibles.estados || []);
@@ -454,8 +552,8 @@
       selectEl.addEventListener('click', e => e.preventDefault());
     }
     
-    enableClickToggleSelection(mesGlobalFilterEl); enableClickToggleSelection(estadoGlobalFilterEl); enableClickToggleSelection(responsableGlobalFilterEl); enableClickToggleSelection(estadoOYMMFilterEl); enableClickToggleSelection(responsableOYMMFilterEl); enableClickToggleSelection(estadoFilterEl); enableClickToggleSelection(tipoFilterEl); enableClickToggleSelection(errorFilterEl); enableClickToggleSelection(tipoProgFilterEl); enableClickToggleSelection(tipoGestionFilterEl); enableClickToggleSelection(responsableGestionFilterEl);
-    mesGlobalFilterEl.addEventListener("change", () => { updateToggleButton('mesGlobalFilter', 'mesGlobalFilterBtn'); });
+    enableClickToggleSelection(sedeGlobalFilterEl); enableClickToggleSelection(estadoGlobalFilterEl); enableClickToggleSelection(responsableGlobalFilterEl); enableClickToggleSelection(estadoOYMMFilterEl); enableClickToggleSelection(responsableOYMMFilterEl); enableClickToggleSelection(estadoFilterEl); enableClickToggleSelection(tipoFilterEl); enableClickToggleSelection(errorFilterEl); enableClickToggleSelection(tipoProgFilterEl); enableClickToggleSelection(tipoGestionFilterEl); enableClickToggleSelection(responsableGestionFilterEl);
+    sedeGlobalFilterEl.addEventListener("change", () => { updateToggleButton('sedeGlobalFilter', 'sedeGlobalFilterBtn'); });
     estadoGlobalFilterEl.addEventListener("change", () => { updateToggleButton('estadoGlobalFilter', 'estadoGlobalFilterBtn'); });
     responsableGlobalFilterEl.addEventListener("change", () => { updateToggleButton('responsableGlobalFilter', 'responsableGlobalFilterBtn'); });
     estadoOYMMFilterEl.addEventListener("change", () => { updateToggleButton('estadoOYMMFilter', 'estadoOYMMFilterBtn'); aplicarFiltrosGraficaOYMM(); });
@@ -467,13 +565,13 @@
     tipoGestionFilterEl.addEventListener("change", () => { updateToggleButton('tipoGestionFilter', 'tipoGestionFilterBtn'); aplicarFiltrosGraficaGestion(); });
     responsableGestionFilterEl.addEventListener("change", () => { updateToggleButton('responsableGestionFilter', 'responsableGestionFilterBtn'); aplicarFiltrosGraficaGestion(); });
     
-    // Aplicar filtros de Mes, Estado y Responsable del Sidebar
+    // Aplicar filtros de Sede, Estado y Responsable del Sidebar
     async function aplicarFiltros() {
       filtrosGlobales = {};
       
-      const meses = getSelectedOptions(mesGlobalFilterEl);
-      if (meses.length > 0 && meses.length < (filtrosDisponibles.meses || []).length) {
-        filtrosGlobales.meses = meses.join(",");
+      const sedes = getSelectedOptions(sedeGlobalFilterEl);
+      if (sedes.length > 0 && sedes.length < (filtrosDisponibles.sedes || []).length) {
+        filtrosGlobales.sedes = sedes.join(",");
       }
       
       const estados = getSelectedOptions(estadoGlobalFilterEl);
@@ -603,17 +701,43 @@
         Plotly.newPlot('chartPrincipal', [], { 
           annotations: [{ text: 'No hay datos disponibles', showarrow: false, x: 0.5, y: 0.5, xref: 'paper', yref: 'paper' }]
         }, { responsive: true });
+        document.getElementById('tablePrincipal').querySelector('tbody').innerHTML = '<tr><td colspan="5" style="text-align:center; padding:1rem; color:#999;">No hay datos disponibles</td></tr>';
         return;
       }
       
       const sedes = data.map(d => d.sede), costosInv = data.map(d => d.costo_inventario), costosDif = data.map(d => d.costo_diferencia), desv = data.map(d => d.desviacion_promedio);
       const traces = [
-        { x: sedes, y: costosInv, name: 'Costo Inventario', type: 'bar', marker: { color: '#16a34a' } },
-        { x: sedes, y: costosDif, name: 'Costo Diferencia', type: 'bar', marker: { color: '#dc2626' } },
-        { x: sedes, y: desv, name: 'Desviación %', type: 'scatter', mode: 'lines+markers', yaxis: 'y2', line: { color: '#f59e0b', width: 3 }, marker: { size: 8, color: '#f59e0b' } }
+        { x: sedes, y: costosInv, name: 'Costo Inventario', type: 'bar', marker: { color: '#16a34a' }, text: costosInv.map(v => '$' + v.toLocaleString('es-CO')), textposition: 'outside' },
+        { x: sedes, y: costosDif, name: 'Costo Diferencia', type: 'bar', marker: { color: '#dc2626' }, text: costosDif.map(v => '$' + v.toLocaleString('es-CO')), textposition: 'outside' },
+        { x: sedes, y: desv, name: 'Desviación %', type: 'scatter', mode: 'lines+markers', yaxis: 'y2', line: { color: '#f59e0b', width: 3 }, marker: { size: 8, color: '#f59e0b' }, text: desv.map(v => v.toFixed(2) + '%'), textposition: 'top center' }
       ];
       const layout = { barmode: 'group', xaxis: { title: 'Sede' }, yaxis: { title: 'Costo ($)', tickformat: '$,.0f', separatethousands: true }, yaxis2: { title: 'Desviación (%)', overlaying: 'y', side: 'right', tickformat: '.2f', showgrid: false }, legend: { x: 0.5, y: -0.2, xanchor: 'center', orientation: 'h' }, margin: { t: 30, b: 80, l: 150, r: 80 } };
       Plotly.newPlot('chartPrincipal', traces, layout, { responsive: true });
+      
+      // Poblar tabla con totales arriba
+      const tbody = document.getElementById('tablePrincipal').querySelector('tbody');
+      const totalInventario = data.reduce((sum, d) => sum + (d.costo_inventario || 0), 0);
+      const totalDiferencia = data.reduce((sum, d) => sum + (d.costo_diferencia || 0), 0);
+      const totalCodigos = data.reduce((sum, d) => sum + (d.codigos_unicos || 0), 0);
+      const promedioDesviacion = data.length > 0 ? data.reduce((sum, d) => sum + (d.desviacion_promedio || 0), 0) / data.length : 0;
+      
+      tbody.innerHTML = `
+        <tr style="background-color: #f0f9ff; font-weight: 600; border-top: 2px solid #3b82f6; border-bottom: 2px solid #3b82f6;">
+          <td>TOTAL</td>
+          <td class="number positive">$${totalInventario.toLocaleString('es-CO', {minimumFractionDigits: 0, maximumFractionDigits: 0})}</td>
+          <td class="number ${totalDiferencia < 0 ? 'positive' : 'negative'}">$${totalDiferencia.toLocaleString('es-CO', {minimumFractionDigits: 0, maximumFractionDigits: 0})}</td>
+          <td class="number">${promedioDesviacion.toFixed(2)}%</td>
+          <td class="number">${totalCodigos.toLocaleString()}</td>
+        </tr>
+      ` + data.map(d => `
+        <tr>
+          <td>${d.sede}</td>
+          <td class="number positive">$${(d.costo_inventario || 0).toLocaleString('es-CO', {minimumFractionDigits: 0, maximumFractionDigits: 0})}</td>
+          <td class="number ${d.costo_diferencia < 0 ? 'positive' : 'negative'}">$${(d.costo_diferencia || 0).toLocaleString('es-CO', {minimumFractionDigits: 0, maximumFractionDigits: 0})}</td>
+          <td class="number">${(d.desviacion_promedio || 0).toFixed(2)}%</td>
+          <td class="number">${(d.codigos_unicos || 0).toLocaleString()}</td>
+        </tr>
+      `).join('');
     }
     
     async function actualizarGraficaFiscalRU() {
@@ -624,16 +748,39 @@
         Plotly.newPlot('chartFiscalRU', [], { 
           annotations: [{ text: 'No hay datos disponibles', showarrow: false, x: 0.5, y: 0.5, xref: 'paper', yref: 'paper' }]
         }, { responsive: true });
+        document.getElementById('tableFiscalRU').querySelector('tbody').innerHTML = '<tr><td colspan="4" style="text-align:center; padding:1rem; color:#999;">No hay datos disponibles</td></tr>';
         return;
       }
       
       const sedes = data.map(d => d.sede), costosInv = data.map(d => d.costo_inventario), desv = data.map(d => d.desviacion);
       const traces = [
-        { x: sedes, y: costosInv, name: 'Costo Inventario', type: 'bar', marker: { color: '#10b981' } },
-        { x: sedes, y: desv, name: 'Desviación %', type: 'scatter', mode: 'lines+markers', yaxis: 'y2', line: { color: '#f59e0b', width: 3 }, marker: { size: 8, color: '#f59e0b' } }
+        { x: sedes, y: costosInv, name: 'Costo Inventario', type: 'bar', marker: { color: '#10b981' }, text: costosInv.map(v => '$' + v.toLocaleString('es-CO')), textposition: 'outside' },
+        { x: sedes, y: desv, name: 'Desviación %', type: 'scatter', mode: 'lines+markers', yaxis: 'y2', line: { color: '#f59e0b', width: 3 }, marker: { size: 8, color: '#f59e0b' }, text: desv.map(v => v.toFixed(2) + '%'), textposition: 'top center' }
       ];
       const layout = { barmode: 'group', xaxis: { title: 'Sede' }, yaxis: { title: 'Costo ($)', tickformat: '$,.0f', separatethousands: true }, yaxis2: { title: 'Desviación (%)', overlaying: 'y', side: 'right', tickformat: '.2f', showgrid: false }, legend: { x: 0.5, y: -0.2, xanchor: 'center', orientation: 'h' }, margin: { t: 30, b: 80, l: 150, r: 80 } };
       Plotly.newPlot('chartFiscalRU', traces, layout, { responsive: true });
+      
+      // Poblar tabla con totales arriba
+      const tbody = document.getElementById('tableFiscalRU').querySelector('tbody');
+      const totalInventario = data.reduce((sum, d) => sum + (d.costo_inventario || 0), 0);
+      const totalRegistros = data.reduce((sum, d) => sum + (d.registros || 0), 0);
+      const promedioDesviacion = data.length > 0 ? data.reduce((sum, d) => sum + (d.desviacion || 0), 0) / data.length : 0;
+      
+      tbody.innerHTML = `
+        <tr style="background-color: #f0f9ff; font-weight: 600; border-top: 2px solid #3b82f6; border-bottom: 2px solid #3b82f6;">
+          <td>TOTAL</td>
+          <td class="number positive">$${totalInventario.toLocaleString('es-CO', {minimumFractionDigits: 0, maximumFractionDigits: 0})}</td>
+          <td class="number">${promedioDesviacion.toFixed(2)}%</td>
+          <td class="number">${totalRegistros.toLocaleString()}</td>
+        </tr>
+      ` + data.map(d => `
+        <tr>
+          <td>${d.sede}</td>
+          <td class="number positive">$${(d.costo_inventario || 0).toLocaleString('es-CO', {minimumFractionDigits: 0, maximumFractionDigits: 0})}</td>
+          <td class="number">${(d.desviacion || 0).toFixed(2)}%</td>
+          <td class="number">${(d.registros || 0).toLocaleString()}</td>
+        </tr>
+      `).join('');
     }
     
     async function actualizarGraficaBrigadas() {
@@ -644,17 +791,43 @@
         Plotly.newPlot('chartBrigadas', [], { 
           annotations: [{ text: 'No hay datos disponibles', showarrow: false, x: 0.5, y: 0.5, xref: 'paper', yref: 'paper' }]
         }, { responsive: true });
+        document.getElementById('tableBrigadas').querySelector('tbody').innerHTML = '<tr><td colspan="5" style="text-align:center; padding:1rem; color:#999;">No hay datos disponibles</td></tr>';
         return;
       }
       
       const sedes = data.sedes, costosTotal = data.costo_total, costosDif = data.costo_diferencia, desv = data.desviacion;
       const traces = [
-        { x: sedes, y: costosTotal, name: 'Costo Total', type: 'bar', marker: { color: '#3b82f6' } },
-        { x: sedes, y: costosDif, name: 'Costo Diferencia', type: 'bar', marker: { color: '#ef4444' } },
-        { x: sedes, y: desv, name: 'Desviación %', type: 'scatter', mode: 'lines+markers', yaxis: 'y2', line: { color: '#f59e0b', width: 3 }, marker: { size: 8, color: '#f59e0b' } }
+        { x: sedes, y: costosTotal, name: 'Costo Total', type: 'bar', marker: { color: '#3b82f6' }, text: costosTotal.map(v => '$' + v.toLocaleString('es-CO')), textposition: 'outside' },
+        { x: sedes, y: costosDif, name: 'Costo Diferencia', type: 'bar', marker: { color: '#ef4444' }, text: costosDif.map(v => '$' + v.toLocaleString('es-CO')), textposition: 'outside' },
+        { x: sedes, y: desv, name: 'Desviación %', type: 'scatter', mode: 'lines+markers', yaxis: 'y2', line: { color: '#f59e0b', width: 3 }, marker: { size: 8, color: '#f59e0b' }, text: desv.map(v => v.toFixed(2) + '%'), textposition: 'top center' }
       ];
       const layout = { barmode: 'group', xaxis: { title: 'Sede' }, yaxis: { title: 'Costo ($)', tickformat: '$,.0f', separatethousands: true }, yaxis2: { title: 'Desviación (%)', overlaying: 'y', side: 'right', tickformat: '.2f', showgrid: false }, legend: { x: 0.5, y: -0.2, xanchor: 'center', orientation: 'h' }, margin: { t: 30, b: 80, l: 150, r: 80 } };
       Plotly.newPlot('chartBrigadas', traces, layout, { responsive: true });
+      
+      // Poblar tabla con totales arriba
+      const tbody = document.getElementById('tableBrigadas').querySelector('tbody');
+      const totalCostoTotal = costosTotal.reduce((sum, c) => sum + (c || 0), 0);
+      const totalCostoDif = costosDif.reduce((sum, c) => sum + (c || 0), 0);
+      const totalRegistros = data.registros ? data.registros.reduce((sum, r) => sum + (r || 0), 0) : 0;
+      const promedioDesv = desv.length > 0 ? desv.reduce((sum, d) => sum + (d || 0), 0) / desv.length : 0;
+      
+      tbody.innerHTML = `
+        <tr style="background-color: #f0f9ff; font-weight: 600; border-top: 2px solid #3b82f6; border-bottom: 2px solid #3b82f6;">
+          <td>TOTAL</td>
+          <td class="number positive">$${totalCostoTotal.toLocaleString('es-CO', {minimumFractionDigits: 0, maximumFractionDigits: 0})}</td>
+          <td class="number ${totalCostoDif < 0 ? 'positive' : 'negative'}">$${totalCostoDif.toLocaleString('es-CO', {minimumFractionDigits: 0, maximumFractionDigits: 0})}</td>
+          <td class="number">${promedioDesv.toFixed(2)}%</td>
+          <td class="number">${totalRegistros.toLocaleString()}</td>
+        </tr>
+      ` + sedes.map((sede, idx) => `
+        <tr>
+          <td>${sede}</td>
+          <td class="number positive">$${(costosTotal[idx] || 0).toLocaleString('es-CO', {minimumFractionDigits: 0, maximumFractionDigits: 0})}</td>
+          <td class="number ${costosDif[idx] < 0 ? 'positive' : 'negative'}">$${(costosDif[idx] || 0).toLocaleString('es-CO', {minimumFractionDigits: 0, maximumFractionDigits: 0})}</td>
+          <td class="number">${(desv[idx] || 0).toFixed(2)}%</td>
+          <td class="number">${(data.registros && data.registros[idx] || 0).toLocaleString()}</td>
+        </tr>
+      `).join('');
     }
     
     async function actualizarGraficaErrores() {
@@ -665,6 +838,7 @@
         Plotly.newPlot('chartErrores', [], { 
           annotations: [{ text: 'No hay datos disponibles', showarrow: false, x: 0.5, y: 0.5, xref: 'paper', yref: 'paper' }]
         }, { responsive: true });
+        document.getElementById('tableErrores').querySelector('tbody').innerHTML = '<tr><td colspan="3" style="text-align:center; padding:1rem; color:#999;">No hay datos disponibles</td></tr>';
         return;
       }
       
@@ -696,6 +870,24 @@
       };
       
       Plotly.newPlot('chartErrores', traces, layout, { responsive: true });
+      
+      // Poblar tabla con totales arriba
+      const total = valores.reduce((a, b) => a + b, 0);
+      const tbody = document.getElementById('tableErrores').querySelector('tbody');
+      
+      tbody.innerHTML = `
+        <tr style="background-color: #f0f9ff; font-weight: 600; border-top: 2px solid #3b82f6; border-bottom: 2px solid #3b82f6;">
+          <td>TOTAL</td>
+          <td class="number">${total.toLocaleString()}</td>
+          <td class="number">100.00%</td>
+        </tr>
+      ` + labels.map((label, idx) => `
+        <tr>
+          <td>${label}</td>
+          <td class="number ${label === 'Si' || label === 'Revisar' ? 'negative' : 'positive'}">${(valores[idx] || 0).toLocaleString()}</td>
+          <td class="number">${total > 0 ? ((valores[idx] / total) * 100).toFixed(2) : '0.00'}%</td>
+        </tr>
+      `).join('');
     }
     
     async function actualizarGraficaProgramados() {
@@ -706,6 +898,7 @@
         Plotly.newPlot('chartProgramados', [], { 
           annotations: [{ text: 'No hay datos disponibles', showarrow: false, x: 0.5, y: 0.5, xref: 'paper', yref: 'paper' }]
         }, { responsive: true });
+        document.getElementById('tableProgramados').querySelector('tbody').innerHTML = '<tr><td colspan="5" style="text-align:center; padding:1rem; color:#999;">No hay datos disponibles</td></tr>';
         return;
       }
       
@@ -739,6 +932,38 @@
       };
       
       Plotly.newPlot('chartProgramados', traces, layout, { responsive: true });
+      
+      // Poblar tabla con totales arriba
+      const tbody = document.getElementById('tableProgramados').querySelector('tbody');
+      const totalProgramados = data.programados.reduce((sum, p) => sum + (p || 0), 0);
+      const totalEjecutados = data.ejecutados.reduce((sum, e) => sum + (e || 0), 0);
+      const totalPendientes = totalProgramados - totalEjecutados;
+      const cumplimientoTotal = totalProgramados > 0 ? (totalEjecutados / totalProgramados) * 100 : 0;
+      
+      tbody.innerHTML = `
+        <tr style="background-color: #f0f9ff; font-weight: 600; border-top: 2px solid #3b82f6; border-bottom: 2px solid #3b82f6;">
+          <td>TOTAL</td>
+          <td class="number">${totalProgramados.toLocaleString()}</td>
+          <td class="number positive">${totalEjecutados.toLocaleString()}</td>
+          <td class="number ${totalPendientes > 0 ? 'negative' : 'positive'}">${totalPendientes.toLocaleString()}</td>
+          <td class="number">${cumplimientoTotal.toFixed(2)}%</td>
+        </tr>
+      ` + data.sedes.map((sede, idx) => {
+        const programados = data.programados[idx] || 0;
+        const ejecutados = data.ejecutados[idx] || 0;
+        const pendientes = programados - ejecutados;
+        const cumplimiento = programados > 0 ? (ejecutados / programados) * 100 : 0;
+        
+        return `
+          <tr>
+            <td>${sede}</td>
+            <td class="number">${programados.toLocaleString()}</td>
+            <td class="number positive">${ejecutados.toLocaleString()}</td>
+            <td class="number ${pendientes > 0 ? 'negative' : 'positive'}">${pendientes.toLocaleString()}</td>
+            <td class="number">${cumplimiento.toFixed(2)}%</td>
+          </tr>
+        `;
+      }).join('');
     }
     
     async function actualizarGraficaGestion() {
@@ -750,6 +975,7 @@
         Plotly.newPlot('chartGestion', [], { 
           annotations: [{ text: 'No hay datos disponibles', showarrow: false, x: 0.5, y: 0.5, xref: 'paper', yref: 'paper' }]
         }, { responsive: true });
+        document.getElementById('tableGestion').querySelector('tbody').innerHTML = '<tr><td colspan="5" style="text-align:center; padding:1rem; color:#999;">No hay datos disponibles</td></tr>';
         return;
       }
       
@@ -783,6 +1009,38 @@
       };
       
       Plotly.newPlot('chartGestion', traces, layout, { responsive: true });
+      
+      // Poblar tabla con totales arriba
+      const tbody = document.getElementById('tableGestion').querySelector('tbody');
+      const totalDentro = data.dentro_plazo.reduce((sum, d) => sum + (d || 0), 0);
+      const totalFuera = data.fuera_plazo.reduce((sum, f) => sum + (f || 0), 0);
+      const totalGeneral = totalDentro + totalFuera;
+      const cumplimientoTotal = totalGeneral > 0 ? (totalDentro / totalGeneral) * 100 : 0;
+      
+      tbody.innerHTML = `
+        <tr style="background-color: #f0f9ff; font-weight: 600; border-top: 2px solid #3b82f6; border-bottom: 2px solid #3b82f6;">
+          <td>TOTAL</td>
+          <td class="number positive">${totalDentro.toLocaleString()}</td>
+          <td class="number negative">${totalFuera.toLocaleString()}</td>
+          <td class="number">${totalGeneral.toLocaleString()}</td>
+          <td class="number">${cumplimientoTotal.toFixed(2)}%</td>
+        </tr>
+      ` + data.sedes.map((sede, idx) => {
+        const dentro = data.dentro_plazo[idx] || 0;
+        const fuera = data.fuera_plazo[idx] || 0;
+        const total = dentro + fuera;
+        const cumplimiento = total > 0 ? (dentro / total) * 100 : 0;
+        
+        return `
+          <tr>
+            <td>${sede}</td>
+            <td class="number positive">${dentro.toLocaleString()}</td>
+            <td class="number negative">${fuera.toLocaleString()}</td>
+            <td class="number">${total.toLocaleString()}</td>
+            <td class="number">${cumplimiento.toFixed(2)}%</td>
+          </tr>
+        `;
+      }).join('');
     }
     
     function getSelectedOptions(selectEl) { return Array.from(selectEl.options).filter(opt => opt.selected).map(opt => opt.value); }

@@ -2,11 +2,11 @@
 Módulo de caché con Redis para LogísticaHES
 """
 import json
-import os
 import hashlib
 import time
 from typing import Optional, Any
 from functools import wraps
+from .config import REDIS_HOST, REDIS_PORT, REDIS_DB, CACHE_TTL
 
 # Intentar importar redis, si no está disponible usar caché en memoria
 try:
@@ -15,12 +15,6 @@ try:
 except ImportError:
     REDIS_AVAILABLE = False
     print("⚠️ Redis no disponible, usando caché en memoria")
-
-# Configuración de Redis
-REDIS_HOST = os.getenv("REDIS_HOST", "localhost")
-REDIS_PORT = int(os.getenv("REDIS_PORT", 6379))
-REDIS_DB = int(os.getenv("REDIS_DB", 0))
-CACHE_TTL = int(os.getenv("CACHE_TTL", 300))  # 5 minutos por defecto
 
 # Cliente Redis global
 _redis_client: Optional[redis.Redis] = None

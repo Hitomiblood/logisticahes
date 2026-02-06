@@ -1,22 +1,43 @@
 FROM python:3.11-slim
 
+# Variables de entorno para Python
+ENV PYTHONUNBUFFERED=1 \
+    PYTHONDONTWRITEBYTECODE=1 \
+    PIP_NO_CACHE_DIR=1 \
+    PIP_DISABLE_PIP_VERSION_CHECK=1
+
 WORKDIR /app
 
-# Instalar dependencias
-COPY backend/requirements.txt .
+# Instalar dependencias del sistema (para psycopg2)
+RUN apt-get update && apt-get install -y \
+    gcc \
+    postgresql-client \
+    libpq-dev \
+    && rm -rf /var/lib/apt/lists/*
+
+# Copiar requirements e instalar dependencias Python
+COPY backend/requirements.txt ./requirements.txt
 RUN pip install --no-cache-dir -r requirements.txt
 
-# Copiar código del backend
+# Copiar código de la aplicación
 COPY backend/ ./backend/
-
-# Copiar frontend
 COPY frontend/ ./frontend/
 
-# Crear directorio img (opcional)
-RUN mkdir -p ./img
+# Crear directorios necesarios
+RUN mkdir -p ./img ./data
+
+# Crear usuario no-root para ejecutar la aplicación
+RUN useradd -m -u 1000 appuser && \
+    chown -R appuser:appuser /app
+
+USER appuser
+
+# Healthcheck
+HEALTHCHECK --interval=30s --timeout=3s --start-period=10s --retries=3 \
+    CMD python -c "import urllib.request; urllib.request.urlopen('http://localhost:8000/api/health')" || exit 1
 
 # Exponer puerto
 EXPOSE 8000
 
-# Comando para iniciar
-CMD ["uvicorn", "backend.api:app", "--host", "0.0.0.0", "--port", "8000"]
+# Comando para iniciar (usar uvicorn directamente)
+CMD ["uvicorn", "backend.api:app", "--host", "0.0.0.0", "--port", "8000", "--workers", "4"]
