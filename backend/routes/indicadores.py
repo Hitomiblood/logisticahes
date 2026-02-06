@@ -238,3 +238,42 @@ async def get_inventario_por_mes(
             del r["orden"]
         
         return results
+
+@router.get("/materiales")
+async def get_materiales(
+    sedes: Optional[str] = None,
+    responsables: Optional[str] = None,
+    estados: Optional[str] = None,
+    anios: Optional[str] = None,
+    meses: Optional[str] = None,
+    limit: int = Query(default=10000, le=50000)
+):
+    """Obtener detalle de materiales según filtros"""
+    with get_db() as conn:
+        cursor = conn.cursor()
+        where_clause, params = build_where_clause(None, None, sedes, responsables, estados, anios, meses)
+        
+        query = f"""
+            SELECT 
+                codigo,
+                descripcion,
+                SUM(inventario_final) as cantidad,
+                SUM(costo_inventario_final) as valor_total,
+                sede
+            FROM indicadores 
+            {where_clause}
+            GROUP BY codigo, descripcion, sede
+            ORDER BY valor_total DESC
+            LIMIT {limit}
+        """
+        
+        cursor.execute(query, params)
+        rows = cursor.fetchall()
+        
+        return [{
+            "codigo": row[0] or "N/A",
+            "descripcion": row[1] or "N/A",
+            "cantidad": round(row[2] or 0, 2),
+            "valor_total": round(row[3] or 0, 2),
+            "sede": row[4] or "N/A"
+        } for row in rows]

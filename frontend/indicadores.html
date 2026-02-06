@@ -353,6 +353,30 @@
           </table>
         </div>
       </div>
+      
+      <!-- Tabla de Materiales -->
+      <div class="chart-card">
+        <div class="chart-header">
+          <h3 class="chart-title">📦 Detalle de Materiales</h3>
+        </div>
+        <div class="table-title">Materiales según filtros aplicados</div>
+        <div class="data-table-container" style="max-height: 600px;">
+          <table class="data-table" id="tableMateriales">
+            <thead>
+              <tr>
+                <th>Código</th>
+                <th>Descripción</th>
+                <th class="number">Cantidad</th>
+                <th class="number">Valor Total</th>
+                <th>Sede</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr><td colspan="5" style="text-align:center; padding:1rem; color:#999;">Cargando...</td></tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
     </div>
   </div>
   <script>
@@ -585,6 +609,7 @@
       }
       
       await cargarDatos();
+      await cargarTablaMateriales();
     }
     
     // Aplicar filtro global de periodo (calendarios)
@@ -1049,6 +1074,45 @@
     function updateToggleButton(selectId, btnId) { const selectEl = document.getElementById(selectId), buttonEl = document.getElementById(btnId), visible = Array.from(selectEl.options).filter(o => o.style.display !== "none"), allSel = visible.length > 0 && visible.every(o => o.selected); buttonEl.textContent = allSel ? 'Deseleccionar todo' : 'Seleccionar todo'; }
     function setStatus(msg) { statusEl.textContent = msg || ""; }
     function formatMoney(value) { if (value == null || isNaN(value)) return "$0"; const absVal = Math.abs(value); let suffix = "", display = absVal; if (absVal >= 1e9) { display = absVal / 1e9; suffix = "B"; } else if (absVal >= 1e6) { display = absVal / 1e6; suffix = "M"; } else if (absVal >= 1e3) { display = absVal / 1e3; suffix = "K"; } return (value < 0 ? "-$" : "$") + display.toFixed(1) + suffix; }
+    
+    async function cargarTablaMateriales() {
+      const tbody = document.getElementById('tableMateriales').querySelector('tbody');
+      
+      try {
+        const filtros = filtrosGlobales;
+        const r = await fetch(`/api/indicadores/materiales?${new URLSearchParams(filtros)}`);
+        const data = await r.json();
+        
+        if (!data || !Array.isArray(data) || data.length === 0) {
+          tbody.innerHTML = '<tr><td colspan="5" style="text-align:center; padding:1rem; color:#999;">No hay datos disponibles</td></tr>';
+          return;
+        }
+        
+        const totalCantidad = data.reduce((sum, d) => sum + (d.cantidad || 0), 0);
+        const totalValor = data.reduce((sum, d) => sum + (d.valor_total || 0), 0);
+        
+        tbody.innerHTML = `
+          <tr style="background-color: #f0f9ff; font-weight: 600; border-top: 2px solid #3b82f6; border-bottom: 2px solid #3b82f6;">
+            <td>TOTAL</td>
+            <td></td>
+            <td class="number">${totalCantidad.toLocaleString()}</td>
+            <td class="number positive">$${totalValor.toLocaleString('es-CO', {minimumFractionDigits: 0, maximumFractionDigits: 0})}</td>
+            <td></td>
+          </tr>
+        ` + data.map(d => `
+          <tr>
+            <td>${d.codigo || 'N/A'}</td>
+            <td>${d.descripcion || 'N/A'}</td>
+            <td class="number">${(d.cantidad || 0).toLocaleString()}</td>
+            <td class="number positive">$${(d.valor_total || 0).toLocaleString('es-CO', {minimumFractionDigits: 0, maximumFractionDigits: 0})}</td>
+            <td>${d.sede || 'N/A'}</td>
+          </tr>
+        `).join('');
+      } catch (error) {
+        tbody.innerHTML = '<tr><td colspan="5" style="text-align:center; padding:1rem; color:#dc2626;">Error al cargar datos</td></tr>';
+        console.error('Error cargando materiales:', error);
+      }
+    }
   </script>
 </body>
 </html>
