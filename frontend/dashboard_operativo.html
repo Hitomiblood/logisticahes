@@ -207,6 +207,120 @@
       border-color: rgba(255, 255, 255, 0.5);
     }
     
+    .date-picker-container {
+      position: relative;
+    }
+    
+    .date-popup {
+      position: absolute;
+      top: 100%;
+      left: 0;
+      right: 0;
+      background: white;
+      border: 1px solid #d0d7de;
+      border-radius: 8px;
+      box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+      z-index: 100;
+      padding: 0.5rem;
+      display: none;
+    }
+    
+    .date-popup.active {
+      display: block;
+    }
+    
+    .date-popup-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 0.5rem;
+      padding-bottom: 0.3rem;
+      border-bottom: 1px solid #eee;
+    }
+    
+    .date-popup-title {
+      font-weight: 600;
+      font-size: 0.85rem;
+      color: #333;
+    }
+    
+    .date-popup-close {
+      cursor: pointer;
+      font-size: 1.2rem;
+      color: #666;
+    }
+    
+    .year-grid {
+      display: grid;
+      grid-template-columns: repeat(4, 1fr);
+      gap: 0.3rem;
+      margin-bottom: 0.5rem;
+      padding-bottom: 0.5rem;
+      border-bottom: 1px solid #e1e4e8;
+    }
+    
+    .year-btn {
+      padding: 0.4rem;
+      border: 1px solid #e1e4e8;
+      border-radius: 6px;
+      background: #f6f8fa;
+      cursor: pointer;
+      font-size: 0.85rem;
+      text-align: center;
+      transition: all 0.1s;
+      font-weight: 500;
+      color: #333;
+    }
+    
+    .year-btn:hover {
+      background: #1c4e80;
+      color: white;
+      border-color: #1c4e80;
+    }
+    
+    .year-btn.selected {
+      background: #1c4e80;
+      color: white;
+      border-color: #1c4e80;
+    }
+    
+    .month-grid {
+      display: grid;
+      grid-template-columns: repeat(4, 1fr);
+      gap: 0.3rem;
+      margin-bottom: 0.5rem;
+    }
+    
+    .month-btn, .day-btn {
+      padding: 0.4rem;
+      border: 1px solid #e1e4e8;
+      border-radius: 6px;
+      background: #f6f8fa;
+      cursor: pointer;
+      font-size: 0.8rem;
+      text-align: center;
+      transition: all 0.1s;
+      color: #333;
+    }
+    
+    .month-btn:hover, .day-btn:hover {
+      background: #1c4e80;
+      color: white;
+      border-color: #1c4e80;
+    }
+    
+    .month-btn.selected, .day-btn.selected {
+      background: #1c4e80;
+      color: white;
+      border-color: #1c4e80;
+    }
+    
+    .day-grid {
+      display: grid;
+      grid-template-columns: repeat(7, 1fr);
+      gap: 0.2rem;
+    }
+    
     .sidebar-actions {
       padding: 0.8rem 1rem;
       border-top: 1px solid rgba(255, 255, 255, 0.1);
@@ -505,6 +619,69 @@
       border-bottom: 3px solid #1c4e80;
       padding-bottom: 0.5rem;
     }
+
+    /* Tablas de datos */
+    .data-table-container {
+      margin-top: 1rem;
+      overflow-x: auto;
+    }
+
+    .data-table {
+      width: 100%;
+      border-collapse: collapse;
+      font-size: 0.85rem;
+      background: white;
+    }
+
+    .data-table thead {
+      background: linear-gradient(135deg, #1c4e80, #0ea5e9);
+      color: white;
+    }
+
+    .data-table th {
+      padding: 0.75rem 1rem;
+      text-align: left;
+      font-weight: 600;
+      text-transform: uppercase;
+      font-size: 0.75rem;
+      letter-spacing: 0.05em;
+    }
+
+    .data-table th.text-right {
+      text-align: right;
+    }
+
+    .data-table tbody tr {
+      border-bottom: 1px solid #e5e7eb;
+      transition: background-color 0.2s;
+    }
+
+    .data-table tbody tr:hover {
+      background-color: #f0f9ff;
+    }
+
+    .data-table tbody tr:last-child {
+      border-bottom: none;
+    }
+
+    .data-table td {
+      padding: 0.75rem 1rem;
+      color: #374151;
+    }
+
+    .data-table td.text-right {
+      text-align: right;
+      font-weight: 500;
+      color: #1c4e80;
+    }
+
+    .data-table tbody tr:nth-child(even) {
+      background-color: #f9fafb;
+    }
+
+    .data-table tbody tr:nth-child(even):hover {
+      background-color: #f0f9ff;
+    }
   </style>
 </head>
 <body>
@@ -519,45 +696,72 @@
     <div class="sidebar-filters">
       <h3>🔍 Filtros Aplicables</h3>
 
-      <!-- Rango de Fechas -->
+      <!-- Rango de Fechas con Date Picker -->
       <div class="filter-group">
         <label>Fecha Inicio</label>
-        <input type="date" id="filterFechaInicio" class="date-input" />
+        <div class="date-picker-container">
+          <input type="text" class="date-input" id="inicioDateDisplay" placeholder="Desde..." readonly onclick="openDatePicker('inicio')">
+          <div class="date-popup" id="inicioDatePopup">
+            <div class="date-popup-header">
+              <span class="date-popup-title">Fecha inicio</span>
+              <span class="date-popup-close" onclick="closeDatePicker('inicio')">×</span>
+            </div>
+            <div class="year-grid" id="inicioYearGrid"></div>
+            <div class="month-grid" id="inicioMonthGrid"></div>
+            <div class="day-grid" id="inicioDayGrid"></div>
+          </div>
+        </div>
       </div>
 
       <div class="filter-group">
         <label>Fecha Fin</label>
-        <input type="date" id="filterFechaFin" class="date-input" />
+        <div class="date-picker-container">
+          <input type="text" class="date-input" id="finDateDisplay" placeholder="Hasta..." readonly onclick="openDatePicker('fin')">
+          <div class="date-popup" id="finDatePopup">
+            <div class="date-popup-header">
+              <span class="date-popup-title">Fecha fin</span>
+              <span class="date-popup-close" onclick="closeDatePicker('fin')">×</span>
+            </div>
+            <div class="year-grid" id="finYearGrid"></div>
+            <div class="month-grid" id="finMonthGrid"></div>
+            <div class="day-grid" id="finDayGrid"></div>
+          </div>
+        </div>
+        <input type="hidden" id="dateStart" />
+        <input type="hidden" id="dateEnd" />
+        <small style="color: rgba(255,255,255,0.6); font-size: 0.65rem; display: block; margin-top: 0.2rem;">
+          Filtra por fecha de Órdenes de Compra
+        </small>
       </div>
 
-      <!-- Sede -->
+      <!-- Filtro de Proveedores (Tercero|Nombre) -->
       <div class="filter-group">
-        <label>Sede</label>
-        <input type="text" id="searchSede" class="filter-search" placeholder="Buscar sede..." />
-        <select id="filterSede" multiple>
+        <label>Tercero | Nombre</label>
+        <input type="text" id="searchProveedor" class="filter-search" placeholder="Buscar proveedor..." oninput="filterSelect('filterProveedor', this.value)" />
+        <select id="filterProveedor" multiple onchange="applyFilters()">
           <option value="">Cargando...</option>
         </select>
-        <button class="btn-filter" onclick="toggleAllOptions('filterSede')">Seleccionar Todos</button>
+        <button class="btn-filter" onclick="toggleAllOptions('filterProveedor')">Seleccionar Todos</button>
       </div>
 
       <!-- Estado -->
       <div class="filter-group">
         <label>Estado</label>
-        <input type="text" id="searchEstado" class="filter-search" placeholder="Buscar estado..." />
-        <select id="filterEstado" multiple>
+        <input type="text" id="searchEstado" class="filter-search" placeholder="Buscar estado..." oninput="filterSelect('filterEstado', this.value)" />
+        <select id="filterEstado" multiple onchange="applyFilters()">
           <option value="">Cargando...</option>
         </select>
         <button class="btn-filter" onclick="toggleAllOptions('filterEstado')">Seleccionar Todos</button>
       </div>
 
-      <!-- Tipo -->
+      <!-- Proceso -->
       <div class="filter-group">
-        <label>Tipo</label>
-        <input type="text" id="searchTipo" class="filter-search" placeholder="Buscar tipo..." />
-        <select id="filterTipo" multiple>
+        <label>Proceso</label>
+        <input type="text" id="searchProceso" class="filter-search" placeholder="Buscar proceso..." oninput="filterSelect('filterProceso', this.value)" />
+        <select id="filterProceso" multiple onchange="applyFilters()">
           <option value="">Cargando...</option>
         </select>
-        <button class="btn-filter" onclick="toggleAllOptions('filterTipo')">Seleccionar Todos</button>
+        <button class="btn-filter" onclick="toggleAllOptions('filterProceso')">Seleccionar Todos</button>
       </div>
     </div>
 
@@ -597,59 +801,82 @@
         <div class="card">
           <h2 class="section-title">💰 DESCUENTOS</h2>
           
-          <!-- KPIs -->
-          <div class="kpi-grid">
-            <div class="kpi">
-              <label>Total Descuentos</label>
-              <div class="kpi-value" id="kpi-total-descuentos">$0</div>
-              <div class="kpi-sub">Acumulado</div>
+          <!-- Indicadores tipo Gauge -->
+          <div style="display: grid; grid-template-columns: repeat(3, 1fr); gap: 1rem; margin-bottom: 1.5rem;">
+            <div class="chart-card">
+              <div id="gauge-items-procesados" style="height: 200px;"></div>
             </div>
-            <div class="kpi accent1">
-              <label>Promedio Descuento</label>
-              <div class="kpi-value" id="kpi-promedio-descuento">0%</div>
-              <div class="kpi-sub">Porcentaje</div>
+            <div class="chart-card">
+              <div id="gauge-ordenes-compra" style="height: 200px;"></div>
             </div>
-            <div class="kpi accent2">
-              <label>OC Procesadas</label>
-              <div class="kpi-value" id="kpi-oc-procesadas">0</div>
-              <div class="kpi-sub">Órdenes</div>
-            </div>
-            <div class="kpi accent3">
-              <label>Proveedores</label>
-              <div class="kpi-value" id="kpi-proveedores">0</div>
-              <div class="kpi-sub">Activos</div>
+            <div class="chart-card">
+              <div id="gauge-descuentos" style="height: 200px;"></div>
             </div>
           </div>
 
           <!-- Gráficas -->
-          <div class="charts-grid">
-            <div class="chart-card">
-              <h3 class="chart-title">📉 % Descuento por Proceso</h3>
-              <div id="chartDescuentoProceso" class="chart">
-                <div class="chart-loader" id="loaderDescuentoProceso">
-                  <div class="spinner"></div>
-                  <div class="loader-text">Cargando datos...</div>
-                </div>
+          <!-- Gráfica 1: Órdenes e Items (ancho completo) -->
+          <div class="chart-card" style="margin-bottom: 1rem;">
+            <h3 class="chart-title">📊 Órdenes de Compra / Items Procesados por Proceso</h3>
+            <div id="chartOrdenesItemsProceso" class="chart" style="height: 400px;">
+              <div class="chart-loader" id="loaderOrdenesItemsProceso">
+                <div class="spinner"></div>
+                <div class="loader-text">Cargando datos...</div>
               </div>
             </div>
+            <!-- Tabla de datos -->
+            <div class="data-table-container">
+              <table class="data-table" id="tableOrdenesItemsProceso">
+                <thead>
+                  <tr>
+                    <th>Proceso</th>
+                    <th class="text-right">Órdenes de Compra</th>
+                    <th class="text-right">Items Procesados</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  <tr>
+                    <td colspan="3" style="text-align: center; color: #999;">Cargando datos...</td>
+                  </tr>
+                </tbody>
+              </table>
+            </div>
+          </div>
 
-            <div class="chart-card">
-              <h3 class="chart-title">🏆 Top Proveedores con Descuentos</h3>
-              <div id="chartTopProveedores" class="chart">
-                <div class="chart-loader" id="loaderTopProveedores">
-                  <div class="spinner"></div>
-                  <div class="loader-text">Cargando datos...</div>
-                </div>
+          <!-- Gráfica 2: Descuento por Proceso (ancho completo) -->
+          <div class="chart-card" style="margin-bottom: 1rem;">
+            <h3 class="chart-title">📉 Promedio de % Descuento por Proceso</h3>
+            <div id="chartDescuentoProceso" class="chart" style="height: 350px;">
+              <div class="chart-loader" id="loaderDescuentoProceso">
+                <div class="spinner"></div>
+                <div class="loader-text">Cargando datos...</div>
               </div>
             </div>
+            <!-- Tabla de datos -->
+            <div class="data-table-container">
+              <table class="data-table" id="tableDescuentoProceso">
+                <thead>
+                  <tr>
+                    <th>Proceso</th>
+                    <th class="text-right">Promedio % Descuento</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  <tr>
+                    <td colspan="2" style="text-align: center; color: #999;">Cargando datos...</td>
+                  </tr>
+                </tbody>
+              </table>
+            </div>
+          </div>
 
-            <div class="chart-card" style="grid-column: span 2;">
-              <h3 class="chart-title">📊 Evolución de Descuentos por Mes</h3>
-              <div id="chartEvolucionDescuentos" class="chart" style="height: 400px;">
-                <div class="chart-loader" id="loaderEvolucionDescuentos">
-                  <div class="spinner"></div>
-                  <div class="loader-text">Cargando datos...</div>
-                </div>
+          <!-- Gráfica 3: Descuento por Proveedor (ancho completo con scroll) -->
+          <div class="chart-card">
+            <h3 class="chart-title">🏆 Promedio de % Descuento por Proveedor</h3>
+            <div id="chartDescuentoProveedor" class="chart" style="height: 600px; max-height: 600px; overflow-y: auto; overflow-x: hidden;">
+              <div class="chart-loader" id="loaderDescuentoProveedor">
+                <div class="spinner"></div>
+                <div class="loader-text">Cargando datos...</div>
               </div>
             </div>
           </div>
@@ -788,7 +1015,7 @@
 
   <script>
     // API Base
-    const API_BASE = '/api/operativo';
+    const API_BASE = '/api/dashboard-operativo';
 
     // Estado actual de la pestaña
     let currentTab = 'descuentos';
@@ -827,16 +1054,424 @@
       }
     }
 
-    // Funciones de carga de datos (placeholder)
+    // Funciones de carga de datos
     async function loadDescuentosData(filters) {
-      console.log('Cargando datos de descuentos...', filters);
-      // TODO: Implementar llamadas a la API
-      updateKPIDescuentos({
-        totalDescuentos: 1250000,
-        promedioDescuento: 8.5,
-        ocProcesadas: 342,
-        proveedores: 28
-      });
+      console.log('📊 Cargando datos de DESCUENTOS con filtros:', filters);
+      
+      try {
+        // Construir objeto de filtros para POST
+        const requestBody = {
+          dateStart: filters.fechaInicio || null,
+          dateEnd: filters.fechaFin || null,
+          states: filters.estados && filters.estados.length > 0 ? filters.estados : null,
+          processes: filters.procesos && filters.procesos.length > 0 ? filters.procesos : null,
+          suppliers: filters.proveedores && filters.proveedores.length > 0 ? filters.proveedores : null
+        };
+
+        console.log('📤 Enviando POST con body:', requestBody);
+
+        const response = await fetch('/api/dashboard-operativo/descuentos/graficas', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json'
+          },
+          body: JSON.stringify(requestBody)
+        });
+        
+        if (!response.ok) {
+          const errorText = await response.text();
+          throw new Error(`Error ${response.status}: ${errorText}`);
+        }
+        
+        const data = await response.json();
+        console.log('✅ Datos recibidos:', data);
+        
+        // Renderizar indicadores gauge
+        if (data.indicadores) {
+          renderGaugeIndicadores(data.indicadores);
+        }
+        
+        // Renderizar gráficas
+        if (data.ordenes_items_por_proceso) {
+          renderChartOrdenesItemsProceso(data.ordenes_items_por_proceso);
+        }
+        if (data.descuento_por_proceso) {
+          renderChartDescuentoProceso(data.descuento_por_proceso);
+        }
+        if (data.descuento_por_proveedor) {
+          renderChartDescuentoProveedor(data.descuento_por_proveedor);
+        }
+        
+      } catch (error) {
+        console.error('❌ Error cargando datos de descuentos:', error);
+        
+        // Ocultar loaders y mostrar error en cada gráfico
+        ['loaderOrdenesItemsProceso', 'loaderDescuentoProceso', 'loaderDescuentoProveedor'].forEach(loaderId => {
+          const loader = document.getElementById(loaderId);
+          if (loader) {
+            loader.innerHTML = `
+              <div style="color: #991b1b; text-align: center; padding: 2rem;">
+                <div style="font-size: 2rem; margin-bottom: 0.5rem;">⚠️</div>
+                <div style="font-weight: 600; margin-bottom: 0.5rem;">Error al cargar datos</div>
+                <div style="font-size: 0.85rem;">${error.message}</div>
+              </div>
+            `;
+          }
+        });
+      }
+    }
+
+    // Renderizar indicadores tipo gauge
+    function renderGaugeIndicadores(indicadores) {
+      if (!indicadores) {
+        console.warn('⚠️ No hay datos para indicadores gauge');
+        return;
+      }
+      
+      // Gauge 1: Items Procesados
+      const valorItems = indicadores.items_procesados || 0;
+      const rangoMaxItems = valorItems * 1.2;
+      
+      // Generar tickvals y ticktext para mostrar "mil" en lugar de "k"
+      const ticksItems = [];
+      const tickLabelsItems = [];
+      const stepItems = rangoMaxItems / 5;
+      for (let i = 0; i <= 5; i++) {
+        const valor = Math.round(stepItems * i);
+        ticksItems.push(valor);
+        if (valor >= 1000) {
+          const enMiles = valor / 1000;
+          tickLabelsItems.push(enMiles % 1 === 0 ? enMiles + ' mil' : enMiles.toFixed(1) + ' mil');
+        } else {
+          tickLabelsItems.push(valor.toString());
+        }
+      }
+      
+      const gaugeItems = {
+        type: 'indicator',
+        mode: 'gauge+number',
+        value: valorItems,
+        title: { text: 'ITEMS PROCESADOS', font: { size: 14 } },
+        number: { valueformat: ',d' },  // Número completo sin decimales
+        gauge: {
+          axis: { 
+            range: [0, rangoMaxItems],
+            tickmode: 'array',
+            tickvals: ticksItems,
+            ticktext: tickLabelsItems
+          },
+          bar: { color: '#1c4e80' },
+          bgcolor: 'white',
+          borderwidth: 2,
+          bordercolor: '#ccc',
+          steps: [
+            { range: [0, valorItems * 0.5], color: '#e0f2fe' },
+            { range: [valorItems * 0.5, valorItems], color: '#bae6fd' }
+          ]
+        }
+      };
+      
+      Plotly.newPlot('gauge-items-procesados', [gaugeItems], {
+        margin: { t: 50, b: 10, l: 40, r: 40 },
+        paper_bgcolor: 'white',
+        font: { family: 'system-ui' }
+      }, { responsive: true });
+
+      // Gauge 2: Órdenes de Compra
+      const valorOrdenes = indicadores.ordenes_compra || 0;
+      const rangoMaxOrdenes = valorOrdenes * 1.2;
+      
+      // Generar tickvals y ticktext para mostrar "mil" en lugar de "k"
+      const ticksOrdenes = [];
+      const tickLabelsOrdenes = [];
+      const stepOrdenes = rangoMaxOrdenes / 5;
+      for (let i = 0; i <= 5; i++) {
+        const valor = Math.round(stepOrdenes * i);
+        ticksOrdenes.push(valor);
+        if (valor >= 1000) {
+          const enMiles = valor / 1000;
+          tickLabelsOrdenes.push(enMiles % 1 === 0 ? enMiles + ' mil' : enMiles.toFixed(1) + ' mil');
+        } else {
+          tickLabelsOrdenes.push(valor.toString());
+        }
+      }
+      
+      const gaugeOrdenes = {
+        type: 'indicator',
+        mode: 'gauge+number',
+        value: valorOrdenes,
+        title: { text: 'ORDENES DE COMPRA', font: { size: 14 } },
+        number: { valueformat: ',d' },  // Número completo sin decimales
+        gauge: {
+          axis: { 
+            range: [0, rangoMaxOrdenes],
+            tickmode: 'array',
+            tickvals: ticksOrdenes,
+            ticktext: tickLabelsOrdenes
+          },
+          bar: { color: '#0ea5e9' },
+          bgcolor: 'white',
+          borderwidth: 2,
+          bordercolor: '#ccc',
+          steps: [
+            { range: [0, valorOrdenes * 0.5], color: '#e0f2fe' },
+            { range: [valorOrdenes * 0.5, valorOrdenes], color: '#bae6fd' }
+          ]
+        }
+      };
+      
+      
+      Plotly.newPlot('gauge-ordenes-compra', [gaugeOrdenes], {
+        margin: { t: 50, b: 10, l: 40, r: 40 },
+        paper_bgcolor: 'white',
+        font: { family: 'system-ui' }
+      }, { responsive: true });
+
+      // Gauge 3: Descuentos % (límite dinámico)
+      // Convertir de decimal (0.03) a porcentaje (3%)
+      const descuentoValor = (indicadores.promedio_descuento || 0) * 100;
+      const maxDescuento = Math.max(10, Math.ceil(descuentoValor * 1.5));
+      const gaugeDescuentos = {
+        type: 'indicator',
+        mode: 'gauge+number',
+        value: descuentoValor,
+        title: { text: 'DESCUENTOS', font: { size: 14 } },
+        number: { suffix: '%', valueformat: '.2f' },
+        gauge: {
+          axis: { range: [0, maxDescuento] },
+          bar: { color: '#10b981' },
+          bgcolor: 'white',
+          borderwidth: 2,
+          bordercolor: '#ccc',
+          steps: [
+            { range: [0, maxDescuento * 0.33], color: '#f0fdf4' },
+            { range: [maxDescuento * 0.33, maxDescuento * 0.66], color: '#bbf7d0' },
+            { range: [maxDescuento * 0.66, maxDescuento], color: '#86efac' }
+          ]
+        }
+      };
+      
+      Plotly.newPlot('gauge-descuentos', [gaugeDescuentos], {
+        margin: { t: 50, b: 10, l: 40, r: 40 },
+        paper_bgcolor: 'white',
+        font: { family: 'system-ui' }
+      }, { responsive: true });
+    }
+
+    // Gráfica: Órdenes e Items por Proceso
+    function renderChartOrdenesItemsProceso(data) {
+      const loader = document.getElementById('loaderOrdenesItemsProceso');
+      if (loader) loader.classList.add('hidden');
+      
+      if (!data || data.length === 0) {
+        console.warn('⚠️ No hay datos para Órdenes e Items por Proceso');
+        const chart = document.getElementById('chartOrdenesItemsProceso');
+        if (chart) {
+          chart.innerHTML = '<div style="text-align: center; padding: 2rem; color: #666;">No hay datos disponibles</div>';
+        }
+        // Actualizar tabla con mensaje de sin datos
+        const tableBody = document.querySelector('#tableOrdenesItemsProceso tbody');
+        if (tableBody) {
+          tableBody.innerHTML = '<tr><td colspan="3" style="text-align: center; color: #999;">No hay datos disponibles</td></tr>';
+        }
+        return;
+      }
+      
+      const procesos = data.map(d => d.proceso);
+      const ordenes = data.map(d => d.ordenes);
+      const items = data.map(d => d.items);
+
+      const traceOrdenes = {
+        x: procesos,
+        y: ordenes,
+        name: 'ORDENES DE COMPRA',
+        type: 'bar',
+        marker: { color: '#0ea5e9' }
+      };
+
+      const traceItems = {
+        x: procesos,
+        y: items,
+        name: 'ITEM PROCESADOS',
+        type: 'bar',
+        marker: { color: '#1c4e80' }
+      };
+
+      const layout = {
+        barmode: 'group',
+        title: '',
+        xaxis: { title: 'Proceso' },
+        yaxis: { title: 'Cantidad' },
+        showlegend: true,
+        legend: { orientation: 'h', y: 1.1 },
+        margin: { t: 40, b: 80, l: 60, r: 40 },
+        paper_bgcolor: 'white',
+        plot_bgcolor: '#f9fafb'
+      };
+
+      Plotly.newPlot('chartOrdenesItemsProceso', [traceOrdenes, traceItems], layout, { responsive: true });
+      
+      // Llenar tabla
+      const tableBody = document.querySelector('#tableOrdenesItemsProceso tbody');
+      if (tableBody) {
+        tableBody.innerHTML = data.map(row => `
+          <tr>
+            <td>${row.proceso}</td>
+            <td class="text-right">${row.ordenes.toLocaleString()}</td>
+            <td class="text-right">${row.items.toLocaleString()}</td>
+          </tr>
+        `).join('');
+      }
+    }
+
+    // Gráfica: Promedio % Descuento por Proceso
+    function renderChartDescuentoProceso(data) {
+      const loader = document.getElementById('loaderDescuentoProceso');
+      if (loader) loader.classList.add('hidden');
+      
+      if (!data || data.length === 0) {
+        console.warn('⚠️ No hay datos para Descuento por Proceso');
+        const chart = document.getElementById('chartDescuentoProceso');
+        if (chart) {
+          chart.innerHTML = '<div style="text-align: center; padding: 2rem; color: #666;">No hay datos disponibles</div>';
+        }
+        // Actualizar tabla con mensaje de sin datos
+        const tableBody = document.querySelector('#tableDescuentoProceso tbody');
+        if (tableBody) {
+          tableBody.innerHTML = '<tr><td colspan="2" style="text-align: center; color: #999;">No hay datos disponibles</td></tr>';
+        }
+        return;
+      }
+      
+      const procesos = data.map(d => d.proceso);
+      // Convertir de decimal (0.03) a porcentaje (3%)
+      const promedios = data.map(d => d.promedio * 100);
+      
+      // Calcular el valor máximo y ajustar el rango del eje Y
+      const maxValue = Math.max(...promedios);
+      const yAxisMax = maxValue * 1.2;
+
+      const trace = {
+        x: procesos,
+        y: promedios,
+        type: 'bar',
+        marker: { color: '#0ea5e9' },
+        text: promedios.map(v => v.toFixed(2) + '%'),
+        textposition: 'outside'
+      };
+
+      const layout = {
+        title: '',
+        xaxis: { title: 'Proceso' },
+        yaxis: { 
+          title: 'Promedio % Descuento',
+          range: [0, yAxisMax]
+        },
+        showlegend: false,
+        margin: { t: 20, b: 100, l: 60, r: 40 },
+        paper_bgcolor: 'white',
+        plot_bgcolor: '#f9fafb',
+        autosize: true
+      };
+
+      const config = {
+        responsive: true,
+        displayModeBar: false
+      };
+
+      Plotly.newPlot('chartDescuentoProceso', [trace], layout, config);
+      
+      // Llenar tabla
+      const tableBody = document.querySelector('#tableDescuentoProceso tbody');
+      if (tableBody) {
+        tableBody.innerHTML = data.map(row => `
+          <tr>
+            <td>${row.proceso}</td>
+            <td class="text-right">${(row.promedio * 100).toFixed(2)}%</td>
+          </tr>
+        `).join('');
+      }
+    }
+
+    // Gráfica: Promedio % Descuento por Proveedor (TODOS con scroll)
+    function renderChartDescuentoProveedor(data) {
+      const loader = document.getElementById('loaderDescuentoProveedor');
+      if (loader) loader.classList.add('hidden');
+      
+      if (!data || data.length === 0) {
+        console.warn('⚠️ No hay datos para Descuento por Proveedor');
+        const chart = document.getElementById('chartDescuentoProveedor');
+        if (chart) {
+          chart.innerHTML = '<div style="text-align: center; padding: 2rem; color: #666;">No hay datos disponibles</div>';
+        }
+        return;
+      }
+      
+      // Invertir el orden para mostrar de menor a mayor (de abajo hacia arriba)
+      const proveedores = data.map(d => d.proveedor).reverse();
+      // Convertir de decimal (0.03) a porcentaje (3%)
+      const promedios = data.map(d => d.promedio * 100).reverse();
+
+      // Calcular altura dinámica basada en número de proveedores
+      const alturaMinima = 600;
+      const alturaPorProveedor = 25;
+      const alturaCalculada = Math.max(alturaMinima, proveedores.length * alturaPorProveedor);
+
+      const trace = {
+        y: proveedores,
+        x: promedios,
+        type: 'bar',
+        orientation: 'h',
+        marker: { color: '#0ea5e9' },
+        text: promedios.map(v => v.toFixed(2) + '%'),
+        textposition: 'outside'
+      };
+
+      const layout = {
+        title: '',
+        xaxis: { 
+          title: 'Promedio % Descuento',
+          side: 'top'  // Colocar eje X en la parte superior para que sea siempre visible
+        },
+        yaxis: { 
+          title: 'Proveedor',
+          automargin: true,
+          tickfont: { size: 10 }
+        },
+        showlegend: false,
+        height: alturaCalculada,
+        margin: { t: 60, b: 40, l: 250, r: 80 },  // Ajustar márgenes: más espacio arriba, menos abajo
+        paper_bgcolor: 'white',
+        plot_bgcolor: '#f9fafb'
+      };
+
+      // Desactivar responsive para mantener altura fija y el scroll
+      const config = {
+        responsive: false,
+        displayModeBar: false
+      };
+
+      Plotly.newPlot('chartDescuentoProveedor', [trace], layout, config);
+      
+      // Limpiar listener anterior si existe
+      if (window.resizeProveedorChart) {
+        window.removeEventListener('resize', window.resizeProveedorChart);
+      }
+      
+      // Crear función de resize para mantener el ancho adaptable con altura fija
+      window.resizeProveedorChart = function() {
+        const chartDiv = document.getElementById('chartDescuentoProveedor');
+        if (chartDiv && chartDiv.data) {
+          const containerWidth = chartDiv.parentElement.offsetWidth;
+          Plotly.relayout('chartDescuentoProveedor', {
+            width: containerWidth,
+            height: alturaCalculada  // Mantener altura fija calculada
+          });
+        }
+      };
+      
+      // Agregar listener de resize
+      window.addEventListener('resize', window.resizeProveedorChart);
     }
 
     async function loadTrazaData(filters) {
@@ -861,13 +1496,7 @@
       });
     }
 
-    // Actualizar KPIs
-    function updateKPIDescuentos(data) {
-      document.getElementById('kpi-total-descuentos').textContent = `$${data.totalDescuentos.toLocaleString()}`;
-      document.getElementById('kpi-promedio-descuento').textContent = `${data.promedioDescuento}%`;
-      document.getElementById('kpi-oc-procesadas').textContent = data.ocProcesadas.toLocaleString();
-      document.getElementById('kpi-proveedores').textContent = data.proveedores;
-    }
+    // Actualizar KPIs (solo para tabs pendientes)
 
     function updateKPITraza(data) {
       document.getElementById('kpi-total-rq').textContent = data.totalRQ.toLocaleString();
@@ -885,32 +1514,83 @@
 
     // Obtener filtros actuales
     function getFilters() {
-      return {
-        fechaInicio: document.getElementById('filterFechaInicio').value,
-        fechaFin: document.getElementById('filterFechaFin').value,
-        sedes: Array.from(document.getElementById('filterSede').selectedOptions).map(o => o.value),
-        estados: Array.from(document.getElementById('filterEstado').selectedOptions).map(o => o.value),
-        tipos: Array.from(document.getElementById('filterTipo').selectedOptions).map(o => o.value)
+      const proveedorSelect = document.getElementById('filterProveedor');
+      const estadoSelect = document.getElementById('filterEstado');
+      const procesoSelect = document.getElementById('filterProceso');
+      
+      const filters = {
+        fechaInicio: document.getElementById('dateStart').value,
+        fechaFin: document.getElementById('dateEnd').value,
+        proveedores: proveedorSelect ? Array.from(proveedorSelect.selectedOptions).map(o => o.value) : [],
+        estados: estadoSelect ? Array.from(estadoSelect.selectedOptions).map(o => o.value) : [],
+        procesos: procesoSelect ? Array.from(procesoSelect.selectedOptions).map(o => o.value) : []
       };
+      
+      console.log('📊 Filtros actuales:', {
+        fechas: filters.fechaInicio && filters.fechaFin ? `${filters.fechaInicio} a ${filters.fechaFin}` : 'Sin fechas',
+        proveedores: filters.proveedores.length,
+        estados: filters.estados.length,
+        procesos: filters.procesos.length
+      });
+      
+      return filters;
     }
 
-    // Aplicar filtros
+    // Aplicar filtros (solo para rango de fechas con botón)
     async function applyFilters() {
-      document.getElementById('status').textContent = '🔄 Aplicando filtros...';
+      const statusEl = document.getElementById('status');
+      if (statusEl) statusEl.textContent = '🔄 Aplicando filtros...';
+      
+      syncHiddenDates(); // Sincronizar fechas antes de aplicar
+      
+      console.log('🔍 Aplicando filtros para pestaña:', currentTab);
       await loadTabData(currentTab);
-      document.getElementById('status').textContent = '✅ Filtros aplicados';
-      setTimeout(() => {
-        document.getElementById('status').textContent = '';
-      }, 2000);
+      
+      if (statusEl) {
+        statusEl.textContent = '✅ Filtros aplicados';
+        setTimeout(() => {
+          statusEl.textContent = '';
+        }, 2000);
+      }
     }
 
     // Restablecer filtros
     function resetFilters() {
-      document.getElementById('filterFechaInicio').value = '';
-      document.getElementById('filterFechaFin').value = '';
-      document.getElementById('filterSede').selectedIndex = -1;
-      document.getElementById('filterEstado').selectedIndex = -1;
-      document.getElementById('filterTipo').selectedIndex = -1;
+      // Limpiar estados del date picker
+      datePickerState.inicio = { year: null, month: null, day: null };
+      datePickerState.fin = { year: null, month: null, day: null };
+      
+      // Limpiar displays y campos hidden
+      document.getElementById('inicioDateDisplay').value = '';
+      document.getElementById('finDateDisplay').value = '';
+      document.getElementById('dateStart').value = '';
+      document.getElementById('dateEnd').value = '';
+      
+      // Seleccionar todas las opciones en los filtros
+      ['filterProveedor', 'filterEstado', 'filterProceso'].forEach(selectId => {
+        const select = document.getElementById(selectId);
+        if (select) {
+          Array.from(select.options).forEach(option => option.selected = true);
+        }
+      });
+      
+      // Limpiar campos de búsqueda
+      ['searchProveedor', 'searchEstado', 'searchProceso'].forEach(searchId => {
+        const searchInput = document.getElementById(searchId);
+        if (searchInput) {
+          searchInput.value = '';
+        }
+      });
+      
+      // Mostrar todas las opciones (limpiar filtros de búsqueda)
+      ['filterProveedor', 'filterEstado', 'filterProceso'].forEach(selectId => {
+        const select = document.getElementById(selectId);
+        if (select) {
+          Array.from(select.options).forEach(option => option.style.display = '');
+        }
+      });
+      
+      console.log('🔄 Filtros restablecidos');
       applyFilters();
     }
 
@@ -922,39 +1602,334 @@
       for (let option of select.options) {
         option.selected = !allSelected;
       }
+      
+      // Aplicar filtros automáticamente
+      applyFilters();
     }
 
-    // Configurar búsqueda en selects
-    function setupFilterSearch() {
-      const searchInputs = [
-        { input: 'searchSede', select: 'filterSede' },
-        { input: 'searchEstado', select: 'filterEstado' },
-        { input: 'searchTipo', select: 'filterTipo' }
-      ];
+    // Filtrar opciones de select
+    function filterSelect(selectId, searchText) {
+      const select = document.getElementById(selectId);
+      const options = select.getElementsByTagName('option');
+      const searchLower = searchText.toLowerCase();
+      
+      for (let option of options) {
+        const textLower = option.textContent.toLowerCase();
+        option.style.display = textLower.includes(searchLower) ? '' : 'none';
+      }
+    }
 
-      searchInputs.forEach(({ input, select }) => {
-        const searchInput = document.getElementById(input);
-        const selectEl = document.getElementById(select);
+    // =====================================================
+    // Date Picker Personalizado
+    // =====================================================
+    const monthNames = ['Ene', 'Feb', 'Mar', 'Abr', 'May', 'Jun', 'Jul', 'Ago', 'Sep', 'Oct', 'Nov', 'Dic'];
+    
+    const datePickerState = {
+      inicio: { year: null, month: null, day: null },
+      fin: { year: null, month: null, day: null },
+      minYear: 2020,
+      maxYear: new Date().getFullYear() + 1
+    };
+    
+    function initDatePickerYears() {
+      ['inicio', 'fin'].forEach(prefix => {
+        const yearGrid = document.getElementById(prefix + 'YearGrid');
+        if (!yearGrid) return;
+        yearGrid.innerHTML = '';
         
-        if (searchInput && selectEl) {
-          searchInput.addEventListener('input', function() {
-            const searchText = this.value.toLowerCase();
-            Array.from(selectEl.options).forEach(option => {
-              const text = option.textContent.toLowerCase();
-              option.style.display = text.includes(searchText) ? '' : 'none';
-            });
-          });
+        for (let y = datePickerState.minYear; y <= datePickerState.maxYear; y++) {
+          const btn = document.createElement('div');
+          btn.className = 'year-btn';
+          btn.textContent = y;
+          btn.dataset.year = y;
+          if (datePickerState[prefix].year === y) {
+            btn.classList.add('selected');
+          }
+          btn.onclick = () => selectYear(prefix, y);
+          yearGrid.appendChild(btn);
         }
+      });
+    }
+    
+    function selectYear(prefix, year) {
+      datePickerState[prefix].year = year;
+      
+      const yearGrid = document.getElementById(prefix + 'YearGrid');
+      yearGrid.querySelectorAll('.year-btn').forEach(btn => {
+        btn.classList.toggle('selected', parseInt(btn.dataset.year) === year);
+      });
+      
+      showMonths(prefix);
+    }
+    
+    function openDatePicker(prefix) {
+      const otherPrefix = prefix === 'inicio' ? 'fin' : 'inicio';
+      document.getElementById(otherPrefix + 'DatePopup').classList.remove('active');
+      
+      const popup = document.getElementById(prefix + 'DatePopup');
+      popup.classList.add('active');
+      
+      if (!datePickerState[prefix].year) {
+        datePickerState[prefix].year = datePickerState.minYear || new Date().getFullYear();
+      }
+      
+      const yearGrid = document.getElementById(prefix + 'YearGrid');
+      // Inicializar años si aún no existen
+      if (yearGrid && yearGrid.children.length === 0) {
+        initDatePickerYears();
+      }
+      if (yearGrid) {
+        yearGrid.querySelectorAll('.year-btn').forEach(btn => {
+          btn.classList.toggle('selected', parseInt(btn.dataset.year) === datePickerState[prefix].year);
+        });
+      }
+      
+      showMonths(prefix);
+    }
+    
+    function closeDatePicker(prefix) {
+      document.getElementById(prefix + 'DatePopup').classList.remove('active');
+    }
+    
+    function showMonths(prefix) {
+      const monthGrid = document.getElementById(prefix + 'MonthGrid');
+      const dayGrid = document.getElementById(prefix + 'DayGrid');
+      
+      let year = datePickerState[prefix].year;
+      if (!year) {
+        year = datePickerState.minYear || new Date().getFullYear();
+        datePickerState[prefix].year = year;
+      }
+      
+      monthGrid.innerHTML = '';
+      dayGrid.innerHTML = '';
+      
+      monthNames.forEach((name, idx) => {
+        const btn = document.createElement('div');
+        btn.className = 'month-btn';
+        if (datePickerState[prefix].month === idx) {
+          btn.classList.add('selected');
+        }
+        btn.textContent = name;
+        btn.onclick = () => selectMonth(prefix, idx);
+        monthGrid.appendChild(btn);
+      });
+      
+      if (datePickerState[prefix].month !== null) {
+        showDays(prefix);
+      }
+    }
+    
+    function selectMonth(prefix, month) {
+      datePickerState[prefix].month = month;
+      
+      // Si no hay día seleccionado, usar el día 1 por defecto
+      if (!datePickerState[prefix].day) {
+        datePickerState[prefix].day = 1;
+      } else {
+        // Verificar que el día seleccionado sea válido para el nuevo mes
+        const daysInMonth = new Date(datePickerState[prefix].year, month + 1, 0).getDate();
+        if (datePickerState[prefix].day > daysInMonth) {
+          datePickerState[prefix].day = daysInMonth;
+        }
+      }
+      
+      showDays(prefix);
+      updateDateDisplay(prefix);
+    }
+    
+    function showDays(prefix) {
+      const monthGrid = document.getElementById(prefix + 'MonthGrid');
+      const dayGrid = document.getElementById(prefix + 'DayGrid');
+      const year = datePickerState[prefix].year;
+      const month = datePickerState[prefix].month;
+      
+      monthGrid.querySelectorAll('.month-btn').forEach((btn, idx) => {
+        btn.classList.toggle('selected', idx === month);
+      });
+      
+      const daysInMonth = new Date(year, month + 1, 0).getDate();
+      
+      dayGrid.innerHTML = '';
+      for (let d = 1; d <= daysInMonth; d++) {
+        const btn = document.createElement('div');
+        btn.className = 'day-btn';
+        if (datePickerState[prefix].day === d) {
+          btn.classList.add('selected');
+        }
+        btn.textContent = d;
+        btn.onclick = () => selectDay(prefix, d);
+        dayGrid.appendChild(btn);
+      }
+    }
+    
+    function selectDay(prefix, day) {
+      datePickerState[prefix].day = day;
+      updateDateDisplay(prefix);
+      closeDatePicker(prefix);
+      syncHiddenDates();
+      // Aplicar filtros automáticamente al cambiar fechas
+      applyFilters();
+    }
+    
+    function updateDateDisplay(prefix) {
+      const state = datePickerState[prefix];
+      const displayEl = document.getElementById(prefix + 'DateDisplay');
+      if (state.year && state.month !== null && state.day) {
+        displayEl.value = `${state.day} ${monthNames[state.month]} ${state.year}`;
+      }
+    }
+    
+    function syncHiddenDates() {
+      const inicio = datePickerState.inicio;
+      const fin = datePickerState.fin;
+      
+      if (inicio.year && inicio.month !== null && inicio.day) {
+        const d = new Date(inicio.year, inicio.month, inicio.day);
+        const dateString = d.toISOString().split('T')[0];
+        document.getElementById('dateStart').value = dateString;
+      }
+      if (fin.year && fin.month !== null && fin.day) {
+        const d = new Date(fin.year, fin.month, fin.day);
+        const dateString = d.toISOString().split('T')[0];
+        document.getElementById('dateEnd').value = dateString;
+      }
+    }
+    
+    // Cerrar date picker al hacer clic fuera
+    document.addEventListener('click', function(e) {
+      if (!e.target.closest('.date-picker-container') && !e.target.closest('.date-popup')) {
+        closeDatePicker('inicio');
+        closeDatePicker('fin');
+      }
+    });
+
+    // Cargar filtros desde el API
+    async function loadFiltersFromAPI() {
+      try {
+        console.log('🔄 Cargando filtros desde /api/dashboard-operativo/filters...');
+        const response = await fetch('/api/dashboard-operativo/filters');
+        
+        if (!response.ok) {
+          const errorText = await response.text();
+          console.error('❌ Error en respuesta:', response.status, errorText);
+          throw new Error(`Error ${response.status}: ${errorText}`);
+        }
+        
+        const filters = await response.json();
+        
+        console.log('📋 Filtros cargados desde API:', filters);
+        console.log('  - Proveedores:', (filters.proveedores_desc || []).length, 'items');
+        console.log('  - Estados:', (filters.estados_oc_desc || []).length, 'items');
+        console.log('  - Procesos:', (filters.procesos || []).length, 'items');
+        
+        // Validar que hay datos
+        if (!filters.proveedores_desc || filters.proveedores_desc.length === 0) {
+          console.warn('⚠️ No se recibieron proveedores desde la API');
+        }
+        if (!filters.estados_oc_desc || filters.estados_oc_desc.length === 0) {
+          console.warn('⚠️ No se recibieron estados desde la API');
+        }
+        if (!filters.procesos || filters.procesos.length === 0) {
+          console.warn('⚠️ No se recibieron procesos desde la API');
+        }
+        
+        // Llenar selects y seleccionar todos por defecto
+        fillSelect('filterProveedor', filters.proveedores_desc || [], true);
+        fillSelect('filterEstado', filters.estados_oc_desc || [], true);
+        fillSelect('filterProceso', filters.procesos || [], true);
+        
+        // Habilitar selección con clic simple
+        enableClickToggleSelection(document.getElementById('filterProveedor'));
+        enableClickToggleSelection(document.getElementById('filterEstado'));
+        enableClickToggleSelection(document.getElementById('filterProceso'));
+        
+        console.log('✅ Filtros inicializados correctamente');
+        
+      } catch (error) {
+        console.error('❌ Error cargando filtros:', error);
+        // Mostrar error en los selects
+        ['filterProveedor', 'filterEstado', 'filterProceso'].forEach(selectId => {
+          const select = document.getElementById(selectId);
+          if (select) {
+            select.innerHTML = '<option value="">Error al cargar filtros</option>';
+          }
+        });
+      }
+    }
+
+    function fillSelect(selectId, items, selectAll = false) {
+      const select = document.getElementById(selectId);
+      if (!select) {
+        console.warn(`⚠️ No se encontró el select con id: ${selectId}`);
+        return;
+      }
+      
+      console.log(`📝 Llenando select ${selectId} con ${items.length} items, selectAll=${selectAll}`);
+      
+      select.innerHTML = '';
+      
+      if (items.length === 0) {
+        select.innerHTML = '<option value="">Sin datos disponibles</option>';
+        return;
+      }
+      
+      items.forEach(item => {
+        const option = document.createElement('option');
+        option.value = item;
+        option.textContent = item;
+        if (selectAll) option.selected = true;
+        select.appendChild(option);
+      });
+      
+      console.log(`✅ Select ${selectId} llenado exitosamente con ${items.length} opciones`);
+    }
+
+    // Función para habilitar selección múltiple con clic simple (sin Ctrl)
+    function enableClickToggleSelection(selectEl) {
+      if (!selectEl) return;
+      
+      let lastSelected = null;
+      
+      selectEl.addEventListener('mousedown', function(e) {
+        e.preventDefault();
+        
+        const option = e.target;
+        if (option.tagName !== 'OPTION') return;
+        
+        // Si se presiona Shift, seleccionar rango
+        if (e.shiftKey && lastSelected) {
+          const start = Array.from(selectEl.options).indexOf(lastSelected);
+          const end = Array.from(selectEl.options).indexOf(option);
+          const [min, max] = start < end ? [start, end] : [end, start];
+          
+          for (let i = min; i <= max; i++) {
+            if (selectEl.options[i].style.display !== 'none') {
+              selectEl.options[i].selected = true;
+            }
+          }
+        } else {
+          // Toggle individual
+          option.selected = !option.selected;
+        }
+        
+        lastSelected = option;
+        
+        // Disparar evento change
+        selectEl.dispatchEvent(new Event('change'));
+      }, false);
+      
+      // Prevenir comportamiento por defecto del click
+      selectEl.addEventListener('click', function(e) {
+        e.preventDefault();
       });
     }
 
     // Inicializar al cargar la página
     window.addEventListener('DOMContentLoaded', async () => {
-      setupFilterSearch();
+      initDatePickerYears();
+      await loadFiltersFromAPI();
       await loadTabData('descuentos');
-      
-      // TODO: Cargar opciones de filtros desde la API
-      // await loadFilterOptions();
     });
   </script>
 </body>

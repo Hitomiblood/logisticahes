@@ -37,6 +37,8 @@ class FilterRequest(BaseModel):
     suppliers: Optional[list] = None
     states: Optional[list] = None
     processes: Optional[list] = None
+    req_states: Optional[list] = None  # Para traza RQ
+    oc_states: Optional[list] = None   # Para traza OC
 
 
 # ==================== VERIFICACIÓN DE DATOS ====================
@@ -70,7 +72,7 @@ async def get_filters():
         cursor.execute("SELECT DISTINCT proceso FROM dashboard_oc_descuentos WHERE proceso IS NOT NULL ORDER BY proceso")
         filters["procesos"] = [row[0] for row in cursor.fetchall()]
         
-        cursor.execute("SELECT DISTINCT tercero_nombre FROM dashboard_oc_descuentos WHERE tercero_nombre IS NOT NULL ORDER BY tercero_nombre LIMIT 500")
+        cursor.execute("SELECT DISTINCT tercero_nombre FROM dashboard_oc_descuentos WHERE tercero_nombre IS NOT NULL ORDER BY tercero_nombre")
         filters["proveedores_desc"] = [row[0] for row in cursor.fetchall()]
         
         cursor.execute("SELECT MAX(fecha), MIN(fecha) FROM dashboard_oc_descuentos WHERE fecha IS NOT NULL")
@@ -97,15 +99,9 @@ async def get_filters():
 
 
 # ==================== TAB 1: DESCUENTOS ====================
-@router.get("/descuentos/kpis")
-async def get_descuentos_kpis(
-    dateStart: Optional[str] = None,
-    dateEnd: Optional[str] = None,
-    suppliers: Optional[str] = None,
-    states: Optional[str] = None,
-    processes: Optional[str] = None
-):
-    """KPIs principales para la pestaña DESCUENTOS"""
+@router.post("/descuentos/kpis")
+async def get_descuentos_kpis(filters: FilterRequest):
+    """KPIs principales para la pestaña DESCUENTOS (POST para evitar URL demasiado larga)"""
     with get_db() as conn:
         cursor = conn.cursor()
         
@@ -113,27 +109,24 @@ async def get_descuentos_kpis(
         where_clauses = []
         params = []
         
-        if dateStart and dateEnd:
+        if filters.dateStart and filters.dateEnd:
             where_clauses.append(f"fecha BETWEEN {_ph()} AND {_ph()}")
-            params.extend([dateStart, dateEnd])
+            params.extend([filters.dateStart, filters.dateEnd])
         
-        if suppliers:
-            supplier_list = suppliers.split(',')
-            placeholders = ','.join([_ph()] * len(supplier_list))
+        if filters.suppliers:
+            placeholders = ','.join([_ph()] * len(filters.suppliers))
             where_clauses.append(f"tercero_nombre IN ({placeholders})")
-            params.extend(supplier_list)
+            params.extend(filters.suppliers)
         
-        if states:
-            state_list = states.split(',')
-            placeholders = ','.join([_ph()] * len(state_list))
+        if filters.states:
+            placeholders = ','.join([_ph()] * len(filters.states))
             where_clauses.append(f"estado IN ({placeholders})")
-            params.extend(state_list)
+            params.extend(filters.states)
         
-        if processes:
-            process_list = processes.split(',')
-            placeholders = ','.join([_ph()] * len(process_list))
+        if filters.processes:
+            placeholders = ','.join([_ph()] * len(filters.processes))
             where_clauses.append(f"proceso IN ({placeholders})")
-            params.extend(process_list)
+            params.extend(filters.processes)
         
         where_sql = " WHERE " + " AND ".join(where_clauses) if where_clauses else ""
         
@@ -177,15 +170,9 @@ async def get_descuentos_kpis(
         }
 
 
-@router.get("/descuentos/graficas")
-async def get_descuentos_graficas(
-    dateStart: Optional[str] = None,
-    dateEnd: Optional[str] = None,
-    suppliers: Optional[str] = None,
-    states: Optional[str] = None,
-    processes: Optional[str] = None
-):
-    """Gráficas para la pestaña DESCUENTOS"""
+@router.post("/descuentos/graficas")
+async def get_descuentos_graficas(filters: FilterRequest):
+    """Gráficas para la pestaña DESCUENTOS (POST para evitar URL demasiado larga)"""
     with get_db() as conn:
         cursor = conn.cursor()
         
@@ -193,86 +180,108 @@ async def get_descuentos_graficas(
         where_clauses = []
         params = []
         
-        if dateStart and dateEnd:
+        if filters.dateStart and filters.dateEnd:
             where_clauses.append(f"fecha BETWEEN {_ph()} AND {_ph()}")
-            params.extend([dateStart, dateEnd])
+            params.extend([filters.dateStart, filters.dateEnd])
         
-        if suppliers:
-            supplier_list = suppliers.split(',')
-            placeholders = ','.join([_ph()] * len(supplier_list))
+        if filters.suppliers:
+            placeholders = ','.join([_ph()] * len(filters.suppliers))
             where_clauses.append(f"tercero_nombre IN ({placeholders})")
-            params.extend(supplier_list)
+            params.extend(filters.suppliers)
         
-        if states:
-            state_list = states.split(',')
-            placeholders = ','.join([_ph()] * len(state_list))
+        if filters.states:
+            placeholders = ','.join([_ph()] * len(filters.states))
             where_clauses.append(f"estado IN ({placeholders})")
-            params.extend(state_list)
+            params.extend(filters.states)
         
-        if processes:
-            process_list = processes.split(',')
-            placeholders = ','.join([_ph()] * len(process_list))
+        if filters.processes:
+            placeholders = ','.join([_ph()] * len(filters.processes))
             where_clauses.append(f"proceso IN ({placeholders})")
-            params.extend(process_list)
+            params.extend(filters.processes)
         
         where_sql = " WHERE " + " AND ".join(where_clauses) if where_clauses else ""
         
-        # Gráfica 1: Top 10 Proveedores por Descuento
-        _exec(cursor, f"""
-            SELECT tercero_nombre, SUM(total_dcto) as total_descuento
-            FROM dashboard_oc_descuentos
-            {where_sql} AND total_dcto > 0
-            GROUP BY tercero_nombre
-            ORDER BY total_descuento DESC
-            LIMIT 10
-        """, params)
-        top_proveedores = [{"proveedor": row[0], "descuento": round(row[1], 2)} for row in cursor.fetchall()]
+        # Helper para agregar condiciones adicionales
+        def add_where(base_where, condition):
+            if base_where:
+                return f"{base_where} AND {condition}"
+            else:
+                return f" WHERE {condition}"
         
-        # Gráfica 2: Descuentos por Mes
+        # Indicadores superiores
+        # Total de items procesados
         _exec(cursor, f"""
-            SELECT strftime('%Y-%m', fecha) as mes, SUM(total_dcto) as total_descuento
-            FROM dashboard_oc_descuentos
-            {where_sql} AND fecha IS NOT NULL
-            GROUP BY mes
-            ORDER BY mes
-        """, params)
-        descuentos_mes = [{"mes": row[0], "descuento": round(row[1], 2)} for row in cursor.fetchall()]
-        
-        # Gráfica 3: Distribución de Descuentos por Rango de %
-        _exec(cursor, f"""
-            SELECT 
-                CASE 
-                    WHEN porcentaje_descuento = 0 THEN 'Sin descuento'
-                    WHEN porcentaje_descuento > 0 AND porcentaje_descuento <= 5 THEN '0-5%'
-                    WHEN porcentaje_descuento > 5 AND porcentaje_descuento <= 10 THEN '5-10%'
-                    WHEN porcentaje_descuento > 10 AND porcentaje_descuento <= 15 THEN '10-15%'
-                    WHEN porcentaje_descuento > 15 THEN '>15%'
-                END as rango,
-                COUNT(*) as cantidad
+            SELECT COUNT(*) as items_procesados
             FROM dashboard_oc_descuentos
             {where_sql}
-            GROUP BY rango
-            ORDER BY rango
         """, params)
-        distribucion_descuentos = [{"rango": row[0], "cantidad": row[1]} for row in cursor.fetchall()]
+        items_procesados = cursor.fetchone()[0]
+        
+        # Total de órdenes de compra
+        _exec(cursor, f"""
+            SELECT COUNT(DISTINCT CONCAT(documento_emp, '-', documento_suc, '-', documento_tipo, '-', documento_num)) as ordenes_compra
+            FROM dashboard_oc_descuentos
+            {where_sql}
+        """, params)
+        ordenes_compra = cursor.fetchone()[0]
+        
+        # Promedio de descuento
+        _exec(cursor, f"""
+            SELECT COALESCE(AVG(porcentaje_descuento), 0) as promedio_descuento
+            FROM dashboard_oc_descuentos
+            {where_sql}
+        """, params)
+        promedio_descuento = cursor.fetchone()[0]
+        
+        # Gráfica 1: Órdenes de Compra e Items Procesados por Proceso
+        _exec(cursor, f"""
+            SELECT 
+                proceso,
+                COUNT(DISTINCT CONCAT(documento_emp, '-', documento_suc, '-', documento_tipo, '-', documento_num)) as ordenes,
+                COUNT(*) as items
+            FROM dashboard_oc_descuentos
+            {add_where(where_sql, "proceso IS NOT NULL")}
+            GROUP BY proceso
+            ORDER BY items DESC
+        """, params)
+        ordenes_items_proceso = [{"proceso": row[0], "ordenes": row[1], "items": row[2]} for row in cursor.fetchall()]
+        
+        # Gráfica 2: Promedio de % Descuento por Proceso
+        _exec(cursor, f"""
+            SELECT proceso, AVG(porcentaje_descuento) as promedio
+            FROM dashboard_oc_descuentos
+            {add_where(where_sql, "proceso IS NOT NULL")}
+            GROUP BY proceso
+            ORDER BY promedio DESC
+        """, params)
+        descuento_por_proceso = [{"proceso": row[0], "promedio": round(row[1], 2)} for row in cursor.fetchall()]
+        
+        # Gráfica 3: Promedio de % Descuento por Proveedor (TODOS con scroll)
+        _exec(cursor, f"""
+            SELECT tercero_nombre, AVG(porcentaje_descuento) as promedio
+            FROM dashboard_oc_descuentos
+            {add_where(where_sql, "tercero_nombre IS NOT NULL")}
+            GROUP BY tercero_nombre
+            ORDER BY promedio DESC
+        """, params)
+        descuento_por_proveedor = [{"proveedor": row[0], "promedio": round(row[1], 2)} for row in cursor.fetchall()]
         
         return {
-            "top_proveedores": top_proveedores,
-            "descuentos_por_mes": descuentos_mes,
-            "distribucion_descuentos": distribucion_descuentos
+            "indicadores": {
+                "items_procesados": items_procesados,
+                "ordenes_compra": ordenes_compra,
+                "promedio_descuento": round(promedio_descuento, 2)
+            },
+            "ordenes_items_por_proceso": ordenes_items_proceso,
+            "descuento_por_proceso": descuento_por_proceso,
+            "descuento_por_proveedor": descuento_por_proveedor
         }
 
 
 # ==================== TAB 2: TRAZA RQ OC ====================
-@router.get("/traza/kpis")
-async def get_traza_kpis(
-    dateStart: Optional[str] = None,
-    dateEnd: Optional[str] = None,
-    suppliers: Optional[str] = None,
-    req_states: Optional[str] = None,
-    oc_states: Optional[str] = None
-):
-    """KPIs principales para la pestaña TRAZA RQ OC"""
+@router.post("/traza/kpis")
+async def get_traza_kpis(filters: FilterRequest):
+    """KPIs principales para la pestaña TRAZA RQ OC (POST para evitar URL demasiado larga)"""
     with get_db() as conn:
         cursor = conn.cursor()
         
@@ -280,27 +289,24 @@ async def get_traza_kpis(
         where_clauses = []
         params = []
         
-        if dateStart and dateEnd:
+        if filters.dateStart and filters.dateEnd:
             where_clauses.append(f"req_fecha BETWEEN {_ph()} AND {_ph()}")
-            params.extend([dateStart, dateEnd])
+            params.extend([filters.dateStart, filters.dateEnd])
         
-        if suppliers:
-            supplier_list = suppliers.split(',')
-            placeholders = ','.join([_ph()] * len(supplier_list))
+        if filters.suppliers:
+            placeholders = ','.join([_ph()] * len(filters.suppliers))
             where_clauses.append(f"oc_tercero_nombre IN ({placeholders})")
-            params.extend(supplier_list)
+            params.extend(filters.suppliers)
         
-        if req_states:
-            state_list = req_states.split(',')
-            placeholders = ','.join([_ph()] * len(state_list))
+        if filters.req_states:
+            placeholders = ','.join([_ph()] * len(filters.req_states))
             where_clauses.append(f"req_estado IN ({placeholders})")
-            params.extend(state_list)
+            params.extend(filters.req_states)
         
-        if oc_states:
-            state_list = oc_states.split(',')
-            placeholders = ','.join([_ph()] * len(state_list))
+        if filters.oc_states:
+            placeholders = ','.join([_ph()] * len(filters.oc_states))
             where_clauses.append(f"oc_estado IN ({placeholders})")
-            params.extend(state_list)
+            params.extend(filters.oc_states)
         
         where_sql = " WHERE " + " AND ".join(where_clauses) if where_clauses else ""
         
@@ -344,15 +350,9 @@ async def get_traza_kpis(
         }
 
 
-@router.get("/traza/graficas")
-async def get_traza_graficas(
-    dateStart: Optional[str] = None,
-    dateEnd: Optional[str] = None,
-    suppliers: Optional[str] = None,
-    req_states: Optional[str] = None,
-    oc_states: Optional[str] = None
-):
-    """Gráficas para la pestaña TRAZA RQ OC"""
+@router.post("/traza/graficas")
+async def get_traza_graficas(filters: FilterRequest):
+    """Gráficas para la pestaña TRAZA RQ OC (POST para evitar URL demasiado larga)"""
     with get_db() as conn:
         cursor = conn.cursor()
         
@@ -360,27 +360,24 @@ async def get_traza_graficas(
         where_clauses = []
         params = []
         
-        if dateStart and dateEnd:
+        if filters.dateStart and filters.dateEnd:
             where_clauses.append(f"req_fecha BETWEEN {_ph()} AND {_ph()}")
-            params.extend([dateStart, dateEnd])
+            params.extend([filters.dateStart, filters.dateEnd])
         
-        if suppliers:
-            supplier_list = suppliers.split(',')
-            placeholders = ','.join([_ph()] * len(supplier_list))
+        if filters.suppliers:
+            placeholders = ','.join([_ph()] * len(filters.suppliers))
             where_clauses.append(f"oc_tercero_nombre IN ({placeholders})")
-            params.extend(supplier_list)
+            params.extend(filters.suppliers)
         
-        if req_states:
-            state_list = req_states.split(',')
-            placeholders = ','.join([_ph()] * len(state_list))
+        if filters.req_states:
+            placeholders = ','.join([_ph()] * len(filters.req_states))
             where_clauses.append(f"req_estado IN ({placeholders})")
-            params.extend(state_list)
+            params.extend(filters.req_states)
         
-        if oc_states:
-            state_list = oc_states.split(',')
-            placeholders = ','.join([_ph()] * len(state_list))
+        if filters.oc_states:
+            placeholders = ','.join([_ph()] * len(filters.oc_states))
             where_clauses.append(f"oc_estado IN ({placeholders})")
-            params.extend(state_list)
+            params.extend(filters.oc_states)
         
         where_sql = " WHERE " + " AND ".join(where_clauses) if where_clauses else ""
         
@@ -429,13 +426,9 @@ async def get_traza_graficas(
 
 
 # ==================== TAB 3: COMPRAS (resumen general) ====================
-@router.get("/compras/kpis")
-async def get_compras_kpis(
-    dateStart: Optional[str] = None,
-    dateEnd: Optional[str] = None,
-    suppliers: Optional[str] = None
-):
-    """KPIs principales para la pestaña COMPRAS"""
+@router.post("/compras/kpis")
+async def get_compras_kpis(filters: FilterRequest):
+    """KPIs principales para la pestaña COMPRAS (POST para evitar URL demasiado larga)"""
     with get_db() as conn:
         cursor = conn.cursor()
         
@@ -443,15 +436,14 @@ async def get_compras_kpis(
         where_clauses = []
         params = []
         
-        if dateStart and dateEnd:
+        if filters.dateStart and filters.dateEnd:
             where_clauses.append(f"fecha BETWEEN {_ph()} AND {_ph()}")
-            params.extend([dateStart, dateEnd])
+            params.extend([filters.dateStart, filters.dateEnd])
         
-        if suppliers:
-            supplier_list = suppliers.split(',')
-            placeholders = ','.join([_ph()] * len(supplier_list))
+        if filters.suppliers:
+            placeholders = ','.join([_ph()] * len(filters.suppliers))
             where_clauses.append(f"tercero_nombre IN ({placeholders})")
-            params.extend(supplier_list)
+            params.extend(filters.suppliers)
         
         where_sql = " WHERE " + " AND ".join(where_clauses) if where_clauses else ""
         
@@ -490,13 +482,9 @@ async def get_compras_kpis(
         }
 
 
-@router.get("/compras/graficas")
-async def get_compras_graficas(
-    dateStart: Optional[str] = None,
-    dateEnd: Optional[str] = None,
-    suppliers: Optional[str] = None
-):
-    """Gráficas para la pestaña COMPRAS"""
+@router.post("/compras/graficas")
+async def get_compras_graficas(filters: FilterRequest):
+    """Gráficas para la pestaña COMPRAS (POST para evitar URL demasiado larga)"""
     with get_db() as conn:
         cursor = conn.cursor()
         
@@ -504,15 +492,14 @@ async def get_compras_graficas(
         where_clauses = []
         params = []
         
-        if dateStart and dateEnd:
+        if filters.dateStart and filters.dateEnd:
             where_clauses.append(f"fecha BETWEEN {_ph()} AND {_ph()}")
-            params.extend([dateStart, dateEnd])
+            params.extend([filters.dateStart, filters.dateEnd])
         
-        if suppliers:
-            supplier_list = suppliers.split(',')
-            placeholders = ','.join([_ph()] * len(supplier_list))
+        if filters.suppliers:
+            placeholders = ','.join([_ph()] * len(filters.suppliers))
             where_clauses.append(f"tercero_nombre IN ({placeholders})")
-            params.extend(supplier_list)
+            params.extend(filters.suppliers)
         
         where_sql = " WHERE " + " AND ".join(where_clauses) if where_clauses else ""
         
