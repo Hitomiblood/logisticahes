@@ -6,6 +6,7 @@ COPY frontend/costos_mensuales.html /usr/share/nginx/html/
 COPY frontend/operatividad_vehiculos.html /usr/share/nginx/html/
 COPY frontend/compras.html /usr/share/nginx/html/
 COPY frontend/indicadores.html /usr/share/nginx/html/
+COPY frontend/dashboard_operativo.html /usr/share/nginx/html/
 COPY img/ /usr/share/nginx/html/img/
 
 # Copiar configuración de nginx

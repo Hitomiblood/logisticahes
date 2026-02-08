@@ -8,9 +8,20 @@ Columnas reales según la BD:
 from fastapi import APIRouter, Query
 from typing import Optional, Dict, Any
 from pydantic import BaseModel
-from ..database import get_db
+from ..database import get_db, execute_sql
+from ..config import DB_TYPE
 
 router = APIRouter(prefix="/api/compras", tags=["Compras"])
+
+
+def _ph():
+    """Retorna el placeholder correcto según el tipo de BD"""
+    return "%s" if DB_TYPE == "postgresql" else "?"
+
+
+def _exec(cursor, sql, params=None):
+    """Ejecuta SQL adaptando placeholders ? -> %s para PostgreSQL"""
+    return execute_sql(cursor, sql, params)
 
 
 # Modelo para filtros POST
@@ -94,8 +105,8 @@ async def get_proveedores_por_proceso(procesos: Optional[str] = None):
         
         if procesos:
             lista_procesos = procesos.split(",")
-            placeholders = ','.join(['?' for _ in lista_procesos])
-            cursor.execute(f"""
+            placeholders = ','.join([_ph() for _ in lista_procesos])
+            _exec(cursor, f"""
                 SELECT DISTINCT tercero_nombre 
                 FROM oc_descuentos 
                 WHERE tercero_nombre IS NOT NULL 
@@ -412,46 +423,47 @@ def build_filters_where(filters: FilterRequest, table: str):
     
     CAMBIO: Si no hay procesos seleccionados, muestra TODOS los datos (no WHERE 1=0)
     """
+    ph = _ph()
     where_clause = "WHERE 1=1"
     params = []
     
     if table == 'descuentos':
         # Para tabla oc_descuentos
         if filters.dateStart:
-            where_clause += " AND fecha >= ?"
+            where_clause += f" AND fecha >= {ph}"
             params.append(filters.dateStart)
         if filters.dateEnd:
-            where_clause += " AND fecha <= ?"
+            where_clause += f" AND fecha <= {ph}"
             params.append(filters.dateEnd)
         # Filtrar por procesos solo si se especifican (si no, mostrar todos)
         if filters.processes and len(filters.processes) > 0:
-            placeholders = ','.join(['?' for _ in filters.processes])
+            placeholders = ','.join([ph for _ in filters.processes])
             where_clause += f" AND proceso IN ({placeholders})"
             params.extend(filters.processes)
         # OPTIMIZACIÓN: Solo aplicar filtro de proveedores si son menos de 100
         # Si son todos (500), no filtrar para mejorar performance
         if filters.suppliers and len(filters.suppliers) > 0 and len(filters.suppliers) < 100:
-            placeholders = ','.join(['?' for _ in filters.suppliers])
+            placeholders = ','.join([ph for _ in filters.suppliers])
             where_clause += f" AND tercero_nombre IN ({placeholders})"
             params.extend(filters.suppliers)
             
     elif table == 'traza':
         # Para tabla traza_req_oc
         if filters.dateStart:
-            where_clause += " AND oc_fecha >= ?"
+            where_clause += f" AND oc_fecha >= {ph}"
             params.append(filters.dateStart)
         if filters.dateEnd:
-            where_clause += " AND oc_fecha <= ?"
+            where_clause += f" AND oc_fecha <= {ph}"
             params.append(filters.dateEnd)
         # OPTIMIZACIÓN: Solo aplicar filtro de proveedores si son menos de 100
         if filters.suppliers and len(filters.suppliers) > 0 and len(filters.suppliers) < 100:
-            placeholders = ','.join(['?' for _ in filters.suppliers])
+            placeholders = ','.join([ph for _ in filters.suppliers])
             where_clause += f" AND oc_tercero_nombre IN ({placeholders})"
             params.extend(filters.suppliers)
         # IMPORTANTE: traza_req_oc no tiene columna proceso directamente
         # Usar EXISTS con JOIN a oc_descuentos para filtrar por proceso
         if filters.processes and len(filters.processes) > 0:
-            placeholders = ','.join(['?' for _ in filters.processes])
+            placeholders = ','.join([ph for _ in filters.processes])
             where_clause += f""" AND EXISTS (
                 SELECT 1 FROM oc_descuentos d 
                 WHERE d.documento_tipo = traza_req_oc.oc_tipo 
@@ -463,14 +475,14 @@ def build_filters_where(filters: FilterRequest, table: str):
     elif table == 'base':
         # Para tabla base_oc_generadas
         if filters.dateStart:
-            where_clause += " AND fecha >= ?"
+            where_clause += f" AND fecha >= {ph}"
             params.append(filters.dateStart)
         if filters.dateEnd:
-            where_clause += " AND fecha <= ?"
+            where_clause += f" AND fecha <= {ph}"
             params.append(filters.dateEnd)
         # OPTIMIZACIÓN: Solo aplicar filtro de proveedores si son menos de 100
         if filters.suppliers and len(filters.suppliers) > 0 and len(filters.suppliers) < 100:
-            placeholders = ','.join(['?' for _ in filters.suppliers])
+            placeholders = ','.join([ph for _ in filters.suppliers])
             where_clause += f" AND tercero_nombre IN ({placeholders})"
             params.extend(filters.suppliers)
     
@@ -528,11 +540,14 @@ async def get_kpis_post(filters: FilterRequest):
         desc = cursor.fetchone()
         
         # Pendientes por aprobar RQ con filtros
-        cursor.execute(f"SELECT COUNT(*) FROM traza_req_oc {where_traza} AND (req_estado = 'PENDIENTE' OR req_estado LIKE '%PEND%')", params_traza)
+        ph = _ph()
+        params_rq_pend = list(params_traza) + ['%PEND%']
+        _exec(cursor, f"SELECT COUNT(*) FROM traza_req_oc {where_traza} AND (req_estado = 'PENDIENTE' OR req_estado LIKE {ph})", params_rq_pend)
         pendientes_rq = cursor.fetchone()[0]
         
         # Pendientes por aprobar OC con filtros
-        cursor.execute(f"SELECT COUNT(*) FROM traza_req_oc {where_traza} AND (oc_estado = 'PENDIENTE' OR oc_estado LIKE '%PEND%')", params_traza)
+        params_oc_pend = list(params_traza) + ['%PEND%']
+        _exec(cursor, f"SELECT COUNT(*) FROM traza_req_oc {where_traza} AND (oc_estado = 'PENDIENTE' OR oc_estado LIKE {ph})", params_oc_pend)
         pendientes_oc = cursor.fetchone()[0]
         
         return {
@@ -777,12 +792,14 @@ async def chart_pending_rq(filters: FilterRequest):
     with get_db() as conn:
         cursor = conn.cursor()
         where_clause, params = build_filters_where(filters, 'traza')
-        cursor.execute(f'''
+        ph = _ph()
+        params_ext = list(params) + ['%PEND%']
+        _exec(cursor, f'''
             SELECT req_usuario_autorizador, COUNT(*) as cantidad
-            FROM traza_req_oc {where_clause} AND (req_estado = 'PENDIENTE' OR req_estado LIKE '%PEND%') 
+            FROM traza_req_oc {where_clause} AND (req_estado = 'PENDIENTE' OR req_estado LIKE {ph}) 
             AND req_usuario_autorizador IS NOT NULL
             GROUP BY req_usuario_autorizador ORDER BY cantidad DESC LIMIT 10
-        ''', params)
+        ''', params_ext)
         rows = cursor.fetchall()
         
         return {
@@ -800,12 +817,14 @@ async def chart_pending_oc(filters: FilterRequest):
     with get_db() as conn:
         cursor = conn.cursor()
         where_clause, params = build_filters_where(filters, 'traza')
-        cursor.execute(f'''
+        ph = _ph()
+        params_ext = list(params) + ['%PEND%']
+        _exec(cursor, f'''
             SELECT oc_usuario_autorizacion, COUNT(*) as cantidad
-            FROM traza_req_oc {where_clause} AND (oc_estado = 'PENDIENTE' OR oc_estado LIKE '%PEND%') 
+            FROM traza_req_oc {where_clause} AND (oc_estado = 'PENDIENTE' OR oc_estado LIKE {ph}) 
             AND oc_usuario_autorizacion IS NOT NULL
             GROUP BY oc_usuario_autorizacion ORDER BY cantidad DESC LIMIT 10
-        ''', params)
+        ''', params_ext)
         rows = cursor.fetchall()
         
         return {

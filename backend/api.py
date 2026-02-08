@@ -136,6 +136,11 @@ async def indicadores_page():
     return FileResponse(str(FRONTEND_DIR / "indicadores.html"))
 
 
+@app.get("/dashboard_operativo.html")
+async def dashboard_operativo_page():
+    return FileResponse(str(FRONTEND_DIR / "dashboard_operativo.html"))
+
+
 # ============== ENDPOINTS DE ADMINISTRACIÓN ==============
 
 @app.get("/api/admin/stats")

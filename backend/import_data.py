@@ -1,5 +1,5 @@
 """
-Script para importar datos de Excel a la base de datos SQLite
+Script para importar datos de Excel a la base de datos (SQLite o PostgreSQL)
 """
 import pandas as pd
 import sys
@@ -8,8 +8,15 @@ from pathlib import Path
 # Agregar el directorio padre al path
 sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
 
-from backend.config import EXCEL_FILES, DB_PATH
+from backend.config import EXCEL_FILES, DB_PATH, DB_TYPE
 from backend.database import init_db, clear_table, get_db
+
+
+def adapt_sql(sql):
+    """Adaptar SQL para el tipo de base de datos (? -> %s para PostgreSQL)"""
+    if DB_TYPE == "postgresql":
+        return sql.replace("?", "%s")
+    return sql
 
 def fix_encoding(text):
     """Corregir caracteres mal codificados"""
@@ -27,6 +34,23 @@ def fix_encoding(text):
     for bad, good in replacements:
         result = result.replace(bad, good)
     return result
+
+
+def safe_numeric(value, target_type='real'):
+    """Convertir valor a numérico de forma segura, retorna None si no es posible"""
+    if value is None or (isinstance(value, float) and pd.isna(value)):
+        return None
+    if isinstance(value, (int, float)):
+        return int(value) if target_type == 'integer' else float(value)
+    if isinstance(value, str):
+        # Limpiar el string
+        cleaned = value.strip().replace(',', '.').replace('$', '').replace(' ', '')
+        try:
+            num = float(cleaned)
+            return int(num) if target_type == 'integer' else num
+        except (ValueError, TypeError):
+            return None
+    return None
 
 def import_costos_mensuales():
     """Importar datos de Costos Mensuales"""
@@ -70,11 +94,11 @@ def import_costos_mensuales():
         with get_db() as conn:
             cursor = conn.cursor()
             for record in records:
-                cursor.execute('''
+                cursor.execute(adapt_sql('''
                     INSERT INTO costos_mensuales 
                     (fecha, catalogo, neto, ciudad, proyecto, tercero, descripcion)
                     VALUES (?, ?, ?, ?, ?, ?, ?)
-                ''', (
+                '''), (
                     record["fecha"],
                     record["catalogo"],
                     record["neto"],
@@ -150,7 +174,7 @@ def import_operatividad_vehiculos():
             batch_size = 1000
             for i in range(0, len(records), batch_size):
                 batch = records[i:i+batch_size]
-                cursor.executemany('''
+                cursor.executemany(adapt_sql('''
                     INSERT INTO operatividad_vehiculos 
                     (fecha_ejecucion, placa, tipo_vehiculo, sede, estado_vehiculo,
                      brigada, conductor, contrato, gps, justificacion_no_salida,
@@ -159,7 +183,7 @@ def import_operatividad_vehiculos():
                      vehiculos_programados, vehiculos_operativos, dias_en_taller,
                      propietario, indicador)
                     VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
-                ''', [
+                '''), [
                     (r["fecha_ejecucion"], r["placa"], r["tipo_vehiculo"], r["sede"],
                      r["estado_vehiculo"], r["brigada"], r["conductor"], r["contrato"],
                      r["gps"], r["justificacion_no_salida"], r["tipo_dano"],
@@ -235,14 +259,14 @@ def import_indicadores_almacenes():
             batch_size = 1000
             for i in range(0, len(records), batch_size):
                 batch = records[i:i+batch_size]
-                cursor.executemany('''
+                cursor.executemany(adapt_sql('''
                     INSERT INTO indicadores 
                     (anio, mes, sede, responsable, codigo, descripcion, inventario_inicial,
                      total_entregado, total_consumos, total_reintegros, denuncio_fiscalia,
                      inventario_final, diferencia, precio_unidad, precio_total,
                      costo_inventario_final, costo_diferencia, objetivo, estado)
                     VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
-                ''', [(r.get("anio"), r["mes"], r["sede"], r["responsable"], r["codigo"], r["descripcion"],
+                '''), [(r.get("anio"), r["mes"], r["sede"], r["responsable"], r["codigo"], r["descripcion"],
                        r["inventario_inicial"], r["total_entregado"], r["total_consumos"],
                        r["total_reintegros"], r["denuncio_fiscalia"], r["inventario_final"],
                        r["diferencia"], r["precio_unidad"], r["precio_total"],
@@ -297,13 +321,13 @@ def import_indicadores_almacenes():
             batch_size = 1000
             for i in range(0, len(records), batch_size):
                 batch = records[i:i+batch_size]
-                cursor.executemany('''
+                cursor.executemany(adapt_sql('''
                     INSERT INTO fiscal_ru 
                     (mes, item, descripcion, bodega, sede, saldo_final, costo_promedio,
                      costo_total, inf_fisico, diferencia, estado, costo_diferencia,
                      unidad, clasificacion, descripcion3, tipo_inventario, objetivo)
                     VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
-                ''', [(r["mes"], r["item"], r["descripcion"], r["bodega"], r["sede"],
+                '''), [(r["mes"], r["item"], r["descripcion"], r["bodega"], r["sede"],
                        r["saldo_final"], r["costo_promedio"], r["costo_total"], r["inf_fisico"],
                        r["diferencia"], r["estado"], r["costo_diferencia"], r["unidad"],
                        r["clasificacion"], r["descripcion3"], r["tipo_inventario"], r["objetivo"]) for r in batch])
@@ -354,13 +378,13 @@ def import_indicadores_almacenes():
             batch_size = 1000
             for i in range(0, len(records), batch_size):
                 batch = records[i:i+batch_size]
-                cursor.executemany('''
+                cursor.executemany(adapt_sql('''
                     INSERT INTO brigadas 
                     (mes, sede, item_codigo, descripcion, tercero_id, tercero_nombre,
                      neto, conteo, reconteo, diferencia, estado, costo_unitario,
                      costo_total, costo_diferencia)
                     VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
-                ''', [(r["mes"], r["sede"], r["item_codigo"], r["descripcion"], r["tercero_id"],
+                '''), [(r["mes"], r["sede"], r["item_codigo"], r["descripcion"], r["tercero_id"],
                        r["tercero_nombre"], r["neto"], r["conteo"], r["reconteo"], r["diferencia"],
                        r["estado"], r["costo_unitario"], r["costo_total"], r["costo_diferencia"]) for r in batch])
                 conn.commit()
@@ -420,13 +444,13 @@ def import_indicadores_almacenes():
             batch_size = 1000
             for i in range(0, len(records), batch_size):
                 batch = records[i:i+batch_size]
-                cursor.executemany('''
+                cursor.executemany(adapt_sql('''
                     INSERT INTO errores 
                     (error, zona, bodega, doc, fecha, tipo_numero, tipo_numero2, codigo,
                      descripcion, bodega2, tercero, nombre, nombre2, cantidad, costo,
                      total, cantidad3, costo4, total5, codigo6, nombre7, observacion)
                     VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
-                ''', [(r["error"], r["zona"], r["bodega"], r["doc"], r["fecha"], r["tipo_numero"],
+                '''), [(r["error"], r["zona"], r["bodega"], r["doc"], r["fecha"], r["tipo_numero"],
                        r["tipo_numero2"], r["codigo"], r["descripcion"], r["bodega2"], r["tercero"],
                        r["nombre"], r["nombre2"], r["cantidad"], r["costo"], r["total"],
                        r["cantidad3"], r["costo4"], r["total5"], r["codigo6"], r["nombre7"],
@@ -469,11 +493,11 @@ def import_indicadores_almacenes():
         
         with get_db() as conn:
             cursor = conn.cursor()
-            cursor.executemany('''
+            cursor.executemany(adapt_sql('''
                 INSERT INTO programados_ejecutados 
                 (fecha_propuesta, sede, programados, ejecutados, indicador_programacion, tipo_inventario)
                 VALUES (?, ?, ?, ?, ?, ?)
-            ''', [(r["fecha_propuesta"], r["sede"], r["programados"], r["ejecutados"],
+            '''), [(r["fecha_propuesta"], r["sede"], r["programados"], r["ejecutados"],
                    r["indicador_programacion"], r["tipo_inventario"]) for r in records])
             conn.commit()
         
@@ -514,12 +538,12 @@ def import_indicadores_almacenes():
         
         with get_db() as conn:
             cursor = conn.cursor()
-            cursor.executemany('''
+            cursor.executemany(adapt_sql('''
                 INSERT INTO gestion 
                 (mes, sede, tipo_inventario, almacenista, fecha_ejecucion,
                  fecha_reporte, dias, indicador_inventario)
                 VALUES (?, ?, ?, ?, ?, ?, ?, ?)
-            ''', [(r["mes"], r["sede"], r["tipo_inventario"], r["almacenista"],
+            '''), [(r["mes"], r["sede"], r["tipo_inventario"], r["almacenista"],
                    r["fecha_ejecucion"], r["fecha_reporte"], r["dias"],
                    r["indicador_inventario"]) for r in records])
             conn.commit()
@@ -639,6 +663,13 @@ def import_compras():
             "SUMARQ": "suma_rq"
         }
         
+        # Columnas numéricas que necesitan validación de tipo
+        integer_cols = {'req_emp', 'req_suc', 'req_numero', 'item_codigo', 'cotizacion_numero', 
+                        'oc_numero', 'oc_tercero_suc', 'dias_aprobar_rq', 'dias_generar_oc', 
+                        'dias_aprobacion_oc', 'suma_rq'}
+        real_cols = {'entrega_servicio_numero', 'entrega_almacen_numero', 'factura_compra_numero',
+                     'devolucion_compra_numero', 'dias_recepcion_servicio', 'dias_entrada_almacen', 'mes'}
+        
         records = []
         for _, row in df.iterrows():
             record = {}
@@ -653,6 +684,11 @@ def import_compras():
                         value = None
                 elif "fecha" in db_col and value is not None:
                     value = str(value)[:10]
+                # Validar columnas numéricas
+                if db_col in integer_cols:
+                    value = safe_numeric(value, 'integer')
+                elif db_col in real_cols:
+                    value = safe_numeric(value, 'real')
                 record[db_col] = value
             records.append(record)
         
@@ -661,7 +697,7 @@ def import_compras():
             batch_size = 1000
             for i in range(0, len(records), batch_size):
                 batch = records[i:i+batch_size]
-                cursor.executemany('''
+                cursor.executemany(adapt_sql('''
                     INSERT INTO traza_req_oc 
                     (req_fecha_entrega, req_fecha, req_usuario, req_fecha_autorizada, req_usuario_autorizador,
                      req_emp, req_suc, req_descripcion_tipo_doc, req_tipo, req_numero, req_estado,
@@ -675,7 +711,7 @@ def import_compras():
                      dias_aprobar_rq, dias_generar_oc, dias_aprobacion_oc, dias_recepcion_servicio, dias_entrada_almacen,
                      mes, suma_rq)
                     VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
-                ''', [tuple(r.values()) for r in batch])
+                '''), [tuple(r.values()) for r in batch])
                 conn.commit()
                 print(f"      Insertados {min(i+batch_size, len(records))}/{len(records)}...")
         
@@ -724,6 +760,11 @@ def import_compras():
             "%Descuento": "porcentaje_descuento"
         }
         
+        # Columnas numéricas de oc_descuentos
+        oc_integer_cols = {'dias_entrega', 'documento_suc', 'documento_num', 'item_codigo', 'item_proyecto'}
+        oc_real_cols = {'item_bodega', 'item_cantidad', 'costo_unitario', 'total_item', 'tasa_dcto', 
+                        'total_dcto', 'subtotal', 'tasa_iva', 'total_iva', 'total', 'porcentaje_descuento'}
+        
         records = []
         for _, row in df.iterrows():
             record = {}
@@ -745,6 +786,11 @@ def import_compras():
                 # Convertir cualquier tipo datetime/time a string
                 elif hasattr(value, 'isoformat'):
                     value = str(value)
+                # Validar columnas numéricas
+                if db_col in oc_integer_cols:
+                    value = safe_numeric(value, 'integer')
+                elif db_col in oc_real_cols:
+                    value = safe_numeric(value, 'real')
                 record[db_col] = value
             records.append(record)
         
@@ -753,7 +799,7 @@ def import_compras():
             batch_size = 1000
             for i in range(0, len(records), batch_size):
                 batch = records[i:i+batch_size]
-                cursor.executemany('''
+                cursor.executemany(adapt_sql('''
                     INSERT INTO oc_descuentos 
                     (fecha, fecha_entrega, dias_entrega, documento_emp, documento_suc, documento_tipo, documento_num,
                      item_codigo, item_descripcion, item_bodega, item_cantidad, talla, item_unidad, item_proyecto,
@@ -761,7 +807,7 @@ def import_compras():
                      tasa_dcto, total_dcto, subtotal, tasa_iva, total_iva, total, estado, moneda, observaciones,
                      proceso, concatenado, porcentaje_descuento)
                     VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
-                ''', [tuple(r.values()) for r in batch])
+                '''), [tuple(r.values()) for r in batch])
                 conn.commit()
                 print(f"      Insertados {min(i+batch_size, len(records))}/{len(records)}...")
         
@@ -808,6 +854,11 @@ def import_compras():
         }
         
         records = []
+        # Columnas numéricas de base_oc_generadas (misma estructura que oc_descuentos)
+        base_integer_cols = {'dias_entrega', 'documento_suc', 'documento_num', 'item_codigo', 'item_proyecto'}
+        base_real_cols = {'item_bodega', 'item_cantidad', 'costo_unitario', 'total_item', 'tasa_dcto', 
+                          'total_dcto', 'subtotal', 'tasa_iva', 'total_iva', 'total'}
+        
         for _, row in df.iterrows():
             record = {}
             for excel_col, db_col in column_mapping.items():
@@ -824,6 +875,11 @@ def import_compras():
                             value = None
                 elif "fecha" in db_col and value is not None and not isinstance(value, str):
                     value = str(value)[:10]
+                # Validar columnas numéricas
+                if db_col in base_integer_cols:
+                    value = safe_numeric(value, 'integer')
+                elif db_col in base_real_cols:
+                    value = safe_numeric(value, 'real')
                 record[db_col] = value
             records.append(record)
         
@@ -832,14 +888,14 @@ def import_compras():
             batch_size = 1000
             for i in range(0, len(records), batch_size):
                 batch = records[i:i+batch_size]
-                cursor.executemany('''
+                cursor.executemany(adapt_sql('''
                     INSERT INTO base_oc_generadas 
                     (fecha, fecha_entrega, dias_entrega, documento_emp, documento_suc, documento_tipo, documento_num,
                      item_codigo, item_descripcion, item_bodega, item_cantidad, talla, item_unidad, item_proyecto,
                      item_solicitante, item_fecha_requ, tercero_id, tercero_nombre, costo_unitario, total_item,
                      tasa_dcto, total_dcto, subtotal, tasa_iva, total_iva, total, estado, moneda, observaciones)
                     VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
-                ''', [tuple(r.values()) for r in batch])
+                '''), [tuple(r.values()) for r in batch])
                 conn.commit()
                 print(f"      Insertados {min(i+batch_size, len(records))}/{len(records)}...")
         

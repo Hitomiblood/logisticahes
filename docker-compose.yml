@@ -81,7 +81,7 @@ services:
       LOG_LEVEL: ${LOG_LEVEL:-INFO}
       LOG_FORMAT: ${LOG_FORMAT:-json}
     volumes:
-      - sharepoint_data:/app/data:ro
+      - ${DATA_PATH:-./data}:/app/data:ro
     networks:
       - web
     ports:
@@ -110,7 +110,7 @@ services:
     ports:
       - "8085:80"
     volumes:
-      - sharepoint_data:/usr/share/nginx/html/data:ro
+      - ${DATA_PATH:-./data}:/usr/share/nginx/html/data:ro
     networks:
       - web
     depends_on:
@@ -133,7 +133,7 @@ services:
     ports:
       - "5000:5000"
     volumes:
-      - sharepoint_data:/app/data
+      - ${DATA_PATH:-./data}:/app/data
     environment:
       - WEBHOOK_SECRET=${WEBHOOK_SECRET:-hesego_logistica_2024}
     networks:
@@ -147,8 +147,6 @@ volumes:
     name: logistica_postgres_data
   redis_data:
     name: logistica_redis_data
-  sharepoint_data:
-    name: logistica_sharepoint_data
 
 # ========================================
 # Red
