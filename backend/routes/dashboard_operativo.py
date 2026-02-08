@@ -381,114 +381,76 @@ async def get_traza_graficas(filters: FilterRequest):
         
         where_sql = " WHERE " + " AND ".join(where_clauses) if where_clauses else ""
         
-        # Gráfica 1: Tiempos Promedio por Etapa
-        _exec(cursor, f"""
-            SELECT 
-                COALESCE(AVG(dias_aprobar_rq), 0) as aprobar_rq,
-                COALESCE(AVG(dias_generar_oc), 0) as generar_oc,
-                COALESCE(AVG(dias_aprobacion_oc), 0) as aprobar_oc,
-                COALESCE(AVG(dias_recepcion_servicio), 0) as recepcion_servicio,
-                COALESCE(AVG(dias_entrada_almacen), 0) as entrada_almacen
-            FROM dashboard_traza_req_oc
-            {where_sql}
-        """, params)
-        row = cursor.fetchone()
-        tiempos_etapas = {
-            "etapas": ["Aprobar RQ", "Generar OC", "Aprobar OC", "Recepción Servicio", "Entrada Almacén"],
-            "dias": [round(row[0], 1), round(row[1], 1), round(row[2], 1), round(row[3], 1), round(row[4], 1)]
-        }
+        # Helper para agregar condiciones adicionales
+        def add_where(base_where, condition):
+            if base_where:
+                return base_where + " AND " + condition
+            else:
+                return " WHERE " + condition
         
-        # Gráfica 2: Requisiciones por Estado
+        # Gráfica 1: Promedio Días Aprobación RQ por Usuario Autorizador (req_usuario_autorizador)
         _exec(cursor, f"""
-            SELECT req_estado, COUNT(*) as cantidad
+            SELECT req_usuario_autorizador, COALESCE(AVG(dias_aprobar_rq), 0) as promedio
             FROM dashboard_traza_req_oc
-            {where_sql}
-            GROUP BY req_estado
-            ORDER BY cantidad DESC
+            {add_where(where_sql, "req_usuario_autorizador IS NOT NULL AND dias_aprobar_rq IS NOT NULL")}
+            GROUP BY req_usuario_autorizador
+            ORDER BY promedio DESC
         """, params)
-        requisiciones_estado = [{"estado": row[0], "cantidad": row[1]} for row in cursor.fetchall()]
+        dias_aprobar_rq_usuario = [{"usuario": row[0], "promedio": round(row[1], 1)} for row in cursor.fetchall()]
         
-        # Gráfica 3: OC por Estado
+        # Gráfica 2: Promedio Días Generar OC por Orden Compra|Usuario (oc_usuario)
         _exec(cursor, f"""
-            SELECT oc_estado, COUNT(DISTINCT oc_numero) as cantidad
+            SELECT oc_usuario, COALESCE(AVG(dias_generar_oc), 0) as promedio
             FROM dashboard_traza_req_oc
-            {where_sql} AND oc_numero IS NOT NULL
-            GROUP BY oc_estado
-            ORDER BY cantidad DESC
+            {add_where(where_sql, "oc_usuario IS NOT NULL AND dias_generar_oc IS NOT NULL")}
+            GROUP BY oc_usuario
+            ORDER BY promedio DESC
         """, params)
-        oc_estado = [{"estado": row[0], "cantidad": row[1]} for row in cursor.fetchall()]
+        dias_generar_oc_usuario = [{"usuario": row[0], "promedio": round(row[1], 1)} for row in cursor.fetchall()]
+        
+        # Gráfica 3: Días Aprobación OC por Usuario Autorizador (oc_usuario_autorizacion)
+        _exec(cursor, f"""
+            SELECT oc_usuario_autorizacion, COALESCE(AVG(dias_aprobacion_oc), 0) as promedio
+            FROM dashboard_traza_req_oc
+            {add_where(where_sql, "oc_usuario_autorizacion IS NOT NULL AND dias_aprobacion_oc IS NOT NULL")}
+            GROUP BY oc_usuario_autorizacion
+            ORDER BY promedio DESC
+        """, params)
+        dias_aprobacion_oc_autorizador = [{"usuario": row[0], "promedio": round(row[1], 1)} for row in cursor.fetchall()]
+        
+        # Gráfica 4: Promedio Días Entrada Almacén por Entrega de Almacen|Usuario
+        _exec(cursor, f"""
+            SELECT entrega_almacen_usuario, COALESCE(AVG(dias_entrada_almacen), 0) as promedio
+            FROM dashboard_traza_req_oc
+            {add_where(where_sql, "entrega_almacen_usuario IS NOT NULL AND dias_entrada_almacen IS NOT NULL")}
+            GROUP BY entrega_almacen_usuario
+            ORDER BY promedio DESC
+        """, params)
+        dias_entrada_almacen_usuario = [{"usuario": row[0], "promedio": round(row[1], 1)} for row in cursor.fetchall()]
         
         return {
-            "tiempos_por_etapa": tiempos_etapas,
-            "requisiciones_por_estado": requisiciones_estado,
-            "oc_por_estado": oc_estado
+            "dias_aprobar_rq_usuario": dias_aprobar_rq_usuario,
+            "dias_generar_oc_usuario": dias_generar_oc_usuario,
+            "dias_aprobacion_oc_autorizador": dias_aprobacion_oc_autorizador,
+            "dias_entrada_almacen_usuario": dias_entrada_almacen_usuario
         }
 
 
 # ==================== TAB 3: COMPRAS (resumen general) ====================
-@router.post("/compras/kpis")
-async def get_compras_kpis(filters: FilterRequest):
-    """KPIs principales para la pestaña COMPRAS (POST para evitar URL demasiado larga)"""
-    with get_db() as conn:
-        cursor = conn.cursor()
-        
-        # Construir filtros WHERE
-        where_clauses = []
-        params = []
-        
-        if filters.dateStart and filters.dateEnd:
-            where_clauses.append(f"fecha BETWEEN {_ph()} AND {_ph()}")
-            params.extend([filters.dateStart, filters.dateEnd])
-        
-        if filters.suppliers:
-            placeholders = ','.join([_ph()] * len(filters.suppliers))
-            where_clauses.append(f"tercero_nombre IN ({placeholders})")
-            params.extend(filters.suppliers)
-        
-        where_sql = " WHERE " + " AND ".join(where_clauses) if where_clauses else ""
-        
-        # KPI 1: Total Facturado
-        _exec(cursor, f"""
-            SELECT COALESCE(SUM(total), 0) as total_facturado
-            FROM dashboard_oc_descuentos
-            {where_sql}
-        """, params)
-        total_facturado = cursor.fetchone()[0]
-        
-        # KPI 2: Total de Órdenes
-        _exec(cursor, f"""
-            SELECT COUNT(DISTINCT CONCAT(documento_emp, '-', documento_suc, '-', documento_tipo, '-', documento_num)) as total_ordenes
-            FROM dashboard_oc_descuentos
-            {where_sql}
-        """, params)
-        total_ordenes = cursor.fetchone()[0]
-        
-        # KPI 3: Promedio por Orden
-        promedio_orden = total_facturado / total_ordenes if total_ordenes > 0 else 0
-        
-        # KPI 4: Total de Proveedores Activos
-        _exec(cursor, f"""
-            SELECT COUNT(DISTINCT tercero_nombre) as total_proveedores
-            FROM dashboard_oc_descuentos
-            {where_sql}
-        """, params)
-        total_proveedores = cursor.fetchone()[0]
-        
-        return {
-            "total_facturado": round(total_facturado, 2),
-            "total_ordenes": total_ordenes,
-            "promedio_por_orden": round(promedio_orden, 2),
-            "total_proveedores": total_proveedores
-        }
-
-
 @router.post("/compras/graficas")
 async def get_compras_graficas(filters: FilterRequest):
-    """Gráficas para la pestaña COMPRAS (POST para evitar URL demasiado larga)"""
+    """Gráficas para la pestaña COMPRAS (POST para evitar URL demasiado larga)
+    
+    Retorna datos para 4 gráficas del dashboard Power BI:
+    1. Gauge GASTO MES (total general)
+    2. PROVEEDORES (barras horizontales top proveedores por Suma de Total)
+    3. Treemap de items/productos por valor
+    4. Tabla resumen por Proceso con Suma de Total
+    """
     with get_db() as conn:
         cursor = conn.cursor()
         
-        # Construir filtros WHERE
+        # Construir filtros WHERE (mismos filtros que DESCUENTOS)
         where_clauses = []
         params = []
         
@@ -501,41 +463,65 @@ async def get_compras_graficas(filters: FilterRequest):
             where_clauses.append(f"tercero_nombre IN ({placeholders})")
             params.extend(filters.suppliers)
         
+        if filters.states:
+            placeholders = ','.join([_ph()] * len(filters.states))
+            where_clauses.append(f"estado IN ({placeholders})")
+            params.extend(filters.states)
+        
+        if filters.processes:
+            placeholders = ','.join([_ph()] * len(filters.processes))
+            where_clauses.append(f"proceso IN ({placeholders})")
+            params.extend(filters.processes)
+        
         where_sql = " WHERE " + " AND ".join(where_clauses) if where_clauses else ""
         
-        # Gráfica 1: Top 10 Proveedores por Monto
+        # Helper para agregar condiciones adicionales
+        def add_where(base_where, condition):
+            if base_where:
+                return f"{base_where} AND {condition}"
+            return f" WHERE {condition}"
+        
+        # 1. GASTO MES - Total general (para gauge)
         _exec(cursor, f"""
-            SELECT tercero_nombre, SUM(total) as total_compras
+            SELECT COALESCE(SUM(total), 0) as gasto_total
             FROM dashboard_oc_descuentos
             {where_sql}
+        """, params)
+        gasto_total = cursor.fetchone()[0] or 0
+        
+        # 2. PROVEEDORES - Top proveedores por Suma de Total (barras horizontales)
+        _exec(cursor, f"""
+            SELECT tercero_nombre, COALESCE(SUM(total), 0) as total_compras
+            FROM dashboard_oc_descuentos
+            {add_where(where_sql, "tercero_nombre IS NOT NULL")}
             GROUP BY tercero_nombre
             ORDER BY total_compras DESC
-            LIMIT 10
         """, params)
-        top_proveedores = [{"proveedor": row[0], "monto": round(row[1], 2)} for row in cursor.fetchall()]
+        top_proveedores = [{"proveedor": row[0], "monto": round(row[1] or 0, 2)} for row in cursor.fetchall()]
         
-        # Gráfica 2: Compras por Mes
+        # 3. TREEMAP - Items/productos agrupados por descripción y valor total
         _exec(cursor, f"""
-            SELECT strftime('%Y-%m', fecha) as mes, SUM(total) as total_compras
+            SELECT item_descripcion, COALESCE(SUM(total), 0) as total_item_sum
             FROM dashboard_oc_descuentos
-            {where_sql} AND fecha IS NOT NULL
-            GROUP BY mes
-            ORDER BY mes
+            {add_where(where_sql, "item_descripcion IS NOT NULL")}
+            GROUP BY item_descripcion
+            ORDER BY total_item_sum DESC
         """, params)
-        compras_mes = [{"mes": row[0], "monto": round(row[1], 2)} for row in cursor.fetchall()]
+        treemap_items = [{"item": row[0], "valor": round(row[1] or 0, 2)} for row in cursor.fetchall()]
         
-        # Gráfica 3: Compras por Proceso
+        # 4. TABLA PROCESO - Resumen por proceso con Suma de Total
         _exec(cursor, f"""
-            SELECT proceso, SUM(total) as total_compras
+            SELECT proceso, COALESCE(SUM(total), 0) as total_compras
             FROM dashboard_oc_descuentos
-            {where_sql} AND proceso IS NOT NULL
+            {add_where(where_sql, "proceso IS NOT NULL")}
             GROUP BY proceso
             ORDER BY total_compras DESC
         """, params)
-        compras_proceso = [{"proceso": row[0], "monto": round(row[1], 2)} for row in cursor.fetchall()]
+        compras_proceso = [{"proceso": row[0], "monto": round(row[1] or 0, 2)} for row in cursor.fetchall()]
         
         return {
+            "gasto_total": round(gasto_total, 2),
             "top_proveedores": top_proveedores,
-            "compras_por_mes": compras_mes,
+            "treemap_items": treemap_items,
             "compras_por_proceso": compras_proceso
         }

@@ -887,61 +887,96 @@
       <div id="tab-traza" class="tab-content">
         <div class="card">
           <h2 class="section-title">📋 TRAZA RQ OC</h2>
-          
-          <!-- KPIs -->
-          <div class="kpi-grid">
-            <div class="kpi">
-              <label>Total Requisiciones</label>
-              <div class="kpi-value" id="kpi-total-rq">0</div>
-              <div class="kpi-sub">Registradas</div>
-            </div>
-            <div class="kpi accent1">
-              <label>Prom. Días Aprobación</label>
-              <div class="kpi-value" id="kpi-prom-dias-aprobacion">0</div>
-              <div class="kpi-sub">Días</div>
-            </div>
-            <div class="kpi accent2">
-              <label>Prom. Días Generación OC</label>
-              <div class="kpi-value" id="kpi-prom-dias-generacion">0</div>
-              <div class="kpi-sub">Días</div>
-            </div>
-            <div class="kpi accent3">
-              <label>Pendientes</label>
-              <div class="kpi-value" id="kpi-pendientes">0</div>
-              <div class="kpi-sub">Órdenes</div>
+
+          <!-- Gráfica 1: Días Aprobación RQ por Usuario (full width con scroll) -->
+          <div class="chart-card" style="margin-bottom: 1rem;">
+            <h3 class="chart-title">⏱️ DÍAS APROBACIÓN RQ</h3>
+            <div id="chartDiasAprobarRQ" class="chart" style="height: 600px; max-height: 600px; overflow-y: auto; overflow-x: hidden;">
+              <div class="chart-loader" id="loaderDiasAprobarRQ">
+                <div class="spinner"></div>
+                <div class="loader-text">Cargando datos...</div>
+              </div>
             </div>
           </div>
 
-          <!-- Gráficas -->
-          <div class="charts-grid">
-            <div class="chart-card">
-              <h3 class="chart-title">⏱️ Promedio Días Aprobación RQ</h3>
-              <div id="chartPromedioAprobacion" class="chart">
-                <div class="chart-loader" id="loaderPromedioAprobacion">
-                  <div class="spinner"></div>
-                  <div class="loader-text">Cargando datos...</div>
-                </div>
+          <!-- Gráfica 2: Promedio Días Generar OC por Usuario (full width) -->
+          <div class="chart-card" style="margin-bottom: 1rem;">
+            <h3 class="chart-title">🚀 Promedio de DÍAS GENERAR OC por Orden Compra|Usuario</h3>
+            <div id="chartDiasGenerarOC" class="chart" style="height: 400px;">
+              <div class="chart-loader" id="loaderDiasGenerarOC">
+                <div class="spinner"></div>
+                <div class="loader-text">Cargando datos...</div>
               </div>
             </div>
+            <!-- Tabla de datos -->
+            <div class="data-table-container">
+              <table class="data-table" id="tableDiasGenerarOC">
+                <thead>
+                  <tr>
+                    <th>Orden Compra|Usuario</th>
+                    <th class="text-right">Promedio Días</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  <tr>
+                    <td colspan="2" style="text-align: center; color: #999;">Cargando datos...</td>
+                  </tr>
+                </tbody>
+              </table>
+            </div>
+          </div>
 
-            <div class="chart-card">
-              <h3 class="chart-title">🚀 Promedio Días Generación OC</h3>
-              <div id="chartPromedioGeneracion" class="chart">
-                <div class="chart-loader" id="loaderPromedioGeneracion">
-                  <div class="spinner"></div>
-                  <div class="loader-text">Cargando datos...</div>
-                </div>
+          <!-- Gráfica 3: Días Aprobación OC por Usuario Autorizador (full width) -->
+          <div class="chart-card" style="margin-bottom: 1rem;">
+            <h3 class="chart-title">✅ DÍAS APROBACIÓN OC por USUARIO AUTORIZADOR</h3>
+            <div id="chartDiasAprobacionOC" class="chart" style="height: 400px;">
+              <div class="chart-loader" id="loaderDiasAprobacionOC">
+                <div class="spinner"></div>
+                <div class="loader-text">Cargando datos...</div>
               </div>
             </div>
+            <!-- Tabla de datos -->
+            <div class="data-table-container">
+              <table class="data-table" id="tableDiasAprobacionOC">
+                <thead>
+                  <tr>
+                    <th>Usuario Autorizador</th>
+                    <th class="text-right">Promedio Días</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  <tr>
+                    <td colspan="2" style="text-align: center; color: #999;">Cargando datos...</td>
+                  </tr>
+                </tbody>
+              </table>
+            </div>
+          </div>
 
-            <div class="chart-card" style="grid-column: span 2;">
-              <h3 class="chart-title">📈 Estados de Requisiciones</h3>
-              <div id="chartEstadosRQ" class="chart" style="height: 400px;">
-                <div class="chart-loader" id="loaderEstadosRQ">
-                  <div class="spinner"></div>
-                  <div class="loader-text">Cargando datos...</div>
-                </div>
+          <!-- Gráfica 4: Promedio Días Entrada Almacén por Usuario (full width) -->
+          <div class="chart-card" style="margin-bottom: 1rem;">
+            <h3 class="chart-title">📦 Promedio de DÍAS ENTRADA ALMACEN por Entrega de Almacen|Usuario</h3>
+            <div id="chartDiasEntradaAlmacen" class="chart" style="height: 400px;">
+              <div class="chart-loader" id="loaderDiasEntradaAlmacen">
+                <div class="spinner"></div>
+                <div class="loader-text">Cargando datos...</div>
               </div>
+            </div>
+            <!-- Tabla de datos -->
+            <div class="data-table-container">
+              <table class="data-table" id="tableDiasEntradaAlmacen">
+                <thead>
+                  <tr>
+                    <th>Entrega de Almacen|Usuario</th>
+                    <th class="text-right">Promedio Días</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  <tr>
+                    <td colspan="2" style="text-align: center; color: #999;">Cargando datos...</td>
+                  </tr>
+                </tbody>
+              </table>
             </div>
           </div>
         </div>
@@ -951,61 +986,61 @@
       <div id="tab-compras" class="tab-content">
         <div class="card">
           <h2 class="section-title">🛒 COMPRAS</h2>
-          
-          <!-- KPIs -->
-          <div class="kpi-grid">
-            <div class="kpi">
-              <label>Total Órdenes</label>
-              <div class="kpi-value" id="kpi-total-ordenes">0</div>
-              <div class="kpi-sub">Generadas</div>
-            </div>
-            <div class="kpi accent1">
-              <label>Valor Total</label>
-              <div class="kpi-value" id="kpi-valor-total">$0</div>
-              <div class="kpi-sub">Acumulado</div>
-            </div>
-            <div class="kpi accent2">
-              <label>Promedio por Orden</label>
-              <div class="kpi-value" id="kpi-promedio-orden">$0</div>
-              <div class="kpi-sub">Valor</div>
-            </div>
-            <div class="kpi accent3">
-              <label>Items Procesados</label>
-              <div class="kpi-value" id="kpi-items-procesados">0</div>
-              <div class="kpi-sub">Unidades</div>
+
+          <!-- Gráfica 1: GASTO MES (Gauge) - fila completa -->
+          <div class="chart-card" style="margin-bottom: 1rem;">
+            <h3 class="chart-title">💰 GASTO MES</h3>
+            <div id="chartGastoMes" class="chart" style="height: 300px;">
+              <div class="chart-loader" id="loaderGastoMes">
+                <div class="spinner"></div>
+                <div class="loader-text">Cargando datos...</div>
+              </div>
             </div>
           </div>
 
-          <!-- Gráficas -->
-          <div class="charts-grid">
-            <div class="chart-card">
-              <h3 class="chart-title">📦 OC por Estado</h3>
-              <div id="chartOCEstado" class="chart">
-                <div class="chart-loader" id="loaderOCEstado">
-                  <div class="spinner"></div>
-                  <div class="loader-text">Cargando datos...</div>
-                </div>
+          <!-- Gráfica 2: PROVEEDORES (Barras horizontales) - fila completa -->
+          <div class="chart-card" style="margin-bottom: 1rem;">
+            <h3 class="chart-title">🏢 PROVEEDORES</h3>
+            <div id="chartComprasProveedores" class="chart" style="height: 450px; overflow-y: auto;">
+              <div class="chart-loader" id="loaderComprasProveedores">
+                <div class="spinner"></div>
+                <div class="loader-text">Cargando datos...</div>
               </div>
             </div>
+          </div>
 
-            <div class="chart-card">
-              <h3 class="chart-title">💰 Valor por Proveedor</h3>
-              <div id="chartValorProveedor" class="chart">
-                <div class="chart-loader" id="loaderValorProveedor">
-                  <div class="spinner"></div>
-                  <div class="loader-text">Cargando datos...</div>
-                </div>
+          <!-- Gráfica 3: TREEMAP de Items/Productos - fila completa -->
+          <div class="chart-card" style="margin-bottom: 1rem;">
+            <h3 class="chart-title">📦 DISTRIBUCIÓN DE COMPRAS POR ITEM</h3>
+            <div id="chartTreemapItems" class="chart" style="height: 500px;">
+              <div class="chart-loader" id="loaderTreemapItems">
+                <div class="spinner"></div>
+                <div class="loader-text">Cargando datos...</div>
               </div>
             </div>
+          </div>
 
-            <div class="chart-card" style="grid-column: span 2;">
-              <h3 class="chart-title">📊 Tendencia de Compras Mensual</h3>
-              <div id="chartTendenciaCompras" class="chart" style="height: 400px;">
-                <div class="chart-loader" id="loaderTendenciaCompras">
-                  <div class="spinner"></div>
-                  <div class="loader-text">Cargando datos...</div>
-                </div>
-              </div>
+          <!-- Gráfica 4: TABLA PROCESO - Suma de Total por Proceso - fila completa -->
+          <div class="chart-card" style="margin-bottom: 1rem;">
+            <h3 class="chart-title">📊 COMPRAS POR PROCESO</h3>
+            <div class="data-table-container">
+              <table class="data-table" id="tableComprasProceso">
+                <thead>
+                  <tr>
+                    <th>Proceso</th>
+                    <th class="text-right">Suma de Total</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  <tr><td colspan="2" style="text-align: center; color: #999;">Cargando datos...</td></tr>
+                </tbody>
+                <tfoot style="border-top: 3px solid #1c4e80; font-weight: 700;">
+                  <tr>
+                    <td style="padding: 0.75rem 1rem; color: #1c4e80;">Total</td>
+                    <td class="text-right" id="totalComprasProceso" style="padding: 0.75rem 1rem; color: #1c4e80;">$0</td>
+                  </tr>
+                </tfoot>
+              </table>
             </div>
           </div>
         </div>
@@ -1219,7 +1254,7 @@
           ]
         }
       };
-      
+
       
       Plotly.newPlot('gauge-ordenes-compra', [gaugeOrdenes], {
         margin: { t: 50, b: 10, l: 40, r: 40 },
@@ -1475,41 +1510,598 @@
     }
 
     async function loadTrazaData(filters) {
-      console.log('Cargando datos de traza RQ OC...', filters);
-      // TODO: Implementar llamadas a la API
-      updateKPITraza({
-        totalRQ: 456,
-        promDiasAprobacion: 3.2,
-        promDiasGeneracion: 2.8,
-        pendientes: 12
-      });
+      console.log('📊 Cargando datos de TRAZA RQ OC con filtros:', filters);
+      
+      try {
+        const requestBody = {
+          dateStart: filters.fechaInicio || null,
+          dateEnd: filters.fechaFin || null,
+          suppliers: filters.proveedores && filters.proveedores.length > 0 ? filters.proveedores : null,
+          oc_states: filters.estados && filters.estados.length > 0 ? filters.estados : null
+        };
+
+        const response = await fetch('/api/dashboard-operativo/traza/graficas', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(requestBody)
+        });
+        
+        if (!response.ok) {
+          const errorText = await response.text();
+          throw new Error(`Error ${response.status}: ${errorText}`);
+        }
+        
+        const data = await response.json();
+        console.log('✅ Datos TRAZA recibidos:', data);
+        
+        if (data.dias_aprobar_rq_usuario) {
+          renderChartDiasAprobarRQ(data.dias_aprobar_rq_usuario);
+        }
+        if (data.dias_generar_oc_usuario) {
+          renderChartDiasGenerarOC(data.dias_generar_oc_usuario);
+        }
+        if (data.dias_aprobacion_oc_autorizador) {
+          renderChartDiasAprobacionOC(data.dias_aprobacion_oc_autorizador);
+        }
+        if (data.dias_entrada_almacen_usuario) {
+          renderChartDiasEntradaAlmacen(data.dias_entrada_almacen_usuario);
+        }
+        
+      } catch (error) {
+        console.error('❌ Error cargando datos de TRAZA:', error);
+        ['loaderDiasAprobarRQ', 'loaderDiasGenerarOC', 'loaderDiasAprobacionOC', 'loaderDiasEntradaAlmacen'].forEach(loaderId => {
+          const loader = document.getElementById(loaderId);
+          if (loader) {
+            loader.innerHTML = `
+              <div style="color: #991b1b; text-align: center; padding: 2rem;">
+                <div style="font-size: 2rem; margin-bottom: 0.5rem;">⚠️</div>
+                <div style="font-weight: 600; margin-bottom: 0.5rem;">Error al cargar datos</div>
+                <div style="font-size: 0.85rem;">${error.message}</div>
+              </div>
+            `;
+          }
+        });
+      }
+    }
+
+    // ==================== GRÁFICAS TRAZA RQ OC ====================
+    
+    // Gráfica 1: Días Aprobación RQ por Usuario (horizontal bar con scroll)
+    function renderChartDiasAprobarRQ(data) {
+      const loader = document.getElementById('loaderDiasAprobarRQ');
+      if (loader) loader.classList.add('hidden');
+      
+      if (!data || data.length === 0) {
+        document.getElementById('chartDiasAprobarRQ').innerHTML = '<div style="text-align:center;padding:2rem;color:#666;">No hay datos disponibles</div>';
+        return;
+      }
+      
+      // Invertir para que el mayor quede arriba
+      const usuarios = data.map(d => d.usuario).reverse();
+      const promedios = data.map(d => d.promedio).reverse();
+
+      // Calcular altura dinámica basada en número de usuarios
+      const alturaMinima = 600;
+      const alturaPorUsuario = 25;
+      const alturaCalculada = Math.max(alturaMinima, usuarios.length * alturaPorUsuario);
+
+      const trace = {
+        y: usuarios,
+        x: promedios,
+        type: 'bar',
+        orientation: 'h',
+        marker: { color: '#0ea5e9' },
+        text: promedios.map(v => v.toFixed(1)),
+        textposition: 'outside',
+        textfont: { size: 12, color: '#333' }
+      };
+
+      const layout = {
+        title: '',
+        xaxis: { 
+          title: 'DÍAS APROBACIÓN RQ', 
+          titlefont: { size: 12 },
+          side: 'top'  // Colocar eje X en la parte superior para que sea siempre visible
+        },
+        yaxis: { automargin: true, tickfont: { size: 10 } },
+        showlegend: false,
+        height: alturaCalculada,
+        margin: { t: 60, b: 40, l: 150, r: 60 },  // Ajustar márgenes: más espacio arriba, menos abajo
+        paper_bgcolor: 'white',
+        plot_bgcolor: '#f9fafb'
+      };
+
+      // Desactivar responsive para mantener altura fija y el scroll
+      const config = {
+        responsive: false,
+        displayModeBar: false
+      };
+
+      Plotly.newPlot('chartDiasAprobarRQ', [trace], layout, config);
+      
+      // Limpiar listener anterior si existe
+      if (window.resizeDiasAprobarRQChart) {
+        window.removeEventListener('resize', window.resizeDiasAprobarRQChart);
+      }
+      
+      // Crear función de resize para mantener el ancho adaptable con altura fija
+      window.resizeDiasAprobarRQChart = function() {
+        const chartDiv = document.getElementById('chartDiasAprobarRQ');
+        if (chartDiv && chartDiv.data) {
+          const containerWidth = chartDiv.parentElement.offsetWidth;
+          Plotly.relayout('chartDiasAprobarRQ', {
+            width: containerWidth,
+            height: alturaCalculada  // Mantener altura fija calculada
+          });
+        }
+      };
+      
+      // Agregar listener de resize
+      window.addEventListener('resize', window.resizeDiasAprobarRQChart);
+    }
+
+    // Gráfica 2: Promedio Días Generar OC por Orden Compra|Usuario (vertical bar)
+    function renderChartDiasGenerarOC(data) {
+      const loader = document.getElementById('loaderDiasGenerarOC');
+      if (loader) loader.classList.add('hidden');
+      
+      if (!data || data.length === 0) {
+        document.getElementById('chartDiasGenerarOC').innerHTML = '<div style="text-align:center;padding:2rem;color:#666;">No hay datos disponibles</div>';
+        // Actualizar tabla con mensaje de sin datos
+        const tableBody = document.querySelector('#tableDiasGenerarOC tbody');
+        if (tableBody) {
+          tableBody.innerHTML = '<tr><td colspan="2" style="text-align: center; color: #999;">No hay datos disponibles</td></tr>';
+        }
+        return;
+      }
+      
+      const usuarios = data.map(d => d.usuario);
+      const promedios = data.map(d => d.promedio);
+      const maxVal = Math.max(...promedios);
+
+      const trace = {
+        x: usuarios,
+        y: promedios,
+        type: 'bar',
+        marker: { color: '#0ea5e9' },
+        text: promedios.map(v => v.toFixed(1)),
+        textposition: 'outside',
+        textfont: { size: 12, color: '#333' }
+      };
+
+      const layout = {
+        title: '',
+        xaxis: { title: 'Orden Compra|Usuario', titlefont: { size: 12 } },
+        yaxis: { title: 'Promedio de DÍAS GENERAR OC', range: [0, maxVal * 1.2], titlefont: { size: 12 } },
+        showlegend: false,
+        margin: { t: 20, b: 80, l: 70, r: 40 },
+        paper_bgcolor: 'white',
+        plot_bgcolor: '#f9fafb'
+      };
+
+      Plotly.newPlot('chartDiasGenerarOC', [trace], layout, { responsive: true, displayModeBar: false });
+      
+      // Llenar tabla
+      const tableBody = document.querySelector('#tableDiasGenerarOC tbody');
+      if (tableBody) {
+        tableBody.innerHTML = data.map(row => `
+          <tr>
+            <td>${row.usuario}</td>
+            <td class="text-right">${row.promedio.toFixed(1)}</td>
+          </tr>
+        `).join('');
+      }
+    }
+
+    // Gráfica 3: Días Aprobación OC por Usuario Autorizador (vertical bar)
+    function renderChartDiasAprobacionOC(data) {
+      const loader = document.getElementById('loaderDiasAprobacionOC');
+      if (loader) loader.classList.add('hidden');
+      
+      if (!data || data.length === 0) {
+        document.getElementById('chartDiasAprobacionOC').innerHTML = '<div style="text-align:center;padding:2rem;color:#666;">No hay datos disponibles</div>';
+        // Actualizar tabla con mensaje de sin datos
+        const tableBody = document.querySelector('#tableDiasAprobacionOC tbody');
+        if (tableBody) {
+          tableBody.innerHTML = '<tr><td colspan="2" style="text-align: center; color: #999;">No hay datos disponibles</td></tr>';
+        }
+        return;
+      }
+      
+      const usuarios = data.map(d => d.usuario);
+      const promedios = data.map(d => d.promedio);
+      const maxVal = Math.max(...promedios);
+
+      const trace = {
+        x: usuarios,
+        y: promedios,
+        type: 'bar',
+        marker: { color: '#0ea5e9' },
+        text: promedios.map(v => v.toFixed(1)),
+        textposition: 'outside',
+        textfont: { size: 12, color: '#333' }
+      };
+
+      const layout = {
+        title: '',
+        xaxis: { title: 'USUARIO AUTORIZADOR', titlefont: { size: 12 } },
+        yaxis: { title: 'DÍAS APROBACIÓN OC', range: [0, maxVal * 1.2], titlefont: { size: 12 } },
+        showlegend: false,
+        margin: { t: 20, b: 80, l: 70, r: 40 },
+        paper_bgcolor: 'white',
+        plot_bgcolor: '#f9fafb'
+      };
+
+      Plotly.newPlot('chartDiasAprobacionOC', [trace], layout, { responsive: true, displayModeBar: false });
+      
+      // Llenar tabla
+      const tableBody = document.querySelector('#tableDiasAprobacionOC tbody');
+      if (tableBody) {
+        tableBody.innerHTML = data.map(row => `
+          <tr>
+            <td>${row.usuario}</td>
+            <td class="text-right">${row.promedio.toFixed(1)}</td>
+          </tr>
+        `).join('');
+      }
+    }
+
+    // Gráfica 4: Promedio Días Entrada Almacén por Entrega Almacen|Usuario (line chart)
+    function renderChartDiasEntradaAlmacen(data) {
+      const loader = document.getElementById('loaderDiasEntradaAlmacen');
+      if (loader) loader.classList.add('hidden');
+      
+      if (!data || data.length === 0) {
+        document.getElementById('chartDiasEntradaAlmacen').innerHTML = '<div style="text-align:center;padding:2rem;color:#666;">No hay datos disponibles</div>';
+        // Actualizar tabla con mensaje de sin datos
+        const tableBody = document.querySelector('#tableDiasEntradaAlmacen tbody');
+        if (tableBody) {
+          tableBody.innerHTML = '<tr><td colspan="2" style="text-align: center; color: #999;">No hay datos disponibles</td></tr>';
+        }
+        return;
+      }
+      
+      const usuarios = data.map(d => d.usuario);
+      const promedios = data.map(d => d.promedio);
+
+      const trace = {
+        x: usuarios,
+        y: promedios,
+        type: 'scatter',
+        mode: 'lines+markers+text',
+        line: { color: '#0ea5e9', width: 2 },
+        marker: { color: '#0ea5e9', size: 8 },
+        text: promedios.map(v => v.toFixed(2)),
+        textposition: 'top center',
+        textfont: { size: 11, color: '#333' }
+      };
+
+      const layout = {
+        title: '',
+        xaxis: { title: 'Entrega de Almacen|Usuario', titlefont: { size: 12 } },
+        yaxis: { title: 'Promedio de D...', titlefont: { size: 12 } },
+        showlegend: false,
+        margin: { t: 30, b: 80, l: 70, r: 40 },
+        paper_bgcolor: 'white',
+        plot_bgcolor: '#f9fafb'
+      };
+
+      Plotly.newPlot('chartDiasEntradaAlmacen', [trace], layout, { responsive: true, displayModeBar: false });
+      
+      // Llenar tabla
+      const tableBody = document.querySelector('#tableDiasEntradaAlmacen tbody');
+      if (tableBody) {
+        tableBody.innerHTML = data.map(row => `
+          <tr>
+            <td>${row.usuario}</td>
+            <td class="text-right">${row.promedio.toFixed(2)}</td>
+          </tr>
+        `).join('');
+      }
     }
 
     async function loadComprasData(filters) {
-      console.log('Cargando datos de compras...', filters);
-      // TODO: Implementar llamadas a la API
-      updateKPICompras({
-        totalOrdenes: 834,
-        valorTotal: 45320000,
-        promedioOrden: 54350,
-        itemsProcesados: 2341
+      console.log('📊 Cargando datos de COMPRAS con filtros:', filters);
+      
+      try {
+        const requestBody = {
+          dateStart: filters.fechaInicio || null,
+          dateEnd: filters.fechaFin || null,
+          suppliers: filters.proveedores && filters.proveedores.length > 0 ? filters.proveedores : null,
+          states: filters.estados && filters.estados.length > 0 ? filters.estados : null,
+          processes: filters.procesos && filters.procesos.length > 0 ? filters.procesos : null
+        };
+
+        console.log('📤 Enviando POST compras con body:', requestBody);
+
+        const response = await fetch('/api/dashboard-operativo/compras/graficas', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(requestBody)
+        });
+        
+        if (!response.ok) {
+          const errorText = await response.text();
+          throw new Error(`Error ${response.status}: ${errorText}`);
+        }
+        
+        const data = await response.json();
+        console.log('✅ Datos COMPRAS recibidos:', data);
+        
+        // Renderizar las 4 gráficas
+        if (data.gasto_total !== undefined) {
+          renderChartGastoMes(data.gasto_total);
+        }
+        if (data.top_proveedores) {
+          renderChartComprasProveedores(data.top_proveedores);
+        }
+        if (data.treemap_items) {
+          renderChartTreemapItems(data.treemap_items);
+        }
+        if (data.compras_por_proceso) {
+          renderTableComprasProceso(data.compras_por_proceso, data.gasto_total);
+        }
+        
+      } catch (error) {
+        console.error('❌ Error cargando datos de COMPRAS:', error);
+        ['loaderGastoMes', 'loaderComprasProveedores', 'loaderTreemapItems'].forEach(loaderId => {
+          const loader = document.getElementById(loaderId);
+          if (loader) {
+            loader.innerHTML = `
+              <div style="color: #991b1b; text-align: center; padding: 2rem;">
+                <div style="font-size: 2rem; margin-bottom: 0.5rem;">⚠️</div>
+                <div style="font-weight: 600; margin-bottom: 0.5rem;">Error al cargar datos</div>
+                <div style="font-size: 0.85rem;">${error.message}</div>
+              </div>
+            `;
+          }
+        });
+      }
+    }
+
+    // ==================== GRÁFICAS COMPRAS ====================
+
+    // Formatear moneda colombiana
+    function formatCOP(value) {
+      if (value >= 1e12) return '$ ' + (value / 1e12).toFixed(1) + ' B';
+      if (value >= 1e9) return '$ ' + (value / 1e9).toFixed(0) + ' mil M';
+      if (value >= 1e6) return '$ ' + (value / 1e6).toFixed(0) + ' M';
+      if (value >= 1e3) return '$ ' + (value / 1e3).toFixed(0) + ' mil';
+      return '$ ' + value.toLocaleString('es-CO');
+    }
+
+    function formatCOPFull(value) {
+      return '$ ' + Math.round(value).toLocaleString('es-CO');
+    }
+
+    // Gráfica 1: GASTO MES - Gauge tipo Power BI (semicírculo rojo)
+    function renderChartGastoMes(gastoTotal) {
+      const loader = document.getElementById('loaderGastoMes');
+      if (loader) loader.classList.add('hidden');
+
+      const maxGauge = gastoTotal * 1.3;
+
+      const gauge = {
+        type: 'indicator',
+        mode: 'gauge+number',
+        value: gastoTotal,
+        title: { text: 'GASTO MES', font: { size: 18, color: '#333' } },
+        number: {
+          prefix: '$ ',
+          valueformat: ',.0f',
+          font: { size: 28, color: '#333' }
+        },
+        gauge: {
+          axis: {
+            range: [0, maxGauge],
+            tickmode: 'array',
+            tickvals: [0, maxGauge * 0.25, maxGauge * 0.5, maxGauge * 0.75, maxGauge],
+            ticktext: [
+              '$ 0',
+              formatCOP(maxGauge * 0.25),
+              formatCOP(maxGauge * 0.5),
+              formatCOP(maxGauge * 0.75),
+              formatCOP(maxGauge)
+            ],
+            tickfont: { size: 10 }
+          },
+          bar: { color: '#dc2626', thickness: 0.75 },
+          bgcolor: '#f3f4f6',
+          borderwidth: 2,
+          bordercolor: '#ccc',
+          steps: [
+            { range: [0, maxGauge * 0.5], color: '#fee2e2' },
+            { range: [maxGauge * 0.5, maxGauge * 0.75], color: '#fecaca' },
+            { range: [maxGauge * 0.75, maxGauge], color: '#fca5a5' }
+          ],
+          shape: 'angular'
+        }
+      };
+
+      Plotly.newPlot('chartGastoMes', [gauge], {
+        margin: { t: 60, b: 10, l: 50, r: 50 },
+        paper_bgcolor: 'white',
+        font: { family: 'system-ui' },
+        height: 280
+      }, { responsive: true });
+    }
+
+    // Gráfica 2: PROVEEDORES - Barras horizontales (top proveedores por Suma de Total)
+    function renderChartComprasProveedores(data) {
+      const loader = document.getElementById('loaderComprasProveedores');
+      if (loader) loader.classList.add('hidden');
+
+      if (!data || data.length === 0) {
+        document.getElementById('chartComprasProveedores').innerHTML = '<div style="text-align:center;padding:2rem;color:#666;">No hay datos disponibles</div>';
+        return;
+      }
+
+      // Mostrar top proveedores, invertir para que el mayor quede arriba
+      const topN = data.slice(0, 20);
+      const proveedores = topN.map(d => d.proveedor).reverse();
+      const montos = topN.map(d => d.monto).reverse();
+
+      // Generar colores degradados de azul (como Power BI)
+      const colors = montos.map((_, i) => {
+        const ratio = i / (montos.length - 1 || 1);
+        const r = Math.round(30 + ratio * 0);
+        const g = Math.round(100 + ratio * 120);
+        const b = Math.round(200 + ratio * 55);
+        return `rgb(${r}, ${g}, ${b})`;
       });
+
+      // Calcular altura dinámica
+      const alturaMinima = 400;
+      const alturaPorProveedor = 35;
+      const alturaCalculada = Math.max(alturaMinima, proveedores.length * alturaPorProveedor);
+
+      const trace = {
+        y: proveedores,
+        x: montos,
+        type: 'bar',
+        orientation: 'h',
+        marker: { color: colors },
+        text: montos.map(v => formatCOPFull(v)),
+        textposition: 'outside',
+        textfont: { size: 11, color: '#333' },
+        hovertemplate: '%{y}<br>Total: %{text}<extra></extra>'
+      };
+
+      const maxVal = Math.max(...montos);
+
+      const layout = {
+        title: '',
+        xaxis: {
+          title: { text: 'Suma de Total', font: { size: 12 } },
+          side: 'top',
+          tickformat: ',.0f',
+          tickprefix: '$ ',
+          tickfont: { size: 9 },
+          range: [0, maxVal * 1.35],
+          fixedrange: true
+        },
+        yaxis: {
+          automargin: true,
+          tickfont: { size: 10 },
+          fixedrange: true
+        },
+        showlegend: false,
+        height: alturaCalculada,
+        margin: { t: 60, b: 20, l: 280, r: 120 },
+        paper_bgcolor: 'white',
+        plot_bgcolor: '#fafafa'
+      };
+
+      const config = { responsive: false, displayModeBar: false };
+      Plotly.newPlot('chartComprasProveedores', [trace], layout, config);
+
+      // Resize handler
+      if (window.resizeComprasProvChart) {
+        window.removeEventListener('resize', window.resizeComprasProvChart);
+      }
+      window.resizeComprasProvChart = function() {
+        const chartDiv = document.getElementById('chartComprasProveedores');
+        if (chartDiv && chartDiv.data) {
+          Plotly.relayout('chartComprasProveedores', {
+            width: chartDiv.parentElement.offsetWidth,
+            height: alturaCalculada
+          });
+        }
+      };
+      window.addEventListener('resize', window.resizeComprasProvChart);
     }
 
-    // Actualizar KPIs (solo para tabs pendientes)
+    // Gráfica 3: TREEMAP - Distribución de compras por item/producto
+    function renderChartTreemapItems(data) {
+      const loader = document.getElementById('loaderTreemapItems');
+      if (loader) loader.classList.add('hidden');
 
-    function updateKPITraza(data) {
-      document.getElementById('kpi-total-rq').textContent = data.totalRQ.toLocaleString();
-      document.getElementById('kpi-prom-dias-aprobacion').textContent = data.promDiasAprobacion;
-      document.getElementById('kpi-prom-dias-generacion').textContent = data.promDiasGeneracion;
-      document.getElementById('kpi-pendientes').textContent = data.pendientes;
+      if (!data || data.length === 0) {
+        document.getElementById('chartTreemapItems').innerHTML = '<div style="text-align:center;padding:2rem;color:#666;">No hay datos disponibles</div>';
+        return;
+      }
+
+      // Preparar datos para treemap (sin nodo raíz TOTAL, directo)
+      const labels = [];
+      const parents = [];
+      const values = [];
+      const hoverTexts = [];
+
+      // Agregar items directamente (sin padre TOTAL)
+      data.forEach(d => {
+        // Truncar nombre si es muy largo para la etiqueta
+        const labelText = d.item.length > 40 ? d.item.substring(0, 37) + '...' : d.item;
+        labels.push(labelText);
+        parents.push('');
+        values.push(d.valor);
+        hoverTexts.push(`${d.item}<br>${formatCOPFull(d.valor)}`);
+      });
+
+      // Generar paleta de colores variados (estilo Power BI)
+      const powerBIColors = [
+        '#264478', '#749B59', '#C55A11', '#4472C4', '#ED7D31',
+        '#A5A5A5', '#FFC000', '#5B9BD5', '#70AD47', '#7030A0',
+        '#44546A', '#BF4125', '#00B0F0', '#92D050', '#F4B084',
+        '#8DB4E2', '#C6EFCE', '#FFCC99', '#D9E1F2', '#E2EFDA',
+        '#B4C6E7', '#F8CBAD', '#A9D18E', '#FFD966', '#9DC3E6',
+        '#F4B183', '#C9C9C9', '#BDD7EE', '#E2F0D9', '#FCE4D6'
+      ];
+
+      const itemColors = data.map((_, i) => powerBIColors[i % powerBIColors.length]);
+
+      const trace = {
+        type: 'treemap',
+        labels: labels,
+        parents: parents,
+        values: values,
+        text: hoverTexts,
+        hoverinfo: 'text',
+        textinfo: 'label+value',
+        texttemplate: '<b>%{label}</b><br>%{text}',
+        textfont: { size: 11, color: 'white' },
+        marker: {
+          colors: itemColors,
+          line: { width: 2, color: 'white' }
+        },
+        pathbar: { visible: false }
+      };
+
+      const layout = {
+        margin: { t: 10, b: 10, l: 10, r: 10 },
+        paper_bgcolor: 'white',
+        font: { family: 'system-ui' },
+        height: 480
+      };
+
+      Plotly.newPlot('chartTreemapItems', [trace], layout, { responsive: true, displayModeBar: false });
     }
 
-    function updateKPICompras(data) {
-      document.getElementById('kpi-total-ordenes').textContent = data.totalOrdenes.toLocaleString();
-      document.getElementById('kpi-valor-total').textContent = `$${data.valorTotal.toLocaleString()}`;
-      document.getElementById('kpi-promedio-orden').textContent = `$${data.promedioOrden.toLocaleString()}`;
-      document.getElementById('kpi-items-procesados').textContent = data.itemsProcesados.toLocaleString();
+    // Gráfica 4: TABLA PROCESO - Resumen por proceso con Suma de Total
+    function renderTableComprasProceso(data, gastoTotal) {
+      const tableBody = document.querySelector('#tableComprasProceso tbody');
+      const totalCell = document.getElementById('totalComprasProceso');
+
+      if (!data || data.length === 0) {
+        if (tableBody) {
+          tableBody.innerHTML = '<tr><td colspan="2" style="text-align: center; color: #999;">No hay datos disponibles</td></tr>';
+        }
+        if (totalCell) totalCell.textContent = '$ 0';
+        return;
+      }
+
+      if (tableBody) {
+        tableBody.innerHTML = data.map(row => `
+          <tr>
+            <td>${row.proceso}</td>
+            <td class="text-right">${formatCOPFull(row.monto)}</td>
+          </tr>
+        `).join('');
+      }
+
+      if (totalCell) {
+        const total = gastoTotal || data.reduce((sum, r) => sum + r.monto, 0);
+        totalCell.textContent = formatCOPFull(total);
+      }
     }
 
     // Obtener filtros actuales
