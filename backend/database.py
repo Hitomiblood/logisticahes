@@ -234,6 +234,101 @@ def init_db():
             )
         ''')
         
+        # ========== TABLAS PARA DASHBOARD OPERATIVO (CONSOLIDADAS DE DATA BI) ==========
+        # Tabla para DASHBOARD TRAZA REQ OC (consolidada de carpetas DATA BI)
+        execute_sql(cursor, f'''
+            CREATE TABLE IF NOT EXISTS dashboard_traza_req_oc (
+                id {id_type},
+                req_fecha_entrega TEXT,
+                req_fecha TEXT,
+                req_usuario TEXT,
+                req_fecha_autorizada TEXT,
+                req_usuario_autorizador TEXT,
+                req_emp INTEGER,
+                req_suc INTEGER,
+                req_descripcion_tipo_doc TEXT,
+                req_tipo TEXT,
+                req_numero INTEGER,
+                req_estado TEXT,
+                item_codigo INTEGER,
+                item_descripcion TEXT,
+                cotizacion_tipo TEXT,
+                cotizacion_numero INTEGER,
+                oc_fecha TEXT,
+                oc_usuario TEXT,
+                oc_fecha_autorizacion TEXT,
+                oc_usuario_autorizacion TEXT,
+                oc_tipo TEXT,
+                oc_numero INTEGER,
+                oc_estado TEXT,
+                oc_tercero_id TEXT,
+                oc_tercero_suc INTEGER,
+                oc_tercero_nombre TEXT,
+                entrega_servicio_fecha TEXT,
+                entrega_servicio_usuario TEXT,
+                entrega_servicio_tipo TEXT,
+                entrega_servicio_numero REAL,
+                entrega_almacen_fecha TEXT,
+                entrega_almacen_usuario TEXT,
+                entrega_almacen_tipo TEXT,
+                entrega_almacen_numero REAL,
+                factura_compra_fecha TEXT,
+                factura_compra_tipo TEXT,
+                factura_compra_numero REAL,
+                devolucion_compra_fecha TEXT,
+                devolucion_compra_tipo TEXT,
+                devolucion_compra_numero REAL,
+                dias_aprobar_rq INTEGER,
+                dias_generar_oc INTEGER,
+                dias_aprobacion_oc INTEGER,
+                dias_recepcion_servicio REAL,
+                dias_entrada_almacen REAL,
+                mes REAL,
+                suma_rq INTEGER,
+                created_at {timestamp_default}
+            )
+        ''')
+        
+        # Tabla para DASHBOARD OC DESCUENTOS (consolidada de carpetas DATA BI)
+        execute_sql(cursor, f'''
+            CREATE TABLE IF NOT EXISTS dashboard_oc_descuentos (
+                id {id_type},
+                fecha TEXT,
+                fecha_entrega TEXT,
+                dias_entrega INTEGER,
+                documento_emp TEXT,
+                documento_suc INTEGER,
+                documento_tipo TEXT,
+                documento_num INTEGER,
+                item_codigo INTEGER,
+                item_descripcion TEXT,
+                item_bodega REAL,
+                item_cantidad REAL,
+                talla TEXT,
+                item_unidad TEXT,
+                item_proyecto INTEGER,
+                item_solicitante TEXT,
+                item_fecha_requ TEXT,
+                tercero_id TEXT,
+                tercero_nombre TEXT,
+                costo_unitario REAL,
+                total_item REAL,
+                tasa_dcto REAL,
+                total_dcto REAL,
+                subtotal REAL,
+                tasa_iva REAL,
+                total_iva REAL,
+                total REAL,
+                estado TEXT,
+                moneda TEXT,
+                observaciones TEXT,
+                proceso TEXT,
+                concatenado TEXT,
+                porcentaje_descuento REAL,
+                created_at {timestamp_default}
+            )
+        ''')
+        
         # Índices para mejorar rendimiento
         execute_sql(cursor, 'CREATE INDEX IF NOT EXISTS idx_costos_fecha ON costos_mensuales(fecha)')
         execute_sql(cursor, 'CREATE INDEX IF NOT EXISTS idx_costos_catalogo ON costos_mensuales(catalogo)')

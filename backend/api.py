@@ -21,7 +21,7 @@ from .logging_middleware import (
 logger = get_logger("api")
 
 # Importar routers
-from .routes import costos, operatividad, compras, indicadores, fiscal_ru, brigadas, errores, programados, gestion, upload
+from .routes import costos, operatividad, compras, indicadores, fiscal_ru, brigadas, errores, programados, gestion, upload, dashboard_operativo
 
 # Rutas de carpetas
 FRONTEND_DIR = BASE_DIR / "frontend"
@@ -62,6 +62,7 @@ if DATA_DIR.exists():
 app.include_router(costos.router)
 app.include_router(operatividad.router)
 app.include_router(compras.router)
+app.include_router(dashboard_operativo.router)
 app.include_router(indicadores.router)
 app.include_router(fiscal_ru.router)
 app.include_router(brigadas.router)

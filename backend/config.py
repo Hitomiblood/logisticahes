@@ -87,6 +87,10 @@ EXCEL_FILES = {
             "programados": "PRO VS EJECU",
             "gestion": "GESTION "
         }
+    },
+    "dashboard_operativo": {
+        "oc_descuentos_folder": DATA_DIR / "DATA BI" / "DATA SET" / "COMPRAS" / "OC_DESCUENTOS",
+        "traza_rq_oc_folder": DATA_DIR / "DATA BI" / "DATA SET" / "COMPRAS" / "TRAZA_RQ_OC"
     }
 }
 

@@ -589,6 +589,11 @@ def main():
         print(f"⚠️ Error en Compras: {e}")
     
     try:
+        total += import_dashboard_operativo()
+    except Exception as e:
+        print(f"⚠️ Error en Dashboard Operativo: {e}")
+    
+    try:
         total += import_indicadores_almacenes()
     except Exception as e:
         print(f"⚠️ Error en Indicadores Almacenes: {e}")
@@ -599,8 +604,331 @@ def main():
     print("=" * 60)
 
 
+def import_dashboard_operativo():
+    """
+    Importar datos del Dashboard Operativo desde carpetas consolidadas (DATA BI)
+    
+    IMPORTANTE: Este proceso usa TABLAS SEPARADAS para evitar conflictos:
+    - dashboard_oc_descuentos (consolidada de carpetas DATA BI)
+    - dashboard_traza_req_oc (consolidada de carpetas DATA BI)
+    
+    Las tablas originales (oc_descuentos, traza_req_oc) son usadas por compras.html
+    y se importan desde BASE INFORME COMPRAS.xlsx mediante import_compras().
+    
+    Esto permite que ambos dashboards coexistan sin sobrescribirse.
+    """
+    config = EXCEL_FILES["dashboard_operativo"]
+    print(f"📂 Importando datos del Dashboard Operativo...")
+    
+    total_records = 0
+    
+    try:
+        # ========== OC_DESCUENTOS - Consolidar todos los archivos ==========
+        print("   📋 Consolidando archivos de OC_DESCUENTOS...")
+        oc_descuentos_folder = config["oc_descuentos_folder"]
+        
+        if not oc_descuentos_folder.exists():
+            print(f"   ⚠️ Carpeta no encontrada: {oc_descuentos_folder}")
+        else:
+            # Leer todos los archivos Excel de la carpeta
+            excel_files = list(oc_descuentos_folder.glob("*.xlsx"))
+            print(f"   📁 Archivos encontrados: {[f.name for f in excel_files]}")
+            
+            if excel_files:
+                dfs = []
+                for file in excel_files:
+                    try:
+                        df_temp = pd.read_excel(file)
+                        # Agregar columna de origen
+                        df_temp['Source.Name'] = file.name
+                        dfs.append(df_temp)
+                        print(f"      ✓ {file.name}: {len(df_temp)} registros")
+                    except Exception as e:
+                        print(f"      ✗ Error leyendo {file.name}: {e}")
+                
+                if dfs:
+                    # Consolidar todos los DataFrames
+                    df = pd.concat(dfs, ignore_index=True)
+                    print(f"   📊 Total registros consolidados: {len(df)}")
+                    
+                    # Limpiar tabla
+                    clear_table("dashboard_oc_descuentos")
+                    
+                    # Mapear columnas según PowerBI
+                    column_mapping = {
+                        "Fecha|Fecha": "fecha",
+                        "Fecha|Fecha Entrega": "fecha_entrega",
+                        "Fecha|Dias Entrega": "dias_entrega",
+                        "Documento|Emp": "documento_emp",
+                        "Documento|Suc": "documento_suc",
+                        "Documento|Tipo": "documento_tipo",
+                        "Documento|Núm": "documento_num",
+                        "Item|Código": "item_codigo",
+                        "Item|Descripción": "item_descripcion",
+                        "Item|Bodega": "item_bodega",
+                        "Item|Cantidad": "item_cantidad",
+                        "Talla": "talla",
+                        "Item|Unidad": "item_unidad",
+                        "Item|Proyecto": "item_proyecto",
+                        "Item|Solicitante": "item_solicitante",
+                        "Item|Fecha Requ.": "item_fecha_requ",
+                        "Tercero|Identificación": "tercero_id",
+                        "Tercero|Nombre": "tercero_nombre",
+                        "Costo Unitario": "costo_unitario",
+                        "Total Item": "total_item",
+                        "Tasa Dcto": "tasa_dcto",
+                        "Total Dcto": "total_dcto",
+                        "Subtotal": "subtotal",
+                        "Tasa IVA": "tasa_iva",
+                        "Total IVA": "total_iva",
+                        "Total": "total",
+                        "Estado": "estado",
+                        "Moneda": "moneda",
+                        "Observaciones": "observaciones",
+                        "Proceso": "proceso",
+                        "Concatenado": "concatenado",
+                        "%Descuento": "porcentaje_descuento"
+                    }
+                    
+                    # Columnas numéricas según transformaciones de PowerBI y esquema de BD
+                    integer_cols = {'dias_entrega', 'documento_suc', 'documento_num', 'item_codigo', 
+                                    'item_proyecto'}
+                    real_cols = {'item_bodega', 'item_cantidad', 'costo_unitario', 'total_item', 
+                                 'tasa_dcto', 'total_dcto', 'subtotal', 'tasa_iva', 
+                                 'total_iva', 'total', 'porcentaje_descuento'}
+                    
+                    records = []
+                    for _, row in df.iterrows():
+                        record = {}
+                        for excel_col, db_col in column_mapping.items():
+                            if excel_col in df.columns:
+                                value = row[excel_col]
+                                
+                                # Aplicar conversión de tipos según PowerBI
+                                if db_col in integer_cols:
+                                    record[db_col] = safe_numeric(value, 'integer')
+                                elif db_col in real_cols:
+                                    record[db_col] = safe_numeric(value, 'real')
+                                elif pd.isna(value):
+                                    record[db_col] = None
+                                else:
+                                    record[db_col] = fix_encoding(str(value))
+                            else:
+                                record[db_col] = None
+                        records.append(record)
+                    
+                    # Insertar en BD
+                    with get_db() as conn:
+                        cursor = conn.cursor()
+                        sql = adapt_sql('''
+                            INSERT INTO dashboard_oc_descuentos (
+                                fecha, fecha_entrega, dias_entrega, documento_emp, documento_suc,
+                                documento_tipo, documento_num, item_codigo, item_descripcion, item_bodega,
+                                item_cantidad, talla, item_unidad, item_proyecto, item_solicitante,
+                                item_fecha_requ, tercero_id, tercero_nombre, costo_unitario, total_item,
+                                tasa_dcto, total_dcto, subtotal, tasa_iva, total_iva, total,
+                                estado, moneda, observaciones, proceso, concatenado, porcentaje_descuento
+                            ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+                        ''')
+                        
+                        for record in records:
+                            cursor.execute(sql, (
+                                record.get('fecha'), record.get('fecha_entrega'), record.get('dias_entrega'),
+                                record.get('documento_emp'), record.get('documento_suc'), record.get('documento_tipo'),
+                                record.get('documento_num'), record.get('item_codigo'), record.get('item_descripcion'),
+                                record.get('item_bodega'), record.get('item_cantidad'), record.get('talla'),
+                                record.get('item_unidad'), record.get('item_proyecto'), record.get('item_solicitante'),
+                                record.get('item_fecha_requ'), record.get('tercero_id'), record.get('tercero_nombre'),
+                                record.get('costo_unitario'), record.get('total_item'), record.get('tasa_dcto'),
+                                record.get('total_dcto'), record.get('subtotal'), record.get('tasa_iva'),
+                                record.get('total_iva'), record.get('total'), record.get('estado'),
+                                record.get('moneda'), record.get('observaciones'), record.get('proceso'),
+                                record.get('concatenado'), record.get('porcentaje_descuento')
+                            ))
+                        
+                        conn.commit()
+                    
+                    total_records += len(records)
+                    print(f"   ✅ DASHBOARD OC_DESCUENTOS: {len(records)} registros importados")
+        
+        # ========== TRAZA_RQ_OC - Consolidar todos los archivos ==========
+        print("   📋 Consolidando archivos de TRAZA_RQ_OC...")
+        traza_folder = config["traza_rq_oc_folder"]
+        
+        if not traza_folder.exists():
+            print(f"   ⚠️ Carpeta no encontrada: {traza_folder}")
+        else:
+            # Leer todos los archivos Excel de la carpeta
+            excel_files = list(traza_folder.glob("*.xlsx"))
+            print(f"   📁 Archivos encontrados: {[f.name for f in excel_files]}")
+            
+            if excel_files:
+                dfs = []
+                for file in excel_files:
+                    try:
+                        df_temp = pd.read_excel(file)
+                        # Agregar columna de origen
+                        df_temp['Source.Name'] = file.name
+                        dfs.append(df_temp)
+                        print(f"      ✓ {file.name}: {len(df_temp)} registros")
+                    except Exception as e:
+                        print(f"      ✗ Error leyendo {file.name}: {e}")
+                
+                if dfs:
+                    # Consolidar todos los DataFrames
+                    df = pd.concat(dfs, ignore_index=True)
+                    print(f"   📊 Total registros consolidados: {len(df)}")
+                    
+                    # Limpiar tabla
+                    clear_table("dashboard_traza_req_oc")
+                    
+                    # Mapear columnas según PowerBI
+                    column_mapping = {
+                        "Requisición|Fecha Entrega": "req_fecha_entrega",
+                        "Requisición|Fecha": "req_fecha",
+                        "Requisición|Usuario": "req_usuario",
+                        "Requisición|Fecha Autorizada": "req_fecha_autorizada",
+                        "Requisición|Usuario Autorizador": "req_usuario_autorizador",
+                        "Requisición|Emp": "req_emp",
+                        "Requisición|Suc": "req_suc",
+                        "Requisición| Descripción Tipo Doc": "req_descripcion_tipo_doc",
+                        "Requisición|Tipo": "req_tipo",
+                        "Requisición|Numero": "req_numero",
+                        "Requisición|Estado": "req_estado",
+                        "Item|Codigo": "item_codigo",
+                        "Item|Descripción": "item_descripcion",
+                        "Cotización|Tipo": "cotizacion_tipo",
+                        "Cotización|Numero": "cotizacion_numero",
+                        "Orden Compra|Fecha": "oc_fecha",
+                        "Orden Compra|Usuario ": "oc_usuario",
+                        "Orden Compra|Fecha Autorizacion": "oc_fecha_autorizacion",
+                        "Orden Compra|Usuario Autorizacion": "oc_usuario_autorizacion",
+                        "Orden Compra|Tipo": "oc_tipo",
+                        "Orden Compra|Numero": "oc_numero",
+                        "Orden Compra|Estado": "oc_estado",
+                        "Orden Compra|Tercero|Identificación": "oc_tercero_id",
+                        "Orden Compra|Tercero|Suc": "oc_tercero_suc",
+                        "Orden Compra|Tercero|Nombre": "oc_tercero_nombre",
+                        "Entrega de Servicio|Fecha": "entrega_servicio_fecha",
+                        "Entrega de Servicio|Usuario": "entrega_servicio_usuario",
+                        "Entrega de Servicio|Tipo": "entrega_servicio_tipo",
+                        "Entrega de Servicio|Numero": "entrega_servicio_numero",
+                        "Entrega de Almacen|Fecha": "entrega_almacen_fecha",
+                        "Entrega de Almacen|Usuario": "entrega_almacen_usuario",
+                        "Entrega de Almacen|Tipo": "entrega_almacen_tipo",
+                        "Entrega de Almacen|Numero": "entrega_almacen_numero",
+                        "Factura de Compra|Fecha": "factura_compra_fecha",
+                        "Factura de Compra|Tipo": "factura_compra_tipo",
+                        "Factura de Compra|Numero": "factura_compra_numero",
+                        "Devolucion de Compra|Fecha": "devolucion_compra_fecha",
+                        "Devolucion de Compra|Tipo": "devolucion_compra_tipo",
+                        "Devolucion de Compra|Numero": "devolucion_compra_numero",
+                        "DÍAS APROBAR RQ": "dias_aprobar_rq",
+                        "DÍAS GENERAR OC": "dias_generar_oc",
+                        "DÍAS APROBACIÓN OC": "dias_aprobacion_oc",
+                        "DÍAS RECEPCIÓN SERVICIO": "dias_recepcion_servicio",
+                        "DÍAS ENTRADA ALMACEN": "dias_entrada_almacen",
+                        "mes": "mes",
+                        "SUMARQ": "suma_rq"
+                    }
+                    
+                    # Columnas numéricas según transformaciones de PowerBI y esquema de BD
+                    integer_cols = {'req_emp', 'req_suc', 'req_numero', 'item_codigo', 'cotizacion_numero',
+                                    'oc_numero', 'oc_tercero_suc', 'dias_aprobar_rq', 'dias_generar_oc', 
+                                    'dias_aprobacion_oc', 'suma_rq'}
+                    real_cols = {'entrega_servicio_numero', 'entrega_almacen_numero', 
+                                 'factura_compra_numero', 'devolucion_compra_numero',
+                                 'dias_recepcion_servicio', 'dias_entrada_almacen', 'mes'}
+                    
+                    records = []
+                    for _, row in df.iterrows():
+                        record = {}
+                        for excel_col, db_col in column_mapping.items():
+                            if excel_col in df.columns:
+                                value = row[excel_col]
+                                
+                                # Aplicar conversión de tipos según PowerBI
+                                if db_col in integer_cols:
+                                    record[db_col] = safe_numeric(value, 'integer')
+                                elif pd.isna(value):
+                                    record[db_col] = None
+                                else:
+                                    record[db_col] = fix_encoding(str(value))
+                            else:
+                                record[db_col] = None
+                        records.append(record)
+                    
+                    # Insertar en BD
+                    with get_db() as conn:
+                        cursor = conn.cursor()
+                        sql = adapt_sql('''
+                            INSERT INTO dashboard_traza_req_oc (
+                                req_fecha_entrega, req_fecha, req_usuario, req_fecha_autorizada,
+                                req_usuario_autorizador, req_emp, req_suc, req_descripcion_tipo_doc,
+                                req_tipo, req_numero, req_estado, item_codigo, item_descripcion,
+                                cotizacion_tipo, cotizacion_numero, oc_fecha, oc_usuario,
+                                oc_fecha_autorizacion, oc_usuario_autorizacion, oc_tipo, oc_numero,
+                                oc_estado, oc_tercero_id, oc_tercero_suc, oc_tercero_nombre,
+                                entrega_servicio_fecha, entrega_servicio_usuario, entrega_servicio_tipo,
+                                entrega_servicio_numero, entrega_almacen_fecha, entrega_almacen_usuario,
+                                entrega_almacen_tipo, entrega_almacen_numero, factura_compra_fecha,
+                                factura_compra_tipo, factura_compra_numero, devolucion_compra_fecha,
+                                devolucion_compra_tipo, devolucion_compra_numero, dias_aprobar_rq,
+                                dias_generar_oc, dias_aprobacion_oc, dias_recepcion_servicio,
+                                dias_entrada_almacen, mes, suma_rq
+                            ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+                        ''')
+                        
+                        for record in records:
+                            cursor.execute(sql, (
+                                record.get('req_fecha_entrega'), record.get('req_fecha'), record.get('req_usuario'),
+                                record.get('req_fecha_autorizada'), record.get('req_usuario_autorizador'),
+                                record.get('req_emp'), record.get('req_suc'), record.get('req_descripcion_tipo_doc'),
+                                record.get('req_tipo'), record.get('req_numero'), record.get('req_estado'),
+                                record.get('item_codigo'), record.get('item_descripcion'), record.get('cotizacion_tipo'),
+                                record.get('cotizacion_numero'), record.get('oc_fecha'), record.get('oc_usuario'),
+                                record.get('oc_fecha_autorizacion'), record.get('oc_usuario_autorizacion'),
+                                record.get('oc_tipo'), record.get('oc_numero'), record.get('oc_estado'),
+                                record.get('oc_tercero_id'), record.get('oc_tercero_suc'), record.get('oc_tercero_nombre'),
+                                record.get('entrega_servicio_fecha'), record.get('entrega_servicio_usuario'),
+                                record.get('entrega_servicio_tipo'), record.get('entrega_servicio_numero'),
+                                record.get('entrega_almacen_fecha'), record.get('entrega_almacen_usuario'),
+                                record.get('entrega_almacen_tipo'), record.get('entrega_almacen_numero'),
+                                record.get('factura_compra_fecha'), record.get('factura_compra_tipo'),
+                                record.get('factura_compra_numero'), record.get('devolucion_compra_fecha'),
+                                record.get('devolucion_compra_tipo'), record.get('devolucion_compra_numero'),
+                                record.get('dias_aprobar_rq'), record.get('dias_generar_oc'),
+                                record.get('dias_aprobacion_oc'), record.get('dias_recepcion_servicio'),
+                                record.get('dias_entrada_almacen'), record.get('mes'), record.get('suma_rq')
+                            ))
+                        
+                        conn.commit()
+                    
+                    total_records += len(records)
+                    print(f"   ✅ DASHBOARD TRAZA_RQ_OC: {len(records)} registros importados")
+        
+        print(f"✅ Dashboard Operativo Total: {total_records:,} registros importados")
+        return total_records
+        
+    except Exception as e:
+        print(f"❌ Error importando Dashboard Operativo: {e}")
+        import traceback
+        traceback.print_exc()
+        raise
+
+
 def import_compras():
-    """Importar datos de Compras (3 hojas)"""
+    """
+    Importar datos de Compras (3 hojas) - ARCHIVO ÚNICO
+    
+    Este proceso importa desde BASE INFORME COMPRAS.xlsx:
+    - TRAZA REQ OC
+    - OC DESCUENTOS  
+    - BASE OC GENERADAS (única fuente para esta tabla)
+    
+    NOTA: Si también ejecutas import_dashboard_operativo(), las tablas 
+    traza_req_oc y oc_descuentos serán sobrescritas con datos de las carpetas consolidadas.
+    """
     config = EXCEL_FILES["compras"]
     print(f"📂 Leyendo {config['path']}...")
     
